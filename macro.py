@@ -590,21 +590,21 @@ def replay_all_macros():
    while True:
      
       if start_marvel_jollyma():
-         play_mission((3,2), 2*15)
+         play_mission((3,5), 2*15)
          exit_marvel()
            
       abort_if_vnc_died()
       time.sleep(60)
       
       if start_marvel_joinge():
-         play_mission((3,2), 2*21)
+         play_mission((3,5), 2*21)
          exit_marvel()
 
       abort_if_vnc_died()
       time.sleep(60)
      
       if start_marvel_jojanr():
-         play_mission((3,2), 2*23)
+         play_mission((3,5), 2*23)
          exit_marvel()
       
       abort_if_vnc_died()

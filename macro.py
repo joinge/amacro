@@ -329,25 +329,32 @@ def fuse_ironman():
    left_click(fusion_button_coords)
    time.sleep(int(uniform(.5,1)))
    
-   printAction("Checking if a base card is already selected...")
-   change_base_card_coords = locate_template("screens/fusion_change_base_card_button.png", offset=(144,15), retries=3)
-   printResult(change_base_card_coords)
-   
-   if change_base_card_coords:
-      time.sleep(.3)
-      left_click(change_base_card_coords)
-   
+   printAction("Checking if a base card is already selected or not...")
+   for i in range(3):
+      change_base_card_coords = locate_template("screens/fusion_change_base_card_button.png", offset=(144,15))
+      base_card_menu          = locate_template("screens/fusion_select_base_card.png", offset=(100,14))
+            
+      if change_base_card_coords:
+         time.sleep(.3)
+         left_click(change_base_card_coords)
+         break
+         
+      if base_card_menu:
+         break
+      
+   if change_base_card_coords or base_card_menu:
+      printResult(change_base_card_coords or base_card_menu)
    #base_card_menu = locate_template("screens/fusion_select_base_card.png", offset=(100,14))
    time.sleep(1)
 
    printAction("Searching for a base card...")
    for i in range(10):
       swipe((10,600),(10,380)) # scroll half a card at the time
-      time.sleep(int(uniform(1,2)))
+      time.sleep(.5)
       ironman_base_coords = locate_template("screens/fusion_ironman_base.png", offset=(240,306))
                      
       if ironman_base_coords:
-         time.sleep(1)
+         time.sleep(.5)
          left_click(ironman_base_coords)
          time.sleep(1)
          break
@@ -360,11 +367,11 @@ def fuse_ironman():
    printAction("Searching for a fuser card...")
    for i in range(10):
       swipe((10,600),(10,380)) # scroll half a card at the time
-      time.sleep(int(uniform(1,2)))
+      time.sleep(.5)
       ironman_fuser_coords = locate_template("screens/fusion_ironman_fuser.png", offset=(240,315))
             
       if ironman_fuser_coords:
-         time.sleep(1)
+         time.sleep(.5)
          left_click(ironman_fuser_coords)
          break
    

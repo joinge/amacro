@@ -612,7 +612,7 @@ def replay_all_macros():
 
 
     
-      time.sleep(60*int(uniform(45,45)))
+      time.sleep(60*uniform(45,70))
 
 if __name__ == "__main__":   
 #   replay_all_macros()

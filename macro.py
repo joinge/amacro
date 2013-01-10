@@ -250,9 +250,12 @@ def take_screenshot_gtk():
       print( "Unable to get the screenshot." )
       
       
-def locate_template(template, correlation_threshold=0.992, offset=(0,0), retries=1, interval=1, print_coeff=True):
+def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=1, interval=1, print_coeff=True):
    import cv2
-   image_template = cv2.imread(template)
+   try:
+      image_template = cv2.imread(template)
+   except:
+      print( template+" does not seem to exist." )
    
    for i in range(retries):
       take_screenshot_adb()
@@ -261,21 +264,22 @@ def locate_template(template, correlation_threshold=0.992, offset=(0,0), retries
       result = cv2.matchTemplate(image_screen,image_template,cv2.TM_CCOEFF_NORMED)
       
       if print_coeff:
-         print( " %f"%result.max(), end='' )
+         print( " %.2f"%result.max(), end='' )
          
       if result.max() > correlation_threshold:
          
          template_coords = np.unravel_index(result.argmax(),result.shape)
          template_coords = np.array([template_coords[1],template_coords[0]])
-         print(" (%d,%d)"%(template_coords[0],template_coords[1]),end=' ')
-         return tuple(template_coords + np.array(offset))
+         object_coords = tuple(template_coords + np.array(offset))
+         print(" (%d,%d)"%(object_coords[0],object_coords[1]),end=' ')
+         return object_coords
       
       else:
                   
          # See if the cause can be an Android error:
          image_error   = cv2.imread("screens/android_error.png")
          err_result = cv2.matchTemplate(image_screen,image_error,cv2.TM_CCOEFF_NORMED)
-         print( " %f"%err_result.max(), end='' )
+         print( " %.2f"%err_result.max(), end='' )
          if err_result.max() > 0.9:
             print(' ')
             printAction( "Android error detected and will (hopefully) be dealt with.", newline=True )
@@ -310,6 +314,112 @@ def abort_if_vnc_died():
    pass
    
 
+def fuse_ironman():
+      
+   print("FUSION")
+   
+   printAction("Clicking fusion button...")
+   fusion_button_coords = locate_template("screens/fusion_button.png", offset=(60,26))
+   printResult(fusion_button_coords)
+   
+   if not fusion_button_coords:
+      printAction( "Huh? Unable to find fusion button!!! That is bad.", newline=True)
+      return
+   
+   left_click(fusion_button_coords)
+   time.sleep(int(uniform(.5,1)))
+   
+   printAction("Checking if a base card is already selected...")
+   change_base_card_coords = locate_template("screens/fusion_change_base_card_button.png", offset=(144,15), retries=3)
+   printResult(change_base_card_coords)
+   
+   if change_base_card_coords:
+      time.sleep(.3)
+      left_click(change_base_card_coords)
+   
+   #base_card_menu = locate_template("screens/fusion_select_base_card.png", offset=(100,14))
+   time.sleep(1)
+
+   printAction("Searching for a base card...")
+   for i in range(10):
+      swipe((10,600),(10,380)) # scroll half a card at the time
+      time.sleep(int(uniform(1,2)))
+      ironman_base_coords = locate_template("screens/fusion_ironman_base.png", offset=(240,306))
+                     
+      if ironman_base_coords:
+         time.sleep(1)
+         left_click(ironman_base_coords)
+         time.sleep(1)
+         break
+      
+   printResult(ironman_base_coords)
+   if not ironman_base_coords:
+      printAction( "Unable to find an Ironman for fusion.", newline=True)
+      return False
+         
+   printAction("Searching for a fuser card...")
+   for i in range(10):
+      swipe((10,600),(10,380)) # scroll half a card at the time
+      time.sleep(int(uniform(1,2)))
+      ironman_fuser_coords = locate_template("screens/fusion_ironman_fuser.png", offset=(240,315))
+            
+      if ironman_fuser_coords:
+         time.sleep(1)
+         left_click(ironman_fuser_coords)
+         break
+   
+   printResult(ironman_fuser_coords) 
+   if not ironman_fuser_coords:
+      printAction( "Unable to find the fuser. This is strange and should not happen.", newline=True)
+      return False
+         
+   printAction("Clicking \"fuse this card\" button...")
+   fuse_this_card_button_coords = locate_template("screens/fusion_fuse_this_card_button.png", offset=(106,16), retries=5)
+   printResult(fuse_this_card_button_coords)
+   
+   if not fuse_this_card_button_coords:
+      return False
+   
+   time.sleep(1)
+   left_click(fuse_this_card_button_coords)
+   time.sleep(4) # The fusion thing takes some time.
+   
+   printAction("Waiting for first fusion screen...")
+   ironman_fused_screen1 = locate_template("screens/fusion_ironman_fused1.png", correlation_threshold=0.96, offset=(155,200), retries=10)
+   
+#   if not ironman_fused_screen1:
+#      return False
+#   
+#   for i in range(10):
+#      time.sleep(int(uniform(1,2)))
+#      ironman_fused_screen1 = locate_template("screens/fusion_ironman_fused1.png", offset=(155,200), retries=5)
+#            
+#      if ironman_fused_screen1:
+#         left_click(ironman_fused_screen1)
+#         break
+   
+   printResult(ironman_fused_screen1) 
+   if not ironman_fused_screen1:
+      printAction( "First fusion screen did not appear. Buggy game?", newline=True)
+      return False
+   
+   time.sleep(1)
+   left_click(ironman_fused_screen1)
+   time.sleep(1)
+   
+   printAction("Waiting for fusion finished screen...")
+   for i in range(10):
+      time.sleep(int(uniform(1,2)))
+      ironman_finished = locate_template("screens/fusion_ironman_finished.png", offset=(240,110), retries=5)
+            
+      if ironman_finished:
+         printResult(ironman_finished) 
+         printAction( "Fusion successful!", newline=True)
+         return True
+   
+   printResult(ironman_finished) 
+   return False
+      
       
 def play_mission(mission_number=(3,2), repeat=5):
    
@@ -346,7 +456,9 @@ def play_mission(mission_number=(3,2), repeat=5):
          time.sleep(int(uniform(1,2)))
          #printAction( "Navigating to mission %d-%d..."%mission_number, newline=True )
          scroll(0,1000)
-         swipe((10,100),(10,300))
+         time.sleep(.3)
+         swipe((10,100),(10,350))
+         time.sleep(.3)
          
          for i in range(mission_number[1]-1):
             swipe((10,100),(10,690))
@@ -465,18 +577,11 @@ def lock_wait_unlock():
 def replay_all_macros():
    
    abort_if_vnc_died()
-   unlock_phone()
+#   unlock_phone()
 #   time.sleep(100)
 
    while True:
      
-      if start_marvel_jojanr():
-         play_mission((3,2), 2*23)
-         exit_marvel()
-      
-      abort_if_vnc_died()
-      time.sleep(60)    
-
       if start_marvel_jollyma():
          play_mission((3,2), 2*15)
          exit_marvel()
@@ -490,10 +595,20 @@ def replay_all_macros():
 
       abort_if_vnc_died()
       time.sleep(60)
+     
+      if start_marvel_jojanr():
+         play_mission((3,2), 2*23)
+         exit_marvel()
+      
+      abort_if_vnc_died()
+      time.sleep(60)    
+
+
     
       time.sleep(60*int(uniform(45,45)))
 
 if __name__ == "__main__":   
-   replay_all_macros()
+#   replay_all_macros()
 #   find_mission()
+   fuse_ironman()
    pass

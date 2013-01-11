@@ -15,6 +15,36 @@ ip      = "10.0.0.15"
 
 PAD = 50
 
+
+# IMEI = 358150 04 524460 6
+# 35     - British Approvals Board of Telecommunications (all phones)
+# 
+# 524460 - Serial number
+# 6      - Check digit
+
+def getIMEI():
+   output = Popen("adb shell dumpsys iphonesubinfo | grep Device | sed s/\".*= \"//", stdout=PIPE, shell=True).stdout.read()
+   print( output )
+   return int(output)
+#   358150045244606
+
+def sumDigits(number,nsum=0):
+   
+   if number < 10:
+      return nsum + number
+   else:
+      return nsum + sumDigits( number/10, number%10 )
+   
+def sumIMEIDigits(number,nsum=0,even=True):
+   """http://en.wikipedia.org/wiki/IMEI#Check_digit_computation"""
+   if number < 10:
+      return nsum + number
+   else:
+      if even:
+         return nsum + sumIMEIDigits( number/10, number%10, not even )
+      else:
+         return nsum + sumIMEIDigits( number/10, sumDigits((number%10)*2), not even )
+
 def printResult(res):
    if res:
       print(":)")
@@ -589,32 +619,35 @@ def replay_all_macros():
 
    while True:
      
+      if start_marvel_jojanr():
+         play_mission((2,4), 2*23)
+         exit_marvel()
+      
+      abort_if_vnc_died()
+      time.sleep(60)   
+     
       if start_marvel_jollyma():
-         play_mission((3,5), 2*15)
+         play_mission((2,4), 2*15)
          exit_marvel()
            
       abort_if_vnc_died()
       time.sleep(60)
       
       if start_marvel_joinge():
-         play_mission((3,5), 2*21)
+         play_mission((2,4), 2*21)
          exit_marvel()
 
       abort_if_vnc_died()
       time.sleep(60)
      
-      if start_marvel_jojanr():
-         play_mission((3,5), 2*23)
-         exit_marvel()
-      
-      abort_if_vnc_died()
-      time.sleep(60)    
+ 
 
 
     
       time.sleep(60*uniform(45,70))
 
-if __name__ == "__main__":   
+if __name__ == "__main__":  
+   getIMEI() 
 #   replay_all_macros()
 #   find_mission()
    fuse_ironman()

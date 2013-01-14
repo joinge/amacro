@@ -1005,7 +1005,7 @@ def farmMission24():
    info = getMyPageStatus()
    roster_count, roster_capacity = info['roster']
    
-   if not roster_count or roster_count > 30:
+   if not roster_count or roster_count > 50:
       printAction("Roster exceeds 30 cards. Sell and fuse baby!!!", newline=True)
       sellAllCards(all_common_cards)
       fuseAllCards('uncommon_ironman', 'tactics')
@@ -1047,7 +1047,7 @@ def runAll():
             exit_marvel()
          time.sleep(uniform(10,60))
          
-      time.sleep(60*uniform(1,15))
+      time.sleep(60*uniform(15,35))
       
       
 def startAndRestartWhenQuit():

@@ -287,9 +287,17 @@ def lock_phone():
 
 def take_screenshot_adb():
 
-   Popen("adb shell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1", stdout=PIPE, shell=True).stdout.read()
-   Popen("adb pull /sdcard/screenshot.png screens/screenshot.png >error.log 2>&1", stdout=PIPE, shell=True).stdout.read()
+   Popen("adb shell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
+          adb pull  /sdcard/screenshot.png screens/screenshot.png >error.log 2>&1", stdout=PIPE, shell=True).stdout.read()
    
+   # adb pull /dev/graphics/fb0 img.raw
+   # dd bs=800 count=1920 if=img.raw of=img.tmp
+   # ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt rgb32 -s 480x800 -i img.tmp image.png
+   
+   # time adb shell screencap -p /sdcard/img.tmp; adb pull /sdcard/img.tmp image2.png
+   # adb shell "screencap -p | uuencode - > /sdcard/img2.tmp"; adb pull /sdcard/img2.tmp /dev/stdout | uudecode  > image3.png
+   
+#   adb shell screencap -p \| uuencode o | uudecode -o out.png
    
 #def take_screenshot_gtk():
 #   import gtk.gdk
@@ -928,17 +936,17 @@ def start_marvel(user):
       check_if_vnc_error()
       #printAction("Searching for
       printAction("Searching for login screen...")
-      login_screen_coords = locate_template('screens/login_screen.png', correlation_threshold=0.992, retries=10, interval=4)
+      login_screen_coords = locate_template('screens/login_screen.png', correlation_threshold=0.992, retries=15, interval=1)
       printResult(login_screen_coords)
       if login_screen_coords:
          adb_login( login_screen_coords, user )
    
       printAction("Searching for home screen...")
       login_success = False
-      for i in range(10):
-         time.sleep(int(uniform(.5,1.5)))
+      for i in range(15):
+         time.sleep(1)
          if locate_template('screens/home_screen.png', correlation_threshold=0.985, print_coeff=False):
-            time.sleep(int(uniform(1,2)))
+            #time.sleep(1)
             left_click((346,551)) # kills ads
             login_success = True
             break
@@ -1054,13 +1062,13 @@ def startAndRestartWhenQuit():
    
 
    for i in users:
-      if randomUserStart():
+      randomUserStart()
          
-         while True:
-            if not re.findall('MARVEL',Popen('adb shell ps', shell=True, stdout=PIPE).stdout.read()):
-               break
+      while True:
+         if not re.findall('MARVEL',Popen('adb shell ps', shell=True, stdout=PIPE).stdout.read()):
+            break
 
-            time.sleep(2)
+         time.sleep(2)
 
             
 def replay_all_macros():
@@ -1073,27 +1081,31 @@ def replay_all_macros():
    while True:
           
       if start_marvel_jollyma():
-         farmMission24()
+         play_mission((2,4), 2*23)
          exit_marvel()
            
-      abort_if_vnc_died()
       time.sleep(uniform(10,60))
            
       if start_marvel_jojanr():
-         farmMission24()
+         play_mission((3,5), 2*23)
+         
+         info = getMyPageStatus()
+         roster_count, roster_capacity = info['roster']
+   
+         if not roster_count or roster_count > 50:
+            printAction("Roster exceeds 30 cards. Sell and fuse baby!!!", newline=True)
+            sellAllCards(all_common_cards)
+            fuseAllCards('uncommon_ironman', 'tactics')
+
          exit_marvel()
       
-      abort_if_vnc_died()
       time.sleep(uniform(10,60)) 
       
       if start_marvel_joinge():
-         farmMission24()
+         play_mission((2,4), 2*23)
          exit_marvel()
-
-      abort_if_vnc_died()
-      time.sleep(uniform(10,60))
      
-      time.sleep(60*uniform(45,70))
+      time.sleep(60*uniform(25,45))
 
 if __name__ == "__main__":
    

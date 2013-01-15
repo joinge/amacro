@@ -1017,6 +1017,18 @@ def farmMission24():
       printAction("Roster exceeds 30 cards. Sell and fuse baby!!!", newline=True)
       sellAllCards(all_common_cards)
       fuseAllCards('uncommon_ironman', 'tactics')
+      
+def farmMission32():
+
+   play_mission((3,2), 2*23)
+
+#   info = getMyPageStatus()
+#   roster_count, roster_capacity = info['roster']
+#   
+#   if not roster_count or roster_count > 50:
+#      printAction("Roster exceeds 30 cards. Sell and fuse baby!!!", newline=True)
+#      sellAllCards(all_common_cards)
+#      fuseAllCards('uncommon_ironman', 'tactics')
 
    
 #   sellAllCards(['common_spiderwoman','common_sandman'])
@@ -1047,7 +1059,7 @@ def randomUserStart():
          return start_marvel(users[i])       
    
    
-def runAll():
+def runAll24():
    while True:
       for i in users:
          if randomUserStart():
@@ -1057,6 +1069,16 @@ def runAll():
          
       time.sleep(60*uniform(15,35))
       
+def runAll32():
+   while True:
+      for i in users:
+         if randomUserStart():
+            farmMission32()
+            exit_marvel()
+         time.sleep(60*uniform(10,25))
+         
+#      time.sleep(60*uniform(35,55))
+   
       
 def startAndRestartWhenQuit():
    

@@ -419,6 +419,10 @@ def runOCR(image,mode='line'):
       print( "ERROR: runOCR() - Mode %s is not supported")
       return ''
    
+   image = 255*(image-float(image.min()))/(float(image.max())-image.min())
+   image = image.astype('uint8')
+#   cv2.normalize(image,image,0,255)
+   image[image>210] = 255
    cv2.imwrite( 'tmp.png', image )
    tesseract_output = Popen("tesseract tmp.png text -psm %d tessconfig >/dev/null 2>&1"%psm, shell=True, stdout=PIPE).stdout.read()
    
@@ -428,8 +432,8 @@ def runOCR(image,mode='line'):
    
    # TODO make sure file is not empty!!!
    text  = open('text.txt','r').read()
-   text  = re.sub(r'\s', '', text) # Remove whitespaces
-   text  = re.sub(r',', '', text) # Remove commas
+#   text  = re.sub(r'\s', '', text) # Remove whitespaces
+#   text  = re.sub(r',', '', text) # Remove commas
    text  = re.sub(r'\n', '', text) # Remove newlines
    
    return text
@@ -441,7 +445,7 @@ def getMyPageStatus():
    print("Get MyPage info...")
    
    printAction("Clicking MyPage button...")
-   mypage_button = locate_template("screens/mypage_button.png", offset=(56,21))
+   mypage_button = locate_template("screens/mypage_button.png", offset=(56,21), retries=5)
    printResult(mypage_button)
    
    if not mypage_button:
@@ -480,7 +484,7 @@ def getMyPageStatus():
       info['roster'] = cards_in_roster
    except:
       printAction("Unable to determine roster size.", newline=True)
-      info['roster'] = 50
+      info['roster'] = [30,70]
       
    printAction("Running OCR to figure out amount of silver...")
    silver_image = readImage("screens/screenshot.png",(240,310),(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
@@ -488,11 +492,11 @@ def getMyPageStatus():
    silver_image[:,:,2] = 0
    silver_image_grey = cv2.cvtColor(silver_image, cv2.COLOR_BGR2GRAY) 
    silver_string = runOCR( 255-silver_image_grey )
-   silver_numbers = re.findall(r'\d+', silver_string)
-   silver_numbers = re.findall(r'\d+', silver_string)
+   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
+   silver_numbers = re.sub(r',', '', silver_numbers)
    
    try:
-      silver = int(silver_numbers[0])
+      silver = int(silver_numbers)
       print("Silver: %d"%silver)
       info['silver'] = silver
    
@@ -842,7 +846,7 @@ def fuseCard(card_type, alignment='all'):
       
 def play_mission(mission_number=(3,2), repeat=5):
    
-   print( "Playing mission %d.%d..."%mission_number )
+   print( "Playing mission %d-%d..."%mission_number )
 
    for i in range(repeat+1):
       check_if_vnc_error()
@@ -863,9 +867,12 @@ def play_mission(mission_number=(3,2), repeat=5):
          mission_button_coords = locate_template('screens/mission_list_%d.png'%mission_number[0], correlation_threshold=0.92, offset=(170,10))
          printResult(mission_button_coords)
          if not mission_button_coords:
-            swipe((240,520),(240,80))
+#            time.sleep(1)
+            printAction( "Locating mission %d button..."%mission_number[0] )
+            swipe((20,600),(20,80))
             time.sleep(int(uniform(1,2)))
             mission_button_coords = locate_template('screens/mission_list_%d.png'%mission_number[0], correlation_threshold=0.92)
+            printResult(mission_button_coords)
             
          if not mission_button_coords:
             print( "Unable to locate mission buttion. This shouldn't happen. Dammit!" )
@@ -945,7 +952,7 @@ def start_marvel(user):
       login_success = False
       for i in range(15):
          time.sleep(1)
-         if locate_template('screens/home_screen.png', correlation_threshold=0.985, print_coeff=False):
+         if locate_template('screens/home_screen.png', correlation_threshold=0.985):
             #time.sleep(1)
             left_click((346,551)) # kills ads
             login_success = True
@@ -983,7 +990,10 @@ def start_marvel_jojanr():
    
 def exit_marvel():
    check_if_vnc_error()
-   clear_marvel_cache() # A little harsh...?
+   
+   Popen("adb shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android", stdout=PIPE, shell=True).stdout.read()
+   
+#   clear_marvel_cache() # A little harsh...?
    lock_phone()
    check_if_vnc_error()
    
@@ -1017,6 +1027,19 @@ def farmMission24():
       printAction("Roster exceeds 30 cards. Sell and fuse baby!!!", newline=True)
       sellAllCards(all_common_cards)
       fuseAllCards('uncommon_ironman', 'tactics')
+      
+def getSilver():
+   
+   play_mission((4,3), 2*23)
+   
+   time.sleep(.5)
+   info = getMyPageStatus()
+   
+   roster_count, roster_capacity = info['roster']
+   
+   if not roster_count or roster_count > 50:
+      printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
+      sellAllCards(['common_medusa', 'common_enchantress'])
       
 def farmMission32():
 
@@ -1093,47 +1116,37 @@ def startAndRestartWhenQuit():
          time.sleep(2)
 
             
-def replay_all_macros():
+def custom1():
    
-   abort_if_vnc_died()
-#   unlock_phone()
-#   time.sleep(100)
-
    i = 0
    while True:
           
-      if start_marvel_jollyma():
-         play_mission((2,4), 2*23)
-         exit_marvel()
-           
-      time.sleep(uniform(10,60))
            
       if start_marvel_jojanr():
-         play_mission((3,5), 2*23)
-         
-         info = getMyPageStatus()
-         roster_count, roster_capacity = info['roster']
-   
-         if not roster_count or roster_count > 50:
-            printAction("Roster exceeds 30 cards. Sell and fuse baby!!!", newline=True)
-            sellAllCards(all_common_cards)
-            fuseAllCards('uncommon_ironman', 'tactics')
-
+         play_mission((3,2), 2*23)
+         getMyPageStatus()
          exit_marvel()
       
-      time.sleep(uniform(10,60)) 
+      time.sleep(uniform(1,5))
       
       if start_marvel_joinge():
-         play_mission((2,4), 2*23)
+         play_mission((3,2), 2*23)
+         getMyPageStatus()
          exit_marvel()
-     
-      time.sleep(60*uniform(25,45))
+         
+      time.sleep(uniform(1,5)) 
+         
+      if start_marvel_jollyma():
+         getSilver()
+         exit_marvel()
+
+      time.sleep(60*uniform(35,55))
 
 if __name__ == "__main__":
    
 #   runAll()
-   startAndRestartWhenQuit()
-#   getMyPageStatus()
+#   startAndRestartWhenQuit()
+   getMyPageStatus()
 #   farmMission24()
 #   replay_all_macros()
 #   getIMEI() 

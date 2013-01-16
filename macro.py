@@ -22,20 +22,78 @@ class Stats:
       self.info = {}
       self.read()
       
+   def setReference(self, key, val):
+
+      self.info[key+"_ref"] = val
+      
+   def clearReference(self, key):
+      
+      self.info[key+"_ref"] = 0
+      
+   def getReference(self, key):
+      
+      if key+"_ref" in self.info:
+         return self.info[key+"_ref"]
+      else:
+         return None
+      
+   def add(self, key, val):
+      
+      try:
+         relative_val = val - self.info[key+"_ref"]
+      except:
+         relative_val = val
+           
+      if key in self.info:
+         self.info[key] = self.info[key] + relative_val
+      else:
+         self.info[key] = relative_val
+                  
+      self.write()
+      
+      
    def read(self):
-      if os.path.getsize('stats.txt') > 0:
-         s = open('stats.txt','a')
-         
-         for key,val in ast.literal_eval(eval(s)):
-            self.info[key] += val
-             
-         s.close()
+      
+      try:
+         s = open('stats.txt','r')
+         if os.path.getsize('stats.txt') > 0:
+            self.info = ast.literal_eval(s.read())
+            s.close()
+      except:
+         pass
+      
+#      if os.path.getsize('stats.txt') > 0:
+#         s = open('stats.txt','a')
+          
    
    def write(self):
-      s = open('stats.txt','a')
+      s = open('stats.txt','w')
       s.write(str(self.info))
       s.close()
       
+   def silverStart(self, key):
+
+      ref = self.getReference(key+'_silver')
+      if not ref:
+         info = getMyPageStatus()
+         try:
+            silver_start = info['silver']
+            self.setReference(key+'_silver', silver_start)
+         except:
+            printAction("WARNING: Unable to read silver status for statistics...", newline=True)
+      
+   def silverEnd(self, key):
+      
+      info = getMyPageStatus()
+      
+      try:
+         silver_end = info['silver']
+         self.add(key+'_silver', silver_end )
+         self.clearReference(key+'_silver')       
+         self.write()
+
+      except:
+         printAction("WARNING: Unable to read silver status for statistics...", newline=True)
 
 # IMEI = 358150 04 524460 6
 # 35     - British Approvals Board of Telecommunications (all phones)
@@ -508,8 +566,12 @@ def getMyPageStatus():
    silver_image[:,:,2] = 0
    silver_image_grey = cv2.cvtColor(silver_image, cv2.COLOR_BGR2GRAY) 
    silver_string = runOCR( 255-silver_image_grey )
-   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
+#   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
+#   silver_numbers = re.sub(r',', '', silver_numbers)
+   silver_numbers = re.search(r'.+,[0-9]{1,3}', silver_string).group(0)
+   silver_numbers = re.sub(r'\s', '', silver_numbers)
    silver_numbers = re.sub(r',', '', silver_numbers)
+   
    
    try:
       silver = int(silver_numbers)
@@ -545,8 +607,9 @@ def sellCards(cards_list, alignment='all'):
    printAction("Selling cards: ")
    for card in cards_list:
       print( "%s "%card, end='' )
-   print('')   
+   print('')
    
+   stats = Stats()
       
    printAction("Clicking roster button...")
    menu_button = locate_template("screens/menu_button.png", offset=(56,12))
@@ -604,6 +667,7 @@ def sellCards(cards_list, alignment='all'):
          if card_coords:
             left_click([card_coords[0],card_coords[1]+300])
             number_of_cards_selected += 1
+            stats.add(card, 1)
             time.sleep(.5)
             break
             
@@ -731,6 +795,8 @@ def fuseCard(card_type, alignment='all'):
       
    print("FUSION")
    
+   stats = Stats()
+   
    printAction("Clicking fusion button...")
    fusion_button_coords = locate_template("screens/fusion_button.png", offset=(60,26))
    printResult(fusion_button_coords)
@@ -843,6 +909,7 @@ def fuseCard(card_type, alignment='all'):
       return False
    
    time.sleep(1)
+   stats.add(card_type, 2)
    left_click(rarity_upgraded)
    time.sleep(1)
    
@@ -860,11 +927,14 @@ def fuseCard(card_type, alignment='all'):
    return False
       
       
-def play_mission(mission_number=(3,2), repeat=5):
-   
-   print( "Playing mission %d-%d..."%mission_number )
-   
+def play_mission(mission_number=(3,2), repeat=5, statistics=True):
+      
    stats = Stats()
+   
+   if statistics:
+      stats.silverStart("mission_%d-%d"%mission_number)
+            
+   print( "Playing mission %d-%d..."%mission_number )
 
    for i in range(repeat+1):
       check_if_vnc_error()
@@ -894,6 +964,10 @@ def play_mission(mission_number=(3,2), repeat=5):
             
          if not mission_button_coords:
             print( "Unable to locate mission buttion. This shouldn't happen. Dammit!" )
+            
+            if statistics:
+               stats.silverEnd("mission_%d-%d"%mission_number)
+            
             return False
          
          left_click(mission_button_coords)
@@ -923,7 +997,7 @@ def play_mission(mission_number=(3,2), repeat=5):
          for i in range(10):
             time.sleep(int(uniform(1,2)))
             
-            out_of_energy = locat               e_template('screens/out_of_energy.png', correlation_threshold=0.985, print_coeff=False)
+            out_of_energy = locate_template('screens/out_of_energy.png', correlation_threshold=0.985, print_coeff=False)
             #printResult(out_of_energy)
             
             mission_started = locate_template('screens/mission_bar.png', correlation_threshold=0.985)
@@ -932,8 +1006,11 @@ def play_mission(mission_number=(3,2), repeat=5):
             if out_of_energy:
                print( '' )
                printAction("No energy left! Exiting.", newline=True)
-               
                back_key()
+               
+               if statistics:
+                  stats.silverEnd("mission_%d-%d"%mission_number)
+               
                return True
                
             if mission_started:
@@ -942,16 +1019,20 @@ def play_mission(mission_number=(3,2), repeat=5):
                back_key()
                time.sleep(int(uniform(1,2)))
                mission_success = True
-               stats["mission_%d_%d.png"%mission_number] += 1
-               stats.write()
+               
+               if statistics:
+                  stats.add("mission_%d-%d"%mission_number, 1)
+                  
                break
          
          if not mission_success:
             printAction("Timeout when waiting for mission screen", newline=True)
+            if statistics:
+               stats.silverEnd("mission_%d-%d"%mission_number)
             return False
                                   
-         
-      
+   if statistics:
+      stats.silverEnd("mission_%d-%d"%mission_number)
           
 
 def start_marvel(user):
@@ -977,6 +1058,11 @@ def start_marvel(user):
             left_click((346,551)) # kills ads
             login_success = True
             break
+         
+      printResult(login_success) 
+      if not login_success:
+         if locate_template('screens/home_screen_maintenance.png'):
+            printAction("It appears server is under maintenance...", newline=True)
       
 #      if login_success:
 #         printAction( "Finished login success!!", newline=True)
@@ -1140,7 +1226,8 @@ def custom1():
    
    i = 0
    while True:
-          
+           
+      
       try:
          if start_marvel_jojanr():
             play_mission((3,2), 2*23)
@@ -1150,10 +1237,10 @@ def custom1():
          pass
       
       time.sleep(uniform(1,5))
-      
+                
       try:
          if start_marvel_joinge():
-            play_mission((3,2), 2*23)
+            play_mission((3,2), 2*23, statistics=True)
             getMyPageStatus()
             exit_marvel()
       except:
@@ -1163,7 +1250,8 @@ def custom1():
          
       try:
          if start_marvel_jollyma():
-            getSilver()
+            play_mission((3,2), 2*23)
+            getMyPageStatus()
             exit_marvel()
       except:
          pass
@@ -1175,29 +1263,30 @@ def custom2():
    i = 0
    while True:
 
+      try:
+         if start_marvel_joinge():
+            play_mission((4,3), 2*23)
+#            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+      
+      time.sleep(uniform(1,5))
+
+      try:
+         if start_marvel_jojanr():
+            play_mission((4,3), 2*23)
+#            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+      
+      time.sleep(uniform(1,5))
 
       try:
          if start_marvel_jollyma():
             play_mission((4,3), 2*23)
-            getMyPageStatus()
-            exit_marvel()
-      except:
-         pass
-
-      try:
-         if start_marvel_joinge():
-            play_mission((4,3), 2*23)
-            getMyPageStatus()
-            exit_marvel()
-      except:
-         pass
-      
-      time.sleep(uniform(1,5)) 
-      
-      try:
-         if start_marvel_jojanr():
-            play_mission((4,3), 2*23)
-            getMyPageStatus()
+#            getMyPageStatus()
             exit_marvel()
       except:
          pass
@@ -1208,9 +1297,11 @@ def custom2():
 
 if __name__ == "__main__":
    
+#   custom1()
+   play_mission((3,2))
 #   runAll()
 #   startAndRestartWhenQuit()
-   getMyPageStatus()
+#   getMyPageStatus()
 #   farmMission24()
 #   replay_all_macros()
 #   getIMEI() 

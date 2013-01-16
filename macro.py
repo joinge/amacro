@@ -7,7 +7,7 @@ from __future__ import print_function
 from random import uniform
 from subprocess import Popen, PIPE
 import numpy as np
-import re, time, os, sys
+import re, time, os, sys, ast
 import cv2
 
 
@@ -19,7 +19,23 @@ all_common_cards = ['common_spiderwoman','common_sandman','common_enchantress','
 
 class Stats:
    def __init__(self):
-      pass
+      self.info = {}
+      self.read()
+      
+   def read(self):
+      if os.path.getsize('stats.txt') > 0:
+         s = open('stats.txt','a')
+         
+         for key,val in ast.literal_eval(eval(s)):
+            self.info[key] += val
+             
+         s.close()
+   
+   def write(self):
+      s = open('stats.txt','a')
+      s.write(str(self.info))
+      s.close()
+      
 
 # IMEI = 358150 04 524460 6
 # 35     - British Approvals Board of Telecommunications (all phones)
@@ -847,6 +863,8 @@ def fuseCard(card_type, alignment='all'):
 def play_mission(mission_number=(3,2), repeat=5):
    
    print( "Playing mission %d-%d..."%mission_number )
+   
+   stats = Stats()
 
    for i in range(repeat+1):
       check_if_vnc_error()
@@ -905,7 +923,7 @@ def play_mission(mission_number=(3,2), repeat=5):
          for i in range(10):
             time.sleep(int(uniform(1,2)))
             
-            out_of_energy = locate_template('screens/out_of_energy.png', correlation_threshold=0.985, print_coeff=False)
+            out_of_energy = locat               e_template('screens/out_of_energy.png', correlation_threshold=0.985, print_coeff=False)
             #printResult(out_of_energy)
             
             mission_started = locate_template('screens/mission_bar.png', correlation_threshold=0.985)
@@ -924,6 +942,8 @@ def play_mission(mission_number=(3,2), repeat=5):
                back_key()
                time.sleep(int(uniform(1,2)))
                mission_success = True
+               stats["mission_%d_%d.png"%mission_number] += 1
+               stats.write()
                break
          
          if not mission_success:

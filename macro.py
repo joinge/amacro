@@ -1141,25 +1141,69 @@ def custom1():
    i = 0
    while True:
           
-           
-      if start_marvel_jojanr():
-         play_mission((3,2), 2*23)
-         getMyPageStatus()
-         exit_marvel()
+      try:
+         if start_marvel_jojanr():
+            play_mission((3,2), 2*23)
+            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
       
       time.sleep(uniform(1,5))
       
-      if start_marvel_joinge():
-         play_mission((3,2), 2*23)
-         getMyPageStatus()
-         exit_marvel()
-         
+      try:
+         if start_marvel_joinge():
+            play_mission((3,2), 2*23)
+            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+      
       time.sleep(uniform(1,5)) 
          
-      if start_marvel_jollyma():
-         getSilver()
-         exit_marvel()
+      try:
+         if start_marvel_jollyma():
+            getSilver()
+            exit_marvel()
+      except:
+         pass
+      
+      time.sleep(60*uniform(35,55))
+      
+def custom2():
+   
+   i = 0
+   while True:
 
+
+      try:
+         if start_marvel_jollyma():
+            play_mission((4,3), 2*23)
+            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+
+      try:
+         if start_marvel_joinge():
+            play_mission((4,3), 2*23)
+            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+      
+      time.sleep(uniform(1,5)) 
+      
+      try:
+         if start_marvel_jojanr():
+            play_mission((4,3), 2*23)
+            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+      
+      time.sleep(uniform(1,5))
+      
       time.sleep(60*uniform(35,55))
 
 if __name__ == "__main__":

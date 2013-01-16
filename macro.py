@@ -485,6 +485,7 @@ def getMyPageStatus():
    except:
       printAction("Unable to determine roster size.", newline=True)
       info['roster'] = [30,70]
+      cv2.imwrite( 'tmp_last_error.png', cards_in_roster_image_grey )
       
    printAction("Running OCR to figure out amount of silver...")
    silver_image = readImage("screens/screenshot.png",(240,310),(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
@@ -499,6 +500,7 @@ def getMyPageStatus():
       silver = int(silver_numbers)
       print("Silver: %d"%silver)
       info['silver'] = silver
+      cv2.imwrite( 'tmp_last_error.png', silver_image_grey )
    
    except:
       printAction("Unable to determine silver amount.", newline=True)
@@ -1155,6 +1157,7 @@ def custom2():
    i = 0
    while True:
 
+      time.sleep(60*uniform(35,55))
 
       try:
          if start_marvel_jollyma():
@@ -1163,6 +1166,8 @@ def custom2():
             exit_marvel()
       except:
          pass
+      
+      time.sleep(60*uniform(1,10)) 
 
       try:
          if start_marvel_joinge():
@@ -1172,7 +1177,7 @@ def custom2():
       except:
          pass
       
-      time.sleep(uniform(1,5)) 
+      time.sleep(60*uniform(1,10)) 
       
       try:
          if start_marvel_jojanr():
@@ -1182,9 +1187,9 @@ def custom2():
       except:
          pass
       
-      time.sleep(uniform(1,5))
+      time.sleep(60*uniform(1,10))
       
-      time.sleep(60*uniform(35,55))
+      
 
 if __name__ == "__main__":
    

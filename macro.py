@@ -927,7 +927,7 @@ def fuseCard(card_type, alignment='all'):
    return False
       
       
-def play_mission(mission_number=(3,2), repeat=5, statistics=True):
+def play_mission(mission_number=(3,2), repeat=50, statistics=True):
       
    stats = Stats()
    

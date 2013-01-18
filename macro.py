@@ -405,7 +405,7 @@ def readImage(image_file, xbounds=None, ybounds=None):
       
    
 
-def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=1, interval=1, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False):
+def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=1, interval=1, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False, click=False, scroll_size=[], swipe_size=[]):
    try:
       image_template = cv2.imread(template)
    except:
@@ -419,6 +419,7 @@ def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=
       time.sleep(.1)
       try:
          image_screen   = readImage("screens/screenshot.png", xbounds, ybounds)
+#         image_screen   = readImage("test.png", xbounds, ybounds)
       except:
          print("ERROR: Unable to load screenshot.png. This is bad, and weird!!!")
          return False
@@ -438,6 +439,8 @@ def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=
          template_coords = np.unravel_index(result.argmax(),result.shape)
          template_coords = np.array([template_coords[1],template_coords[0]])
          object_coords = tuple(template_coords + np.array(offset))
+         if click:
+            left_click(object_coords)
          if print_coeff:
             sys.stdout.write("(%d,%d) "%(object_coords[0],object_coords[1]))
             sys.stdout.flush()
@@ -461,14 +464,21 @@ def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=
             retries = retries + 1                    
          
       if retries > 1:
-         time.sleep(int(uniform(interval,interval*1.5))) # needed?
+         if swipe_size:
+            swipe(swipe_size[0],swipe_size[1])
+            if interval < 1:
+               time.sleep(1)
+            else:
+               time.sleep(interval)
+         if scroll_size:
+            scroll(scroll_size[0],scroll_size[1])
+            if interval < 1:
+               time.sleep(3)
+            else:
+               time.sleep(interval)
       
    return None
       
-      #print template_coords + np.array(offset)
-   
-   #print('')
-
    
 def check_if_vnc_error():
 #   printAction( "Verifying VNC sanity..." )
@@ -485,7 +495,7 @@ def abort_if_vnc_died():
 #      raise Exception("VNC appears to have died. Aborting.")
    pass
 
-def runOCR(image,mode='line'):
+def runOCR(image,mode='line',type='numbers'):
    
    if mode == 'line':
       psm = 7
@@ -493,12 +503,16 @@ def runOCR(image,mode='line'):
       print( "ERROR: runOCR() - Mode %s is not supported")
       return ''
    
+   tessconfig_file = ''
+   if type=='numbers':
+      tessconfig_file = 'tessnumbers'
+   
    image = 255*(image-float(image.min()))/(float(image.max())-image.min())
    image = image.astype('uint8')
 #   cv2.normalize(image,image,0,255)
    image[image>210] = 255
    cv2.imwrite( 'tmp.png', image )
-   tesseract_output = Popen("tesseract tmp.png text -psm %d tessconfig >/dev/null 2>&1"%psm, shell=True, stdout=PIPE).stdout.read()
+   tesseract_output = Popen("tesseract tmp.png text -psm %d %s >/dev/null 2>&1"%(psm,tessconfig_file), shell=True, stdout=PIPE).stdout.read()
    
    if os.path.getsize('text.txt') == 1:
       print( "ERROR: runOCR() returned no output")
@@ -512,11 +526,7 @@ def runOCR(image,mode='line'):
    
    return text
 
-def getMyPageStatus():
-   
-   info = {'roster':[]}
-   
-   print("Get MyPage info...")
+def gotoMyPage():
    
    printAction("Clicking MyPage button...")
    mypage_button = locate_template("screens/mypage_button.png", offset=(56,21), retries=5)
@@ -528,6 +538,15 @@ def getMyPageStatus():
    
    left_click(mypage_button)
    time.sleep(4)
+   return True
+
+def getMyPageStatus():
+   
+   info = {'roster':[]}
+   
+   print("Get MyPage info...")
+   
+   gotoMyPage()
    
    printAction("Locating status screen...")
    swipe((240,600),(240,300))
@@ -584,7 +603,181 @@ def getMyPageStatus():
       cv2.imwrite( 'tmp_last_error.png', silver_image_grey )
    
    return info
+
+def gotoEventHome():
    
+   gotoMyPage()
+         
+   printAction("Clicking Fantastic 4 button...")
+   event_fantastic4 = locate_template("screens/event_fantastic4_button.png", offset=(56,21), retries=5)
+   printResult(event_fantastic4)
+   
+   if not event_fantastic4:
+      printAction( "Huh? Unable to find Fantastic 4 event button!!! That is bad.", newline=True)
+      return False
+   
+   left_click(event_fantastic4)
+   time.sleep(3)
+   return True
+
+   
+def eventPlayMission():
+
+   print( "Playing event mission..." )
+
+   gotoMyPage()
+
+   printAction("Searching for event mission button...")
+   event_mission_button = locate_template("screens/event_newest_event_mission_button.png",
+                                          offset=(109,23), retries=5, click=True, swipe_size=[(240,600),(240,295)])
+   printResult(event_mission_button)
+   if not event_mission_button:
+      return False
+      
+   printAction( "Avaiting mission screen..." )
+   mission_success = False
+   
+   for i in range(10):
+      time.sleep(1)
+      
+      out_of_energy = locate_template('screens/out_of_energy.png', correlation_threshold=0.985, print_coeff=False)
+      #printResult(out_of_energy)
+      
+      mission_started = locate_template('screens/mission_bar.png', correlation_threshold=0.985)
+      #printResult(mission_started)
+         
+      if out_of_energy:
+         print( '' )
+         printAction("No energy left! Exiting.", newline=True)
+         back_key()
+         time.sleep(1)
+         return True
+         
+      if mission_started:
+         print( '' )
+         printAction("Mission started. Returning.", newline=True)
+         back_key()
+         time.sleep(1)
+         mission_success = True           
+         return True
+   
+   if not mission_success:
+      printAction("Timeout when waiting for mission screen", newline=True)
+      return False
+
+      
+def eventKillEnemies():
+   
+   printAction("Supposed to kill enemies, but don't know how...", newline=True)
+   
+   event_face_enemy = locate_template("screens/event_mission_button.png", offset=(240,-54), correlation_threshold=0.92, retries=2, reuse_last_screenshot=True, click=True)
+   if not event_face_enemy:
+      printAction("Unable to locate \"face enemy\" button...")
+      return False
+   
+   printAction("Searching for a decent foe...")
+   event_enemy_corner = locate_template("screens/event_enemy_info.png",
+      offset=(0,130), retries=5, ybounds=(130,640), reuse_last_screenshot=True, swipe_size=[(240,600),(240,295)])
+   printResult(event_enemy_corner)
+      
+   if not event_enemy_corner:
+      printAction("Unable to locate decent foe...")
+      return False
+   
+   printAction("Running OCR to figure badass name and level...")
+#   printAction("Preprocessing image")
+   badguy_image = readImage("test.png",(110,370),(event_enemy_corner[1]-49,event_enemy_corner[1]-18))
+#   badguy_image[:,:,0] = 0
+#   badguy_image[:,:,2] = 0
+   badguy_image_grey = cv2.cvtColor(badguy_image, cv2.COLOR_BGR2GRAY)
+#   cards_in_roster_image_inv = 255-cards_in_roster_image_grey
+#   cards_in_roster_image_inv = cards_in_roster_image_inv * 255.0 / cards_in_roster_image_inv.max()
+
+   import pylab as pl
+   pl.imshow(255-badguy_image_grey,pl.cm.gray)
+#   pl.show()
+
+   badguy_string = runOCR( 255-badguy_image_grey, type='')
+
+   badguy_name  = re.sub(r' Lv.+', '', badguy_string)
+   badguy_level = re.sub(r'.+Lv\.', '', badguy_string)
+#   badguy_level= tuple(map(int, badguy_string))
+   
+   print( badguy_name )
+   print( badguy_level )
+   
+   image = readImage("test.png",(148,390),(311,459))
+
+   image_grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+   pl.imshow(255-image_grey,pl.cm.gray)
+   pl.show()
+   
+   image_string = runOCR( 255-image_grey, type='')
+
+#   badguy_name  = re.sub(r' Lv.+', '', badguy_string)
+#   badguy_level = re.sub(r'.+Lv\.', '', badguy_string)
+#   badguy_level= tuple(map(int, badguy_string))
+   
+   print( image_string )
+#   print( badguy_level )
+   
+#   try:
+#      print("Cards: %d/%d"%cards_in_roster)
+#      info['roster'] = cards_in_roster
+#   except:
+#      printAction("Unable to determine roster size.", newline=True)
+#      info['roster'] = [30,70]
+#      cv2.imwrite( 'tmp_last_error.png', cards_in_roster_image_grey )
+#      
+#   printAction("Running OCR to figure out amount of silver...")
+#   silver_image = readImage("screens/screenshot.png",(240,310),(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
+#   #cards_in_roster_image[:,:,0] = 0
+#   silver_image[:,:,2] = 0
+#   silver_image_grey = cv2.cvtColor(silver_image, cv2.COLOR_BGR2GRAY) 
+#   silver_string = runOCR( 255-silver_image_grey )
+##   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
+##   silver_numbers = re.sub(r',', '', silver_numbers)
+#   silver_numbers = re.search(r'.+,[0-9]{1,3}', silver_string).group(0)
+#   silver_numbers = re.sub(r'\s', '', silver_numbers)
+#   silver_numbers = re.sub(r',', '', silver_numbers)
+#   
+#   
+#   try:
+#      silver = int(silver_numbers)
+#      print("Silver: %d"%silver)
+#      info['silver'] = silver
+#      cv2.imwrite( 'tmp_last_error.png', silver_image_grey )
+#   
+#   except:
+#      printAction("Unable to determine silver amount.", newline=True)
+#   
+#   return info
+      
+   
+def eventPlay():
+      
+   print("PLAYING EVENT")
+   
+   for i in range(10):
+      
+      gotoEventHome()
+  
+      printAction("Checking if enemies are present in the area...")
+      event_enemies_in_area = locate_template("screens/event_enemies_in_area.png",
+         offset=(154,89), retries=5, ybounds=(0,400), swipe_size=[(240,600),(240,295)])
+      printResult(event_enemies_in_area)
+      
+      if event_enemies_in_area:
+         success = eventKillEnemies()
+      else:
+         success = eventPlayMission()
+      
+      if not success:
+         return False   
+   
+   return True
+      
+      
    
 def listSortAlignment(alignment_type):
    
@@ -929,7 +1122,7 @@ def fuseCard(card_type, alignment='all'):
    return False
       
       
-def play_mission(mission_number=(3,2), repeat=5, statistics=True):
+def play_mission(mission_number=(3,2), repeat=50, statistics=True):
       
    stats = Stats()
    
@@ -941,7 +1134,7 @@ def play_mission(mission_number=(3,2), repeat=5, statistics=True):
    for i in range(repeat+1):
       check_if_vnc_error()
       printAction("Searching for mission %d-%d button..."%mission_number)
-      mission_button_coords = locate_template("screens/mission_%d_%d.png"%mission_number, correlation_threshold=0.992, offset=(215,170))
+      mission_button_coords = locate_template("screens/mission_%d_%d.png"%mission_number, correlation_threshold=0.992, offset=(215,170), retries=3)
       printResult(mission_button_coords)
       if not mission_button_coords:
          printAction( "Navigating to missions list...", newline=True )
@@ -1311,7 +1504,8 @@ def custom2():
 if __name__ == "__main__":
    
 #   custom1()
-   play_mission((3,2))
+#   play_mission((3,2))
+   eventKillEnemies()
 #   runAll()
 #   startAndRestartWhenQuit()
 #   getMyPageStatus()

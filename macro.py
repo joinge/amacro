@@ -578,10 +578,10 @@ def getMyPageStatus():
       silver = int(silver_numbers)
       print("Silver: %d"%silver)
       info['silver'] = silver
-      cv2.imwrite( 'tmp_last_error.png', silver_image_grey )
    
    except:
       printAction("Unable to determine silver amount.", newline=True)
+      cv2.imwrite( 'tmp_last_error.png', silver_image_grey )
    
    return info
    
@@ -1208,7 +1208,18 @@ def runAll32():
             exit_marvel()
          time.sleep(60*uniform(10,25))
          
-#      time.sleep(60*uniform(35,55))
+def runAll43():
+   while True:
+      for i in users:
+         try:
+            if randomUserStart():
+               play_mission((4,3), 2*23)
+               exit_marvel()
+         except:
+            pass
+         time.sleep(60*uniform(1,5))
+         
+      time.sleep(60*uniform(35,55))
    
       
 def startAndRestartWhenQuit():
@@ -1233,7 +1244,6 @@ def custom1():
       try:
          if start_marvel_jojanr():
             play_mission((3,2), 2*23)
-            getMyPageStatus()
             exit_marvel()
       except:
          pass
@@ -1242,8 +1252,7 @@ def custom1():
                 
       try:
          if start_marvel_joinge():
-            play_mission((3,2), 2*23, statistics=True)
-            getMyPageStatus()
+            play_mission((3,2), 2*23)
             exit_marvel()
       except:
          pass
@@ -1253,7 +1262,6 @@ def custom1():
       try:
          if start_marvel_jollyma():
             play_mission((3,2), 2*23)
-            getMyPageStatus()
             exit_marvel()
       except:
          pass
@@ -1275,7 +1283,7 @@ def custom2():
          pass
       
 
-      time.sleep(60*uniform(1,10)) 
+      time.sleep(60*uniform(1,3)) 
 
       try:
          if start_marvel_jojanr():
@@ -1286,7 +1294,7 @@ def custom2():
          pass
       
 
-      time.sleep(60*uniform(1,10)) 
+      time.sleep(60*uniform(1,3)) 
       
       try:
          if start_marvel_jollyma():
@@ -1296,7 +1304,7 @@ def custom2():
       except:
          pass
       
-      time.sleep(60*uniform(1,10))
+      time.sleep(60*uniform(1,3))
       
       
 

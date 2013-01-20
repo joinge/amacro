@@ -1,0 +1,41 @@
+#!/bin/bash
+
+tesseract non.wohnumbers.exp0.png non.wohnumbers.exp0 batch.nochop makebox
+#tesseract semibold_numbers_train.png fontfile batch.nochop makebox
+#mv fontfile fontfile.box
+
+tesseract non.enemytext.exp0.png non.enemytext.exp0 batch.nochop makebox
+
+##
+## MAKE CHANGES IF NEED BE
+##
+
+tesseract non.wohnumbers.exp0.png non.wohnumbers.exp0 nobatch box.train
+tesseract non.enemytext.exp0.png non.enemytext.exp0 nobatch box.train
+
+#or
+#tesseract non.wohnumbers.exp0.png non.wohnumbers.exp0 nobatch box.train.stderr
+
+
+# Generate the known set of characters:
+unicharset_extractor non.wohnumbers.exp0.box non.enemytext.exp0.box
+
+# Generate font info / clustering
+# format: <fontname> <italic> <bold> <fixed> <serif> <fraktur>
+echo -e "wohnumbers 0 1 1 0 0\nenemytext 0 0 0 0 0" > font_properties
+shapeclustering -F font_properties -U unicharset non.wohnumbers.exp0.tr non.enemytext.exp0.tr
+mftraining -F font_properties -U unicharset -O non.unicharset non.wohnumbers.exp0.tr non.enemytext.exp0.tr
+
+cntraining non.wohnumbers.exp0.tr non.enemytext.exp0.tr
+
+# Combining everything:
+
+cp inttemp non.inttemp
+cp normproto non.normproto
+cp pffmtable non.pffmtable
+cp shapetable non.shapetable
+cp unicharset non.unicharset
+
+combine_tessdata non.
+
+cp non.traineddata ../../

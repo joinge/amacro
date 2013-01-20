@@ -7,7 +7,7 @@ from __future__ import print_function
 from random import uniform
 from subprocess import Popen, PIPE
 import numpy as np
-import re, time, os, sys, ast
+import re, time, os, sys, ast, select
 import cv2
 
 
@@ -139,6 +139,11 @@ def sumIMEIDigits(number,nsum=0,even=True):
 #   
 #   if res:
 #      printResult(res)
+
+def notify():
+   
+   Popen("mplayer audio/ringtones/BentleyDubs.ogg >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
+   
    
 def printResult(res):
    if res:
@@ -160,6 +165,20 @@ def printAction(str,res=None,newline=False):
       sys.stdout.flush()
    if res:
       printResult(res)
+      
+def printNotify(message):
+   print("NOTIFICATION: "+str)
+   notify()
+   print("Type Enter to continue (will do so anyways in 30s)")
+   
+   select.select( [sys.stdin], [], [], 30 )
+#   i, o, e = 
+   
+#   if (i):
+#     print "You said", sys.stdin.readline().strip()
+#   else:
+#     print "You said nothing!"
+   
 
 #    stdout.write("\r%d" % i)
 #    stdout.flush()
@@ -370,7 +389,7 @@ def take_screenshot_adb():
    
    # time adb shell screencap -p /sdcard/img.tmp; adb pull /sdcard/img.tmp image2.png
    # adb shell "screencap -p | uuencode - > /sdcard/img2.tmp"; adb pull /sdcard/img2.tmp /dev/stdout | uudecode  > image3.png
-   
+   # adb shell screencap -p \| gzip -c \> /mnt/sdcard/s.png.gz; adb pull /mnt/sdcard/s.png.gz;
 #   adb shell screencap -p \| uuencode o | uudecode -o out.png
    
 #def take_screenshot_gtk():
@@ -403,9 +422,26 @@ def readImage(image_file, xbounds=None, ybounds=None):
       else:
          return image[ybounds[0]:ybounds[1],xbounds[0]:xbounds[1]].copy()
       
+      
+def swipeReference(template, destination=(0,0), reuse_last_screenshot=False):
+   
+   ref = locate_template(template, retries=2, print_coeff=False, reuse_last_screenshot=False)
+   
+   if not ref:
+      printAction("Unable to navigate to swipe reference...", newline=True)
+      return None
+   
+   diff = np.array(destination) - ref
+   
+   swipe(ref,map(int,ref+0.613*diff))
+   time.sleep(.3)
+   swipe(ref,map(int,ref+0.613*diff))
+   time.sleep(.5)
+   return ref
    
 
-def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=1, interval=1, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False, click=False, scroll_size=[], swipe_size=[]):
+def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=1, interval=1, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
+                    click=False, scroll_size=[], swipe_size=[], swipe_ref=['',(0,0)]):
    try:
       image_template = cv2.imread(template)
    except:
@@ -441,6 +477,7 @@ def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=
          object_coords = tuple(template_coords + np.array(offset))
          if click:
             left_click(object_coords)
+            time.sleep(3)
          if print_coeff:
             sys.stdout.write("(%d,%d) "%(object_coords[0],object_coords[1]))
             sys.stdout.flush()
@@ -462,8 +499,10 @@ def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=
             template_coords = np.array([template_coords[1],template_coords[0]])
             left_click(template_coords + np.array([319,31]))
             retries = retries + 1                    
-         
+
       if retries > 1:
+         if swipe_ref[0] != '':
+            swipeReference(swipe_ref[0], destination=swipe_ref[1], reuse_last_screenshot=False)
          if swipe_size:
             swipe(swipe_size[0],swipe_size[1])
             if interval < 1:
@@ -495,24 +534,73 @@ def abort_if_vnc_died():
 #      raise Exception("VNC appears to have died. Aborting.")
    pass
 
-def runOCR(image,mode='line',type='numbers'):
+def preOCR(image_name, color_mask=(1,1,1), threshold=180, invert=True, xbounds=None, ybounds=None):
+   
+   import scipy.interpolate as interpolate
+   
+   image = readImage(image_name,xbounds,ybounds)
+#   image = readImage(image_name)
+   
+   # Adjust color information
+   image[:,:,0] = image[:,:,0]*color_mask[0]
+   image[:,:,1] = image[:,:,1]*color_mask[1]
+   image[:,:,2] = image[:,:,2]*color_mask[2]
+   
+   # Convert to grey scale
+   image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+   
+   # Normalize
+   img_min, img_max = image.min(), image.max()
+   image = 255*(image-float(img_min))/(float(img_max)-img_min)
+   
+   #Upinterpolate
+   M,N = image.shape
+   m_idx = np.linspace(0,1,M)
+   n_idx = np.linspace(0,1,N)
+   
+   K = 2 # Upsampling factor
+   m_up_idx = np.linspace(0,1,M*K)
+   n_up_idx = np.linspace(0,1,N*K)
+      
+   image = interpolate.RectBivariateSpline(m_idx, n_idx, image, kx=4, ky=4)(m_up_idx,n_up_idx)
+      
+   #Inversion
+   if invert:
+      image = 255-image
+      
+   # Thresholding
+   img = image**20
+   image = 255*img/(img+float(threshold)**20)
+#   image = 255/(1+(float(threshold)/image)**20)
+   
+#   image[image>=threshold] = 255
+#   image[image< threshold] = 0
+
+   # Reverting to int8
+   image = image.astype('uint8')
+   
+   cv2.imwrite( image_name.strip('.png')+'_processed.png', image )
+   
+   return image
+   
+
+def runOCR(image,mode='',lang='eng'):
    
    if mode == 'line':
-      psm = 7
+      psm = '-psm 7'
+   elif mode == '':
+      psm = ''
    else:
       print( "ERROR: runOCR() - Mode %s is not supported")
       return ''
    
-   tessconfig_file = ''
-   if type=='numbers':
-      tessconfig_file = 'tessnumbers'
+   if lang=='event_enemy':
+      language = 'non'
+   else:
+      language = 'eng'
    
-   image = 255*(image-float(image.min()))/(float(image.max())-image.min())
-   image = image.astype('uint8')
-#   cv2.normalize(image,image,0,255)
-   image[image>210] = 255
    cv2.imwrite( 'tmp.png', image )
-   tesseract_output = Popen("tesseract tmp.png text -psm %d %s >/dev/null 2>&1"%(psm,tessconfig_file), shell=True, stdout=PIPE).stdout.read()
+   Popen("tesseract tmp.png text %s -l %s >/dev/null 2>&1"%(psm,language), shell=True, stdout=PIPE).stdout.read()
    
    if os.path.getsize('text.txt') == 1:
       print( "ERROR: runOCR() returned no output")
@@ -560,14 +648,8 @@ def getMyPageStatus():
       return False
 
    printAction("Running OCR to figure out cards in roster...")
-   cards_in_roster_image = readImage("screens/screenshot.png",(238,282),(mypage_status_corner[1]+274,mypage_status_corner[1]+287))
-   cards_in_roster_image[:,:,0] = 0
-   cards_in_roster_image[:,:,2] = 0
-   cards_in_roster_image_grey = cv2.cvtColor(cards_in_roster_image, cv2.COLOR_BGR2GRAY)
-#   cards_in_roster_image_inv = 255-cards_in_roster_image_grey
-#   cards_in_roster_image_inv = cards_in_roster_image_inv * 255.0 / cards_in_roster_image_inv.max()
-
-   cards_in_roster_string = runOCR( 255-cards_in_roster_image_grey)
+   cards_in_roster_image  = preOCR("screens/screenshot.png",color_mask=(0,1,0),xbounds=(238,282),ybounds=(mypage_status_corner[1]+274,mypage_status_corner[1]+287))
+   cards_in_roster_string = runOCR(cards_in_roster_image,mode='line')
 
    cards_in_roster_numbers = re.findall(r'\d+', cards_in_roster_string)
    cards_in_roster = tuple(map(int, cards_in_roster_numbers))
@@ -575,17 +657,17 @@ def getMyPageStatus():
    try:
       print("Cards: %d/%d"%cards_in_roster)
       info['roster'] = cards_in_roster
+      if cards_in_roster[1] - cards_in_roster[0] < 15:
+         printNotify("Roster is soon full!!!")
+
    except:
       printAction("Unable to determine roster size.", newline=True)
       info['roster'] = [30,70]
-      cv2.imwrite( 'tmp_last_error.png', cards_in_roster_image_grey )
+      cv2.imwrite( 'tmp_last_error.png', cards_in_roster_image )
       
    printAction("Running OCR to figure out amount of silver...")
-   silver_image = readImage("screens/screenshot.png",(240,310),(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
-   #cards_in_roster_image[:,:,0] = 0
-   silver_image[:,:,2] = 0
-   silver_image_grey = cv2.cvtColor(silver_image, cv2.COLOR_BGR2GRAY) 
-   silver_string = runOCR( 255-silver_image_grey )
+   silver_image  = preOCR("screens/screenshot.png",color_mask=(1,1,0),xbounds=(240,307),ybounds=(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
+   silver_string = runOCR( silver_image, mode='line' )
 #   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
 #   silver_numbers = re.sub(r',', '', silver_numbers)
    silver_numbers = re.search(r'.+,[0-9]{1,3}', silver_string).group(0)
@@ -600,7 +682,7 @@ def getMyPageStatus():
    
    except:
       printAction("Unable to determine silver amount.", newline=True)
-      cv2.imwrite( 'tmp_last_error.png', silver_image_grey )
+      cv2.imwrite( 'tmp_last_error.png', silver_image )
    
    return info
 
@@ -640,11 +722,44 @@ def eventPlayMission():
    for i in range(10):
       time.sleep(1)
       
-      out_of_energy = locate_template('screens/out_of_energy.png', correlation_threshold=0.985, print_coeff=False)
+      mission_boss  = locate_template('screens/event_mission_boss_screen.png', print_coeff=False)
+      out_of_energy = locate_template('screens/out_of_energy.png', print_coeff=False, reuse_last_screenshot=True)
       #printResult(out_of_energy)
       
-      mission_started = locate_template('screens/mission_bar.png', correlation_threshold=0.985)
+      mission_started = locate_template('screens/mission_bar.png', correlation_threshold=0.985, reuse_last_screenshot=True)
       #printResult(mission_started)
+      
+      if mission_boss:
+         go_to_boss = locate_template("screens/event_mission_go_to_boss.png",
+                                      offset=(130,16), retries=5, click=True, ybounds=(0,600), swipe_size=[(240,600),(240,295)])
+         if not go_to_boss:
+            print( '' )
+            printAction("Unable to find \"go to boss\" button...", newline=True)
+            return False
+         
+         printResult(False)
+         printAction( "Raid boss detected. Playing the boss...", newline=True )
+         
+         face_the_enemy = locate_template("screens/face_the_enemy_button.png",
+                                          offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+         if not face_the_enemy:
+            printAction("Unable to find \"face the enemy\" button...", newline=True)
+            return False
+
+         fight_enemy =  locate_template("screens/event_mission_boss_fight_button.png", correlation_threshold=0.9,
+                                          offset=(85,24), retries=5, click=True)
+         if not fight_enemy:
+            printAction("Unable to find \"FIGHT\" button...", newline=True)
+            return False
+         
+         confirm =  locate_template("screens/event_mission_boss_confirm_button.png", correlation_threshold=0.9,
+                                          offset=(85,24), retries=5, click=True)
+         if not confirm:
+            printAction("Unable to find \"FIGHT\" button...", newline=True)
+            return False
+         
+         return True
+         
          
       if out_of_energy:
          print( '' )
@@ -668,90 +783,191 @@ def eventPlayMission():
       
 def eventKillEnemies():
    
-   printAction("Supposed to kill enemies, but don't know how...", newline=True)
-   
-   event_face_enemy = locate_template("screens/event_mission_button.png", offset=(240,-54), correlation_threshold=0.92, retries=2, reuse_last_screenshot=True, click=True)
+   printAction("Locating the \"face enemy\" button...")
+   event_face_enemy = locate_template("screens/event_mission_button.png", offset=(240,-54), correlation_threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
+   printResult(event_face_enemy)
    if not event_face_enemy:
       printAction("Unable to locate \"face enemy\" button...")
       return False
    
    printAction("Searching for a decent foe...")
-   event_enemy_corner = locate_template("screens/event_enemy_info.png",
-      offset=(0,130), retries=5, ybounds=(130,640), reuse_last_screenshot=True, swipe_size=[(240,600),(240,295)])
-   printResult(event_enemy_corner)
+#   swipe((10,500),(10,300))
+   time.sleep(1)
+   
+   for i in range(1):
+      take_screenshot_adb()
+#      if not i:
+#         swipeReference("screens/event_enemy_info_frame.png", destination=(0,80), reuse_last_screenshot=False)
+      keep_assessing = True
+      watchdog = 10
+      while keep_assessing and watchdog > 0:
+         keep_assessing = False
+         for j in range(10):
+            swipeReference("screens/event_enemy_info_frame.png", destination=(0,80), reuse_last_screenshot=True)
+            time.sleep(1)
+            event_enemy_corner = locate_template("screens/event_enemy_info.png", correlation_threshold=.80, ybounds=(0,400), reuse_last_screenshot=False)
+            if event_enemy_corner:
+               break
+            else:
+               printAction("This is fishy fish", newline=True)
+               
+            
+         printResult(event_enemy_corner)
+            
+         if not event_enemy_corner:
+            printAction("Unable to locate decent foe...")
+            return False
+         
+         printAction("Running OCR to figure out badass name and level...")
+      #   printAction("Preprocessing image")
       
-   if not event_enemy_corner:
-      printAction("Unable to locate decent foe...")
-      return False
+         badguy_image  = preOCR("screens/screenshot.png",xbounds=(110,370),ybounds=(event_enemy_corner[1]-49,event_enemy_corner[1]-18))
+         badguy_string = runOCR( badguy_image, mode='line')
+      
+         badguy_name  = re.sub(r' Lv.+', '', badguy_string)
+         badguy_level = re.sub(r'.+Lv\.', '', badguy_string)
+      #   badguy_level= tuple(map(int, badguy_string))
+         
+         print( "%s at level %s"%(badguy_name, badguy_level) )
+               
+         printAction("Running OCR to figure out enemy info...", newline=True)
+         e = event_enemy_corner
+         enemy_image = preOCR("screens/screenshot.png",color_mask=(0,1,0),xbounds=(e[0],470),ybounds=(e[1],e[1]+144)) #old x: e[0]+250
+         enemy_info  = runOCR(enemy_image, mode='', lang='event_enemy')
+      
+         enemy_health = re.findall(r'\d+', enemy_info)
+         enemy_health = tuple(map(int, enemy_health))
+            
+         if badguy_level < 50:
+            printAction("Villain has a level less than 50. Moving on...", newline=True)
+            keep_assessing = True
+            watchdog = watchdog - 1
+            swipe((10,400),(10,350))
+      
+      time.sleep(2)
+      printAction("Searching for \"go support\" or \"attack\" button...")
+      support        = locate_template("screens/event_go_support_button.png", correlation_threshold=0.92, reuse_last_screenshot=True, click=True)
+      attack_villain = locate_template("screens/event_attack_button.png", correlation_threshold=0.92, reuse_last_screenshot=True, click=True)
+      printResult(bool(support or attack_villain))
+      if not attack_villain and not support:
+         printAction("Unable to find an enemy to attack!", newline=True)
+         return False
+#      left_click(event_enemy_corner+np.array((66,164)))
+#      left_click(event_enemy_corner+np.array((66,164)))
+      time.sleep(1)
+      
+      printAction("Searching for deck select button...")
+      for j in range(5):
+         swipe((10,400),(10,200))
+         select_deck = locate_template("screens/select_deck_button.png", correlation_threshold=.96, offset=(-144,17), ybounds=(0,600), click=True)
+         if select_deck:
+            break
+      printResult(select_deck)
+         
+      printAction("Selecting raider deck...")
+      raider_deck = locate_template("screens/select_deck_raider.png", offset=(205,35), click=True)
+      printResult(raider_deck)
+      if not raider_deck:
+         return False
    
-   printAction("Running OCR to figure badass name and level...")
-#   printAction("Preprocessing image")
-   badguy_image = readImage("test.png",(110,370),(event_enemy_corner[1]-49,event_enemy_corner[1]-18))
-#   badguy_image[:,:,0] = 0
-#   badguy_image[:,:,2] = 0
-   badguy_image_grey = cv2.cvtColor(badguy_image, cv2.COLOR_BGR2GRAY)
-#   cards_in_roster_image_inv = 255-cards_in_roster_image_grey
-#   cards_in_roster_image_inv = cards_in_roster_image_inv * 255.0 / cards_in_roster_image_inv.max()
+      printAction("Hitting select button...")
+      select_button = locate_template("screens/select_button.png", offset=(60,16), click=True)
+      printResult(select_button)
+      if not select_button:
+         return False
+                  
+      # Assess the timer structure. It will basically count number of swipes, shitty.
+      weird_bool = True
+      watchdog = 10
+      while watchdog > 0:
+#      for j in range(10):
+         if weird_bool:
+            printAction("Attempting to locate \"face the enemy\" button...")
+         face_the_enemy = locate_template("screens/event_face_the_enemy_button.png", offset=(116,17), ybounds=(0,500))        
+         
+         if not face_the_enemy:
+            
+            out_of_power = locate_template('screens/event_out_of_power.png', correlation_threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
+            if out_of_power:
+               print( '' )
+               printAction("No attack power left! Exiting.", newline=True)
+               return False
+            
+            end_of_battle = locate_template('screens/event_battle_results.png', reuse_last_screenshot=True)
+            if end_of_battle:
+               print( '' )
+               printAction("Villain taken down. Returning.", newline=True)
+               return True
+            
+#            time.sleep(3)
+            swipe((240,400),(240,200))
+            time.sleep(1)
+            weird_bool = False
+            watchdog = watchdog - 1
+            if not watchdog:
+               printResult(False)
+               printAction("Timeout when hoping for low-power termination ..", newline=True)
+               return True
+            
+         else:
+            printResult(True)
+            printAction( "Checking if \"ask for support\" option is available..." )
+            ask_for_support = locate_template("screens/event_ask_for_support_button.png", offset=(112,15), click=True)
+            printResult(ask_for_support)
+            
+            if ask_for_support:
+               printAction( "Support asked for. Starting over...", newline=True )
+               return True
+            
+            left_click(face_the_enemy)
+            time.sleep(3)
+            
+            printAction( "Avaiting mission screen..." )
 
-   import pylab as pl
-   pl.imshow(255-badguy_image_grey,pl.cm.gray)
-#   pl.show()
-
-   badguy_string = runOCR( 255-badguy_image_grey, type='')
-
-   badguy_name  = re.sub(r' Lv.+', '', badguy_string)
-   badguy_level = re.sub(r'.+Lv\.', '', badguy_string)
-#   badguy_level= tuple(map(int, badguy_string))
-   
-   print( badguy_name )
-   print( badguy_level )
-   
-   image = readImage("test.png",(148,390),(311,459))
-
-   image_grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-   pl.imshow(255-image_grey,pl.cm.gray)
-   pl.show()
-   
-   image_string = runOCR( 255-image_grey, type='')
-
+            mission_success = False
+            for i in range(10):
+               time.sleep(1)
+               
+               out_of_power    = locate_template('screens/event_out_of_power.png',   correlation_threshold=0.985, print_coeff=False)
+               mission_started = locate_template('screens/event_fight_screen.png',   reuse_last_screenshot=True)
+               end_of_battle   = locate_template('screens/event_battle_results.png', reuse_last_screenshot=True)
+               #printResult(mission_started)
+                  
+               if out_of_power:
+                  print( '' )
+                  printAction("No attack power left! Exiting.", newline=True)
+#                  back_key()
+                  return False
+               
+               if end_of_battle:
+                  print( '' )
+                  printAction("Villain taken down. Returning.", newline=True)
+                  return True
+                  
+               if mission_started:
+                  print( '' )
+                  printAction("Mission started. Returning.", newline=True)
+                  back_key()
+                  time.sleep(int(uniform(1,2)))
+                  mission_success = True
+                  weird_bool = True
+                  break
+            
+            weird_bool = True
+            if not mission_success:
+               printResult(False)
+               printAction("Timeout when waiting for mission screen. Defeated?", newline=True)
+               return          
+        
+         
+         
 #   badguy_name  = re.sub(r' Lv.+', '', badguy_string)
 #   badguy_level = re.sub(r'.+Lv\.', '', badguy_string)
 #   badguy_level= tuple(map(int, badguy_string))
    
-   print( image_string )
 #   print( badguy_level )
    
-#   try:
-#      print("Cards: %d/%d"%cards_in_roster)
-#      info['roster'] = cards_in_roster
-#   except:
-#      printAction("Unable to determine roster size.", newline=True)
-#      info['roster'] = [30,70]
-#      cv2.imwrite( 'tmp_last_error.png', cards_in_roster_image_grey )
-#      
-#   printAction("Running OCR to figure out amount of silver...")
-#   silver_image = readImage("screens/screenshot.png",(240,310),(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
-#   #cards_in_roster_image[:,:,0] = 0
-#   silver_image[:,:,2] = 0
-#   silver_image_grey = cv2.cvtColor(silver_image, cv2.COLOR_BGR2GRAY) 
-#   silver_string = runOCR( 255-silver_image_grey )
-##   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
-##   silver_numbers = re.sub(r',', '', silver_numbers)
-#   silver_numbers = re.search(r'.+,[0-9]{1,3}', silver_string).group(0)
-#   silver_numbers = re.sub(r'\s', '', silver_numbers)
-#   silver_numbers = re.sub(r',', '', silver_numbers)
-#   
-#   
-#   try:
-#      silver = int(silver_numbers)
-#      print("Silver: %d"%silver)
-#      info['silver'] = silver
-#      cv2.imwrite( 'tmp_last_error.png', silver_image_grey )
-#   
-#   except:
-#      printAction("Unable to determine silver amount.", newline=True)
-#   
-#   return info
+
       
    
 def eventPlay():
@@ -774,6 +990,8 @@ def eventPlay():
       
       if not success:
          return False   
+      
+      time.sleep(2)
    
    return True
       
@@ -1251,10 +1469,12 @@ def start_marvel(user):
          if locate_template('screens/home_screen.png', correlation_threshold=0.985):
             #time.sleep(1)
             left_click((346,551)) # kills ads
+            time.sleep(4)
+            
+            left_click((346,551)) # kills ads
             login_success = True
             break
          
-      printResult(login_success) 
       if not login_success:
          if locate_template('screens/home_screen_maintenance.png'):
             printAction("It appears server is under maintenance...", newline=True)
@@ -1415,6 +1635,16 @@ def runAll43():
       time.sleep(60*uniform(35,55))
    
       
+def blockUntilQuit():
+   
+   print("Waiting until game is killed.")
+   time.sleep(3)
+   while True:
+      if not re.findall('MARVEL',Popen('adb shell ps', shell=True, stdout=PIPE).stdout.read()):
+         break
+      time.sleep(3)
+   print("Game was killed. Moving on...")
+      
 def startAndRestartWhenQuit():
    
 
@@ -1499,13 +1729,89 @@ def custom2():
       
       time.sleep(60*uniform(1,3))
       
+def custom3():
+   
+   i = 0
+   while True:
+
+      try:
+         if start_marvel_joinge():
+            eventPlay()
+            play_mission((4,3), 2*23)
+#            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
       
+      time.sleep(60*uniform(1,3)) 
+
+      try:
+         if start_marvel_jollyma():
+            eventPlay()
+            play_mission((4,3), 2*23)
+#            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+      
+      time.sleep(60*uniform(1,3)) 
+      
+      try:
+         if start_marvel_jojanr():
+            eventPlay()
+            play_mission((3,2), 2*23)
+#            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+      
+      time.sleep(60*uniform(5,20))
+
+def custom4():
+   
+   i = 0
+   while True:
+
+      try:
+         if start_marvel_joinge():
+            play_mission((3,2), 2*23)
+            notify()
+            blockUntilQuit()
+      except:
+         pass
+      
+      time.sleep(60*uniform(1,3)) 
+      
+      try:
+         if start_marvel_jojanr():
+            eventPlay()
+            play_mission((3,2), 2*23)
+#            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+      
+      time.sleep(60*uniform(1,3)) 
+      
+      try:
+         if start_marvel_jollyma():
+            eventPlay()
+            play_mission((3,2), 2*23)
+#            getMyPageStatus()
+            exit_marvel()
+      except:
+         pass
+      
+      time.sleep(60*uniform(1,3)) 
+
 
 if __name__ == "__main__":
    
 #   custom1()
-#   play_mission((3,2))
-   eventKillEnemies()
+   play_mission((3,2))
+#   eventKillEnemies()
+#   eventPlay()
+#   eventPlayMission()
 #   runAll()
 #   startAndRestartWhenQuit()
 #   getMyPageStatus()

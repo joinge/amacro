@@ -836,10 +836,13 @@ def eventKillEnemies():
          enemy_info  = runOCR(enemy_image, mode='', lang='event_enemy')
       
          enemy_health = re.findall(r'\d+', enemy_info)
-         enemy_health = tuple(map(int, enemy_health))
+         try:
+            enemy_health = tuple(map(int, enemy_health))
+         except:
+            print( 'WARNING: Unable to convert enemy health to int.' )
             
-         if badguy_level < 50:
-            printAction("Villain has a level less than 50. Moving on...", newline=True)
+         if badguy_level < 50 or badguy_level > 85:
+            printAction("Villain has a level outside [50,85]. Moving on...", newline=True)
             keep_assessing = True
             watchdog = watchdog - 1
             swipe((10,400),(10,350))
@@ -1737,7 +1740,7 @@ def custom3():
       try:
          if start_marvel_joinge():
             eventPlay()
-            play_mission((4,3), 2*23)
+            play_mission((3,2), 2*23)
 #            getMyPageStatus()
             exit_marvel()
       except:
@@ -1748,7 +1751,7 @@ def custom3():
       try:
          if start_marvel_jollyma():
             eventPlay()
-            play_mission((4,3), 2*23)
+            play_mission((3,2), 2*23)
 #            getMyPageStatus()
             exit_marvel()
       except:

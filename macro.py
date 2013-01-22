@@ -666,13 +666,14 @@ def getMyPageStatus():
       cv2.imwrite( 'tmp_last_error.png', cards_in_roster_image )
       
    printAction("Running OCR to figure out amount of silver...")
-   silver_image  = preOCR("screens/screenshot.png",color_mask=(1,1,0),xbounds=(240,307),ybounds=(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
+   silver_image  = preOCR("screens/screenshot.png",color_mask=(1,1,0),xbounds=(242,307),ybounds=(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
    silver_string = runOCR( silver_image, mode='line' )
 #   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
 #   silver_numbers = re.sub(r',', '', silver_numbers)
-   silver_numbers = re.search(r'.+,[0-9]{1,3}', silver_string).group(0)
+   silver_numbers = re.search(r'.+[,\.][0-9]{1,3}', silver_string).group(0)
    silver_numbers = re.sub(r'\s', '', silver_numbers)
    silver_numbers = re.sub(r',', '', silver_numbers)
+   silver_numbers = re.sub(r'\.', '', silver_numbers)
    
    
    try:
@@ -840,12 +841,15 @@ def eventKillEnemies():
             enemy_health = tuple(map(int, enemy_health))
          except:
             print( 'WARNING: Unable to convert enemy health to int.' )
-            
-         if badguy_level < 50 or badguy_level > 85:
-            printAction("Villain has a level outside [50,85]. Moving on...", newline=True)
-            keep_assessing = True
-            watchdog = watchdog - 1
-            swipe((10,400),(10,350))
+         
+         try:
+            if int(badguy_level) < 50 or int(badguy_level) > 85:
+               printAction("Villain has a level outside [50,85]. Moving on...", newline=True)
+               keep_assessing = True
+               watchdog = watchdog - 1
+               swipe((10,400),(10,350))
+         except:
+            pass
       
       time.sleep(2)
       printAction("Searching for \"go support\" or \"attack\" button...")
@@ -1810,8 +1814,8 @@ def custom4():
 
 if __name__ == "__main__":
    
-#   custom1()
-   play_mission((3,2))
+   custom4()
+#   play_mission((3,2))
 #   eventKillEnemies()
 #   eventPlay()
 #   eventPlayMission()

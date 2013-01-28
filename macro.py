@@ -423,15 +423,20 @@ def readImage(image_file, xbounds=None, ybounds=None):
          return image[ybounds[0]:ybounds[1],xbounds[0]:xbounds[1]].copy()
       
       
-def swipeReference(template, destination=(0,0), reuse_last_screenshot=False):
+def swipeReference(template, destination=(0,0), xbounds=None, ybounds=None, reuse_last_screenshot=False):
    
-   ref = locate_template(template, retries=2, print_coeff=False, reuse_last_screenshot=False)
+   ref = locate_template(template, retries=2, print_coeff=False, xbounds=xbounds, ybounds=ybounds, reuse_last_screenshot=False)
    
    if not ref:
       printAction("Unable to navigate to swipe reference...", newline=True)
       return None
    
-   diff = np.array(destination) - ref
+   if not xbounds:
+      xbounds = (0,480)
+   if not ybounds:
+      ybounds = (0,800)
+      
+   diff = np.array(destination) - (ref + np.array([xbounds[0],ybounds[0]]))
    
    swipe(ref,map(int,ref+0.613*diff))
    time.sleep(.3)
@@ -711,7 +716,7 @@ def eventPlayMission():
    gotoMyPage()
 
    printAction("Searching for event mission button...")
-   event_mission_button = locate_template("screens/event_newest_event_mission_button.png",
+   event_mission_button = locate_template("screens/event_newest_event_mission_button.png", correlation_threshold=0.95,
                                           offset=(109,23), retries=5, click=True, swipe_size=[(240,600),(240,295)])
    printResult(event_mission_button)
    if not event_mission_button:
@@ -781,6 +786,80 @@ def eventPlayMission():
       printAction("Timeout when waiting for mission screen", newline=True)
       return False
 
+def eventFindEnemy(find_enraged=True, watchdog=10):
+   
+   printAction("Searching for a decent foe...")
+   info = {'is_enraged':False}
+   keep_assessing = True
+   swipe((10,400),(10,200))
+   while keep_assessing and watchdog > 0:
+      keep_assessing = False
+      is_enraged = False
+      for j in range(10):
+         ref = swipeReference("screens/event_enemy_info_frame.png", destination=(0,80), ybounds=(150,500), reuse_last_screenshot=True)
+         if not ref:
+            return info
+         time.sleep(1)
+         event_enemy_corner = locate_template("screens/event_enemy_info.png", correlation_threshold=.80, ybounds=(0,400), reuse_last_screenshot=False)
+         if event_enemy_corner:
+            break
+         else:
+            printAction("This is fishy fish", newline=True)
+         
+      printResult(event_enemy_corner)
+         
+      if not event_enemy_corner:
+         printAction("Unable to locate decent foe...")
+         return False
+      
+      if find_enraged:
+         printAction("Checking if enemy is enraged...")
+         increased_raid_rating = locate_template("screens/event_3_times_raid_rating.png", correlation_threshold=.85, retries=3, ybounds=(0,450))
+         printResult(increased_raid_rating)
+         if increased_raid_rating:
+            is_enraged = True
+         else:
+            keep_assessing = True
+            watchdog = watchdog - 1
+            
+      
+      printAction("Running OCR to figure out badass name and level...")
+   #   printAction("Preprocessing image")
+   
+      badguy_image  = preOCR("screens/screenshot.png",xbounds=(110,370),ybounds=(event_enemy_corner[1]-49,event_enemy_corner[1]-18))
+      badguy_string = runOCR( badguy_image, mode='line')
+   
+      badguy_name  = re.sub(r' Lv.+', '', badguy_string)
+      badguy_level = re.sub(r'.+Lv\.', '', badguy_string)
+   #   badguy_level= tuple(map(int, badguy_string))
+      
+      print( "%s at level %s"%(badguy_name, badguy_level) )
+            
+      printAction("Running OCR to figure out enemy info...", newline=True)
+      e = event_enemy_corner
+      enemy_image = preOCR("screens/screenshot.png",color_mask=(0,1,0),xbounds=(e[0],470),ybounds=(e[1],e[1]+144)) #old x: e[0]+250
+      enemy_info  = runOCR(enemy_image, mode='', lang='event_enemy')
+   
+      enemy_health = re.findall(r'\d+', enemy_info)
+      try:
+         enemy_health = tuple(map(int, enemy_health))
+      except:
+         print( 'WARNING: Unable to convert enemy health to int.' )
+      
+      try:
+         if int(badguy_level) < 50  or (int(badguy_level) > 85 and not find_enraged):
+            printAction("Villain has a level outside [50,85]. Moving on...", newline=True)
+            keep_assessing = True
+            watchdog = watchdog - 1
+            swipe((10,400),(10,350))
+      except:
+         pass
+      
+      info['badguy_name']  = badguy_name
+      info['badguy_level'] = badguy_level
+      info['is_enraged']   = is_enraged
+      
+   return info
       
 def eventKillEnemies():
    
@@ -791,7 +870,6 @@ def eventKillEnemies():
       printAction("Unable to locate \"face enemy\" button...")
       return False
    
-   printAction("Searching for a decent foe...")
 #   swipe((10,500),(10,300))
    time.sleep(1)
    
@@ -799,57 +877,29 @@ def eventKillEnemies():
       take_screenshot_adb()
 #      if not i:
 #         swipeReference("screens/event_enemy_info_frame.png", destination=(0,80), reuse_last_screenshot=False)
-      keep_assessing = True
-      watchdog = 10
-      while keep_assessing and watchdog > 0:
-         keep_assessing = False
-         for j in range(10):
-            swipeReference("screens/event_enemy_info_frame.png", destination=(0,80), reuse_last_screenshot=True)
-            time.sleep(1)
-            event_enemy_corner = locate_template("screens/event_enemy_info.png", correlation_threshold=.80, ybounds=(0,400), reuse_last_screenshot=False)
-            if event_enemy_corner:
-               break
-            else:
-               printAction("This is fishy fish", newline=True)
-               
-            
-         printResult(event_enemy_corner)
-            
-         if not event_enemy_corner:
-            printAction("Unable to locate decent foe...")
+      enraged_enemy_found = False
+      for j in range(5):
+         info = eventFindEnemy(find_enraged=True)
+         if info['is_enraged']:
+            enraged_enemy_found = True
+            break
+#        scroll(0,-1000)
+         printAction('Unable to find enraged enemy. Retrying in 30 sec (%d/5)...'%(j+1), newline=True)
+         time.sleep(30)
+  
+         gotoEventHome()
+         event_enemies_in_area = locate_template("screens/event_enemies_in_area.png",
+            offset=(154,89), retries=5, ybounds=(0,400), swipe_size=[(240,600),(240,295)])
+         if not event_enemies_in_area:
             return False
+         event_face_enemy = locate_template("screens/event_mission_button.png",
+            offset=(240,-54), correlation_threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
+         if not event_face_enemy:
+            return False
+         take_screenshot_adb()
          
-         printAction("Running OCR to figure out badass name and level...")
-      #   printAction("Preprocessing image")
-      
-         badguy_image  = preOCR("screens/screenshot.png",xbounds=(110,370),ybounds=(event_enemy_corner[1]-49,event_enemy_corner[1]-18))
-         badguy_string = runOCR( badguy_image, mode='line')
-      
-         badguy_name  = re.sub(r' Lv.+', '', badguy_string)
-         badguy_level = re.sub(r'.+Lv\.', '', badguy_string)
-      #   badguy_level= tuple(map(int, badguy_string))
-         
-         print( "%s at level %s"%(badguy_name, badguy_level) )
-               
-         printAction("Running OCR to figure out enemy info...", newline=True)
-         e = event_enemy_corner
-         enemy_image = preOCR("screens/screenshot.png",color_mask=(0,1,0),xbounds=(e[0],470),ybounds=(e[1],e[1]+144)) #old x: e[0]+250
-         enemy_info  = runOCR(enemy_image, mode='', lang='event_enemy')
-      
-         enemy_health = re.findall(r'\d+', enemy_info)
-         try:
-            enemy_health = tuple(map(int, enemy_health))
-         except:
-            print( 'WARNING: Unable to convert enemy health to int.' )
-         
-         try:
-            if int(badguy_level) < 50 or int(badguy_level) > 85:
-               printAction("Villain has a level outside [50,85]. Moving on...", newline=True)
-               keep_assessing = True
-               watchdog = watchdog - 1
-               swipe((10,400),(10,350))
-         except:
-            pass
+      if not enraged_enemy_found:
+         return False
       
       time.sleep(2)
       printAction("Searching for \"go support\" or \"attack\" button...")
@@ -885,14 +935,15 @@ def eventKillEnemies():
                   
       # Assess the timer structure. It will basically count number of swipes, shitty.
       weird_bool = True
-      watchdog = 10
+      watchdog = 15
       while watchdog > 0:
 #      for j in range(10):
          if weird_bool:
             printAction("Attempting to locate \"face the enemy\" button...")
-         face_the_enemy = locate_template("screens/event_face_the_enemy_button.png", offset=(116,17), ybounds=(0,500))        
+         face_the_enemy  = locate_template("screens/event_face_the_enemy_button.png", offset=(116,17), ybounds=(0,500))        
+         face_the_enemy2 = locate_template("screens/event_face_the_enemy_button2.png", offset=(116,17), ybounds=(0,500), reuse_last_screenshot=True) 
          
-         if not face_the_enemy:
+         if not face_the_enemy and not face_the_enemy2:
             
             out_of_power = locate_template('screens/event_out_of_power.png', correlation_threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
             if out_of_power:
@@ -907,7 +958,7 @@ def eventKillEnemies():
                return True
             
 #            time.sleep(3)
-            swipe((240,400),(240,200))
+            swipe((240,400),(240,200)) # This sometimes cause trouble with the face the enemy button
             time.sleep(1)
             weird_bool = False
             watchdog = watchdog - 1
@@ -959,12 +1010,15 @@ def eventKillEnemies():
                   mission_success = True
                   weird_bool = True
                   break
+               
+               # Sometimes one end up at the same screen too. Handle this.
+               
             
             weird_bool = True
             if not mission_success:
                printResult(False)
                printAction("Timeout when waiting for mission screen. Defeated?", newline=True)
-               return          
+               return True        
         
          
          
@@ -1744,7 +1798,7 @@ def custom3():
       try:
          if start_marvel_joinge():
             eventPlay()
-            play_mission((3,2), 2*23)
+            play_mission((4,3), 2*23)
 #            getMyPageStatus()
             exit_marvel()
       except:
@@ -1755,7 +1809,7 @@ def custom3():
       try:
          if start_marvel_jollyma():
             eventPlay()
-            play_mission((3,2), 2*23)
+            play_mission((4,3), 2*23)
 #            getMyPageStatus()
             exit_marvel()
       except:
@@ -1766,13 +1820,13 @@ def custom3():
       try:
          if start_marvel_jojanr():
             eventPlay()
-            play_mission((3,2), 2*23)
+            play_mission((4,3), 2*23)
 #            getMyPageStatus()
             exit_marvel()
       except:
          pass
       
-      time.sleep(60*uniform(5,20))
+      time.sleep(60*uniform(1,10))
 
 def custom4():
    
@@ -1814,10 +1868,10 @@ def custom4():
 
 if __name__ == "__main__":
    
-   custom4()
+#   custom4()
 #   play_mission((3,2))
-#   eventKillEnemies()
-#   eventPlay()
+   eventKillEnemies()
+#   eventFindEnemy()
 #   eventPlayMission()
 #   runAll()
 #   startAndRestartWhenQuit()

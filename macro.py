@@ -468,7 +468,7 @@ def locate_template(template, correlation_threshold=0.98, offset=(0,0), retries=
       try:
          result = cv2.matchTemplate(image_screen,image_template,cv2.TM_CCOEFF_NORMED)
       except:
-         print("ERROR: Unable to match templates. This is bad, and weird!!!")
+         print("ERROR: Unable to match template \"%s\" with screenshot!!!"%template)
          return False
       
       if print_coeff:
@@ -642,7 +642,7 @@ def getMyPageStatus():
    gotoMyPage()
    
    printAction("Locating status screen...")
-   swipe((240,600),(240,300))
+   swipe((240,600),(240,200))
    time.sleep(.5)
    
    mypage_status_corner = locate_template("screens/mypage_status_upper_left_corner.png")
@@ -1798,7 +1798,7 @@ def custom3():
       try:
          if start_marvel_joinge():
             eventPlay()
-            play_mission((4,3), 2*23)
+            play_mission((3,2), 2*23)
 #            getMyPageStatus()
             exit_marvel()
       except:
@@ -1809,7 +1809,7 @@ def custom3():
       try:
          if start_marvel_jollyma():
             eventPlay()
-            play_mission((4,3), 2*23)
+            play_mission((3,2), 2*23)
 #            getMyPageStatus()
             exit_marvel()
       except:
@@ -1820,7 +1820,7 @@ def custom3():
       try:
          if start_marvel_jojanr():
             eventPlay()
-            play_mission((4,3), 2*23)
+            play_mission((3,2), 2*23)
 #            getMyPageStatus()
             exit_marvel()
       except:

@@ -1216,9 +1216,9 @@ def boostCard(card_name, cards_list, alignment='all'):
    
    if multiple_cards_link:
       left_click(multiple_cards_link)
-      printAction( "Huh? Unable to find multipleboost button!!! That is bad.", newline=True)
-      printResult(False)
-      return False
+      time.sleep(3)
+      swipe((240,650),(240,100))
+      time.sleep(1)
    
    ########
    # TODO # Sort mechanism
@@ -1268,7 +1268,8 @@ def boostCard(card_name, cards_list, alignment='all'):
       printAction( "Unable to find \"Boost\" button", newline=True)
       return False
 
-
+   left_click(boost_now)
+   time.sleep(3)
    
    printAction("Clicking \"Boost\" button (second time)...")
    scroll(0,1000)
@@ -1280,8 +1281,8 @@ def boostCard(card_name, cards_list, alignment='all'):
       printAction( "Unable to find \"Boost\" button", newline=True)
       return False
    
-#   left_click(boost_now)
-   time.sleep(3)
+   left_click(boost_now)
+   time.sleep(6)
       
    return True
 
@@ -1619,6 +1620,14 @@ def fuseAllCards(card_type, alignment='all'):
       if not fuseCard(card_type, alignment):
          return
    
+def fuseAndBoost(card_type, cards_list, alignment='all'):
+   
+   for i in range(10):
+      if fuseCard(card_type=card_type, alignment=alignment):
+         boostCard( card_name=card_type, cards_list=cards_list, alignment=alignment )
+      else:
+         return
+   
 def farmMission24():
 
    play_mission((2,4), 2*23)
@@ -1698,10 +1707,16 @@ def runAll24():
 def runAll32():
    while True:
       for i in users:
-         if randomUserStart():
-            farmMission32()
-            exit_marvel()
-         time.sleep(60*uniform(10,25))
+         try:
+            if randomUserStart():
+               farmMission32()
+               fuseAndBoost('uncommon_ironman',['common_thing','common_blackcat'])
+               exit_marvel()
+         except:
+            pass
+         time.sleep(60*uniform(5,20))
+
+               
          
 def runAll43():
    while True:

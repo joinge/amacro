@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# tesseract ../status_screen/non.statusnumbers_small.exp0.png non.statusnumbers_small.exp0 batch.nochop makebox
+
+##
+## MAKE CHANGES IF NEED BE
+##
+
+tesseract non.statusnumbers_small.exp0.png non.statusnumbers_small.exp0 nobatch box.train
+
+# Generate the known set of characters:
+unicharset_extractor non.statusnumbers_small.exp0.box
+
+# Generate font info / clustering
+# format: <fontname> <italic> <bold> <fixed> <serif> <fraktur>
+echo -e "statusnumbers_small 0 0 0 0 0" > font_properties
+shapeclustering -F font_properties -U unicharset non.statusnumbers_small.exp0.tr
+mftraining -F font_properties -U unicharset -O non.unicharset non.statusnumbers_small.exp0.tr
+
+cntraining non.statusnumbers_small.exp0.tr
+
+# Combining everything:
+
+cp inttemp non.inttemp
+cp normproto non.normproto
+cp pffmtable non.pffmtable
+cp shapetable non.shapetable
+cp unicharset non.unicharset
+
+combine_tessdata non.
+
+cp non.traineddata ../../

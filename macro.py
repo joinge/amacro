@@ -1185,85 +1185,105 @@ def sellCards(cards_list, alignment='all'):
    return True
 
       
-#      ironman_base_coords = locate_template("screens/fusion_ironman_base.png", offset=(240,306))
-#                     
-#      if ironman_base_coords:
-#         time.sleep(.5)
-#         left_click(ironman_base_coords)
-#         time.sleep(1)
-#         break
-#      
-#   printResult(ironman_base_coords)
-#   if not ironman_base_coords:
-#      printAction( "Unable to find an Ironman for fusion.", newline=True)
-#      return False
-#         
-#   printAction("Searching for a fuser card...")
-#   
-#   for i in range(10):
-#      swipe((240,600),(240,300))
-#      time.sleep(.5)
-#      
-#
-#         
-#      
-#            
-#      if ironman_fuser_coords:
-#         time.sleep(.5)
-#         left_click(ironman_fuser_coords)
-#         break
-#   
-#   printResult(ironman_fuser_coords) 
-#   if not ironman_fuser_coords:
-#      printAction( "Unable to find the fuser. This is strange and should not happen.", newline=True)
-#      return False
-#         
-#   printAction("Clicking \"fuse this card\" button...")
-#   fuse_this_card_button_coords = locate_template("screens/fusion_fuse_this_card_button.png", offset=(106,16), retries=5)
-#   printResult(fuse_this_card_button_coords)
-#   
-#   if not fuse_this_card_button_coords:
-#      return False
-#   
-#   time.sleep(1)
-#   left_click(fuse_this_card_button_coords)
-#   time.sleep(4) # The fusion thing takes some time.
-#   
-#   printAction("Waiting for first fusion screen...")
-#   ironman_fused_screen1 = locate_template("screens/fusion_ironman_fused1.png", correlation_threshold=0.96, offset=(155,200), retries=10)
-#   
-##   if not ironman_fused_screen1:
-##      return False
-##   
-##   for i in range(10):
-##      time.sleep(int(uniform(1,2)))
-##      ironman_fused_screen1 = locate_template("screens/fusion_ironman_fused1.png", offset=(155,200), retries=5)
-##            
-##      if ironman_fused_screen1:
-##         left_click(ironman_fused_screen1)
-##         break
-#   
-#   printResult(ironman_fused_screen1) 
-#   if not ironman_fused_screen1:
-#      printAction( "First fusion screen did not appear. Buggy game?", newline=True)
-#      return False
-#   
-#   time.sleep(1)
-#   left_click(ironman_fused_screen1)
-#   time.sleep(1)
-#   
-#   printAction("Waiting for fusion finished screen...")
-#   for i in range(10):
-#      time.sleep(int(uniform(1,2)))
-#      ironman_finished = locate_template("screens/fusion_ironman_finished.png", offset=(240,110), retries=5)
-#            
-#      if ironman_finished:
-#         printResult(ironman_finished) 
-#         printAction( "Fusion successful!", newline=True)
-#         return True
-#   
-#   printResult(ironman_finished) 
-#   return False
+   
+def boostCard(card_name, cards_list, alignment='all'):
+      
+   print("BOOSTING")
+   printAction("Boosting card: %s"%card_name, newline=True)
+      
+   printAction("Clicking \"boost\" button...")
+   
+   scroll(0,1000)
+   time.sleep(2)
+   boost_from_fuse = locate_template("screens/boost_from_fuse_button.png", offset=(193,19), retries=4)
+   printResult(boost_from_fuse)
+   
+   if not boost_from_fuse:
+      printAction( "Huh? Unable to find boost button!!! That is bad.", newline=True)
+      return False
+   
+   left_click(boost_from_fuse)
+   time.sleep(4)
+   
+   swipe((240,650),(240,100))
+   time.sleep(1)
+     
+   listSortAlignment(alignment)
+   
+   printAction("Checking that multiple cards are selected...")
+   multiple_cards_link = locate_template("screens/list_multiple_cards_link.png", offset=(54,33))
+   printResult(multiple_cards_link)
+   
+   if multiple_cards_link:
+      left_click(multiple_cards_link)
+      printAction( "Huh? Unable to find multipleboost button!!! That is bad.", newline=True)
+      printResult(False)
+      return False
+   
+   ########
+   # TODO # Sort mechanism
+   ########
+      
+   printAction("Locating and marking the mentioned cards...")
+#   swipe((240,630),(240,198))
+#   time.sleep(.3)
+#   swipe((240,630),(240,198))
+   scroll(0,-1000)
+   time.sleep(1)
+   swipe((240,600),(240,100))
+   time.sleep(1)
+   swipe((240,600),(240,100))
+   time.sleep(1)
+   swipe((240,600),(240,100))
+   time.sleep(1)
+#   clicked_cards = []
+   number_of_cards_selected = 0
+   
+   for i in range(15):
+      take_screenshot_adb()
+      for card in cards_list:
+         card_coords = locate_template("screens/card_%s.png"%card, correlation_threshold=0.95, offset=(214,86), ybounds=(300,800), reuse_last_screenshot=True)
+         
+         if card_coords:
+            left_click([card_coords[0],card_coords[1]+300])
+            number_of_cards_selected += 1
+            time.sleep(.5)
+            break
+            
+      swipe((240,600),(240,295)) # scroll one card at a time
+      time.sleep(1)
+      
+   if number_of_cards_selected == 0:
+      printResult(False)
+      printAction("Could not find any of the specified cards...", newline=True)
+      return False
+   
+   printResult(True)    
+   printAction("Clicking \"Boost\" button...")
+#   scroll(0,500)
+   boost_now = locate_template("screens/boost_green_button.png", offset=(58,17), retries=2)
+   printResult(boost_now)
+   
+   if not boost_now:
+      printAction( "Unable to find \"Boost\" button", newline=True)
+      return False
+
+
+   
+   printAction("Clicking \"Boost\" button (second time)...")
+   scroll(0,1000)
+   time.sleep(2)
+   boost_now = locate_template("screens/boost_green_button.png", offset=(58,17), retries=2)
+   printResult(boost_now)
+   
+   if not boost_now:
+      printAction( "Unable to find \"Boost\" button", newline=True)
+      return False
+   
+#   left_click(boost_now)
+   time.sleep(3)
+      
+   return True
 
 def fuseCard(card_type, alignment='all'):
       
@@ -1390,7 +1410,8 @@ def fuseCard(card_type, alignment='all'):
    printAction("Waiting for fusion finished screen...")
    for i in range(10):
       time.sleep(int(uniform(1,2)))
-      ironman_finished = locate_template("screens/fusion_finished.png", offset=(240,110), retries=5)
+      left_click(rarity_upgraded)
+      ironman_finished = locate_template("screens/fusion_finished.png", offset=(240,110), retries=3)
             
       if ironman_finished:
          printResult(ironman_finished) 

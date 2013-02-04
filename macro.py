@@ -672,16 +672,17 @@ def getMyPageStatus():
       
    printAction("Running OCR to figure out amount of silver...")
    silver_image  = preOCR("screens/screenshot.png",color_mask=(1,1,0),xbounds=(242,307),ybounds=(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
-   silver_string = runOCR( silver_image, mode='line' )
+   silver_string = runOCR( silver_image, mode='line', lang='event_enemy' )
 #   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
 #   silver_numbers = re.sub(r',', '', silver_numbers)
-   silver_numbers = re.search(r'.+[,\.][0-9]{1,3}', silver_string).group(0)
-   silver_numbers = re.sub(r'\s', '', silver_numbers)
-   silver_numbers = re.sub(r',', '', silver_numbers)
-   silver_numbers = re.sub(r'\.', '', silver_numbers)
-   
    
    try:
+      silver_numbers = re.search(r'.+[,\.][0-9]{1,3}', silver_string).group(0)
+      silver_numbers = re.sub(r'\s', '', silver_numbers)
+      silver_numbers = re.sub(r',', '', silver_numbers)
+      silver_numbers = re.sub(r'\.', '', silver_numbers)
+
+
       silver = int(silver_numbers)
       print("Silver: %d"%silver)
       info['silver'] = silver
@@ -1714,7 +1715,9 @@ def runAll32():
                exit_marvel()
          except:
             pass
-         time.sleep(60*uniform(5,20))
+         time.sleep(60*uniform(1,3))
+
+      time.sleep(60*uniform(5,20))
 
                
          

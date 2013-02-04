@@ -1541,7 +1541,7 @@ def start_marvel(user):
       check_if_vnc_error()
       #printAction("Searching for
       printAction("Searching for login screen...")
-      login_screen_coords = locate_template('screens/login_screen.png', correlation_threshold=0.992, retries=15, interval=1)
+      login_screen_coords = locate_template('screens/login_screen.png', correlation_threshold=0.95, retries=15, interval=1)
       printResult(login_screen_coords)
       if login_screen_coords:
          adb_login( login_screen_coords, user )
@@ -1550,7 +1550,7 @@ def start_marvel(user):
       login_success = False
       for i in range(15):
          time.sleep(1)
-         if locate_template('screens/home_screen.png', correlation_threshold=0.985):
+         if locate_template('screens/home_screen.png', correlation_threshold=0.95):
             #time.sleep(1)
             left_click((346,551)) # kills ads
             time.sleep(4)
@@ -1716,8 +1716,7 @@ def runAll32():
          except:
             pass
          time.sleep(60*uniform(1,3))
-
-      time.sleep(60*uniform(5,20))
+      time.sleep(60*uniform(5,15))
 
                
          

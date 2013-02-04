@@ -1282,7 +1282,16 @@ def boostCard(card_name, cards_list, alignment='all'):
       return False
    
    left_click(boost_now)
-   time.sleep(6)
+   time.sleep(5)
+   boost_finished = locate_template("screens/boost_finished.png", offset=(58,17), retries=15)
+   printResult(boost_finished)
+   
+   if not boost_finished:
+      printAction( "Unable to find \"Boost\" button", newline=True)
+      return False
+   
+   left_click(boost_finished)
+   time.sleep(4)
       
    return True
 

@@ -1283,6 +1283,8 @@ def boostCard(card_name, cards_list, alignment='all'):
       return False
    
    left_click(boost_now)
+   
+   printAction("Waiting for boost finished screen...")
    time.sleep(5)
    boost_finished = locate_template("screens/boost_finished.png", offset=(58,17), retries=15)
    printResult(boost_finished)
@@ -1291,7 +1293,10 @@ def boostCard(card_name, cards_list, alignment='all'):
       printAction( "Unable to find \"Boost\" button", newline=True)
       return False
    
-   left_click(boost_finished)
+   time.sleep(3)
+   left_click((200,200))
+   time.sleep(3)
+   left_click((200,200))
    time.sleep(4)
       
    return True
@@ -1390,7 +1395,7 @@ def fuseCard(card_type, alignment='all'):
    if not fuse_this_card_button_coords:
       return False
    
-   time.sleep(1)
+   time.sleep(3)
    left_click(fuse_this_card_button_coords)
    time.sleep(4) # The fusion thing takes some time.
    

@@ -15,6 +15,8 @@ passwords = {'JoInge'  :'Mdt9oFSV',
              'JoJanR'  :'Mdt9oFSV',
              'l33tdump':'dumpl33t'}
 
+def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'lemi28', 'goma7777']
+
 timeout = 90 # minutes
 ip      = "10.0.0.15"
 

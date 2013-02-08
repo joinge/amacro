@@ -10,10 +10,10 @@ import numpy as np
 import re, time, os, sys, ast, select
 import cv2
 
-passwords = {'JoInge'  :'Mdt9oFSV',
-             'JollyMa' :'Mdt9oFSV',
-             'JoJanR'  :'Mdt9oFSV',
-             'l33tdump':'dumpl33t'}
+accounts = {'JoInge'  :'Mdt9oFSV',
+            'JollyMa' :'Mdt9oFSV',
+            'JoJanR'  :'Mdt9oFSV',
+            'l33tdump':'dumpl33t'}
 
 def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'lemi28', 'goma7777']
 
@@ -312,9 +312,7 @@ def adb_login(login_screen_coords, user):
    left_click((  76, 108 )+c) # Mobage name field
    enter_text( user )
    left_click((  76, 174 )+c) # Mobage password field
-   print( 'what' )
-   print( 'hello'+passwords[user] )
-   enter_text( passwords[user] )
+   enter_text( accounts[user] )
    left_click(( 313, 237 )+c) # Login button
    
    
@@ -1317,13 +1315,18 @@ def fuseCard(card_type, alignment='all'):
    
    printAction("Clicking fusion button...")
    fusion_button_coords = locate_template("screens/fusion_button.png", offset=(60,26))
-   printResult(fusion_button_coords)
+   fusion_button2_coords = locate_template("screens/fusion_button2.png", offset=(60,26))
+   printResult(fusion_button_coords or fusion_button2_coords)
    
-   if not fusion_button_coords:
+   if not fusion_button_coords and not fusion_button2_coords:
       printAction( "Huh? Unable to find fusion button!!! That is bad.", newline=True)
       return
    
-   left_click(fusion_button_coords)
+   if fusion_button_coords:
+      left_click(fusion_button_coords)
+   else:
+      left_click(fusion_button2_coords)
+      
    time.sleep(int(uniform(.5,1)))
    
    printAction("Checking if more cards are available...")
@@ -1694,11 +1697,11 @@ def farmMission32():
 #   
 
 #recently_launched = ['joinge', 'jojanr':0, 'jollyma':0]
-users = ['JoInge', 'JoJanR', 'JollyMa']
-recently_launched = [0, 0, 0]
+#users = ['JoInge', 'JoJanR', 'JollyMa']
+recently_launched = [0]*accounts.__len__()
 #
 def randomUserStart():
-   
+     
    global recently_launched
    
    need_reset = True
@@ -1714,12 +1717,12 @@ def randomUserStart():
       i = int(uniform(0,recently_launched.__len__()-0.000001))
       if recently_launched[i] == 0:
          recently_launched[i] = 1
-         return start_marvel(users[i])       
+         return start_marvel(accounts.keys()[i])       
    
    
 def runAll24():
    while True:
-      for i in users:
+      for i in accounts.keys():
          if randomUserStart():
             farmMission24()
             exit_marvel()
@@ -1729,11 +1732,12 @@ def runAll24():
       
 def runAll32():
    while True:
-      for i in users:
+      for i in accounts.keys():
          try:
             if randomUserStart():
                farmMission32()
-               fuseAndBoost('uncommon_ironman',['common_thing','common_blackcat'],fuse_alignment='tactics')
+               if not i == 'l33tdump':
+                  fuseAndBoost('uncommon_ironman',['common_thing','common_blackcat'],fuse_alignment='tactics')
                exit_marvel()
          except:
             pass
@@ -1744,7 +1748,7 @@ def runAll32():
          
 def runAll43():
    while True:
-      for i in users:
+      for i in accounts.keys():
          try:
             if randomUserStart():
                play_mission((4,3), 2*23)
@@ -1769,7 +1773,7 @@ def blockUntilQuit():
 def startAndRestartWhenQuit():
    
 
-   for i in users:
+   for i in accounts.keys():
       randomUserStart()
          
       while True:

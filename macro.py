@@ -10,6 +10,10 @@ import numpy as np
 import re, time, os, sys, ast, select
 import cv2
 
+passwords = {'JoInge'  :'Mdt9oFSV',
+             'JollyMa' :'Mdt9oFSV',
+             'JoJanR'  :'Mdt9oFSV',
+             'l33tdump':'dumpl33t'}
 
 timeout = 90 # minutes
 ip      = "10.0.0.15"
@@ -306,7 +310,9 @@ def adb_login(login_screen_coords, user):
    left_click((  76, 108 )+c) # Mobage name field
    enter_text( user )
    left_click((  76, 174 )+c) # Mobage password field
-   enter_text( "Mdt9oFSV" )
+   print( 'what' )
+   print( 'hello'+passwords[user] )
+   enter_text( passwords[user] )
    left_click(( 313, 237 )+c) # Login button
    
    
@@ -1293,7 +1299,7 @@ def boostCard(card_name, cards_list, alignment='all'):
       printAction( "Unable to find \"Boost\" button", newline=True)
       return False
    
-   time.sleep(3)
+   time.sleep(10)
    left_click((200,200))
    time.sleep(3)
    left_click((200,200))
@@ -1635,11 +1641,11 @@ def fuseAllCards(card_type, alignment='all'):
       if not fuseCard(card_type, alignment):
          return
    
-def fuseAndBoost(card_type, cards_list, alignment='all'):
+def fuseAndBoost(card_type, cards_list, fuse_alignment='all', boost_alignment='all'):
    
    for i in range(10):
-      if fuseCard(card_type=card_type, alignment=alignment):
-         boostCard( card_name=card_type, cards_list=cards_list, alignment=alignment )
+      if fuseCard(card_type=card_type, alignment=fuse_alignment):
+         boostCard( card_name=card_type, cards_list=cards_list, alignment=boost_alignment )
       else:
          return
    
@@ -1725,7 +1731,7 @@ def runAll32():
          try:
             if randomUserStart():
                farmMission32()
-               fuseAndBoost('uncommon_ironman',['common_thing','common_blackcat'])
+               fuseAndBoost('uncommon_ironman',['common_thing','common_blackcat'],fuse_alignment='tactics')
                exit_marvel()
          except:
             pass
@@ -1920,9 +1926,10 @@ def custom4():
 
 if __name__ == "__main__":
    
+   runAll32()
 #   custom4()
 #   play_mission((3,2))
-   eventKillEnemies()
+#   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()
 #   runAll()

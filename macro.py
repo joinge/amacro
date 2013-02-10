@@ -13,9 +13,13 @@ import cv2
 accounts = {'JoInge'  :'Mdt9oFSV',
             'JollyMa' :'Mdt9oFSV',
             'JoJanR'  :'Mdt9oFSV',
-            'l33tdump':'dumpl33t'}
+            'l33tdump':'dumpl33t',
+            'Rolfy86' :'acura1986',
+            'kinemb86':'kinemb86'}
+            #MonaBB86 bb86mona
 
-def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'lemi28', 'goma7777']
+
+def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'lemi28', 'goma7777', 'Fragment08', 'cintax33', 'deathsxwill', 'jclen11', 'Drimdal', 'erictt 55']
 
 timeout = 90 # minutes
 ip      = "10.0.0.15"
@@ -1273,7 +1277,7 @@ def boostCard(card_name, cards_list, alignment='all'):
    
    if not boost_now:
       printAction( "Unable to find \"Boost\" button", newline=True)
-      return False
+      return True
 
    left_click(boost_now)
    time.sleep(3)
@@ -1375,7 +1379,7 @@ def fuseCard(card_type, alignment='all'):
       if base_card_coords and base_card_coords[1]<505:
          time.sleep(.5)
          left_click(base_card_coords)
-         time.sleep(1)
+         time.sleep(3)
          break
       
    printResult(base_card_coords)
@@ -1464,53 +1468,69 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
       mission_button_coords = locate_template("screens/mission_%d_%d.png"%mission_number, correlation_threshold=0.992, offset=(215,170), retries=3)
       printResult(mission_button_coords)
       if not mission_button_coords:
-         printAction( "Navigating to missions list...", newline=True )
-         left_click((181,774)) # mission button
-         time.sleep(3)
-         scroll(0,1000)
-#         swipe((250,390),(250,80))
-         time.sleep(2)
-         left_click((240,602)) #operations button
          
-         time.sleep(int(uniform(2,4)))
-         printAction( "Locating mission %d button..."%mission_number[0] )
-         mission_button_coords = locate_template('screens/mission_list_%d.png'%mission_number[0], correlation_threshold=0.92, offset=(170,10))
-         printResult(mission_button_coords)
-         if not mission_button_coords:
-#            time.sleep(1)
+         # Double check that the return from mission actually was registered.
+         mission_started = locate_template('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
+         if mission_started:
+            printAction("Seems we failed to return from mission. Retrying.", newline=True)
+            back_key()
+            sleep(1)
+            break
+         
+         else:
+            printAction( "Navigating to missions list...", newline=True )
+            left_click((181,774)) # mission button
+            time.sleep(3)
+            scroll(0,1000)
+   #         swipe((250,390),(250,80))
+            printAction("Searching for \"operations\" button...")
+            operations_button = locate_template("screens/operations_button.png", offset=(50,15), retries=6, click=True)
+            printResult(operations_button)
+            
+            if not operations_button:
+               return True
+            #time.sleep(2)
+            #left_click((240,602)) #operations button
+            
+            time.sleep(3)
             printAction( "Locating mission %d button..."%mission_number[0] )
-            swipe((20,600),(20,80))
-            time.sleep(int(uniform(1,2)))
-            mission_button_coords = locate_template('screens/mission_list_%d.png'%mission_number[0], correlation_threshold=0.92)
+            mission_button_coords = locate_template('screens/mission_list_%d.png'%mission_number[0], retries=5, correlation_threshold=0.92, offset=(170,10))
             printResult(mission_button_coords)
+            if not mission_button_coords:
+   #            time.sleep(1)
+               printAction( "Locating mission %d button..."%mission_number[0] )
+               swipe((20,600),(20,80))
+               time.sleep(int(uniform(1,2)))
+               mission_button_coords = locate_template('screens/mission_list_%d.png'%mission_number[0], correlation_threshold=0.92)
+               printResult(mission_button_coords)
+               
+            if not mission_button_coords:
+               print( "Unable to locate mission buttion. This shouldn't happen. Dammit!" )
+               
+               if statistics:
+                  stats.silverEnd("mission_%d-%d"%mission_number)
+               
+               return True # Retry
             
-         if not mission_button_coords:
-            print( "Unable to locate mission buttion. This shouldn't happen. Dammit!" )
+            left_click(mission_button_coords)
+            time.sleep(int(uniform(1,2)))
+            #printAction( "Navigating to mission %d-%d..."%mission_number, newline=True )
+            scroll(0,1000)
+            time.sleep(.3)
+            swipe((10,100),(10,350))
+            time.sleep(.3)
             
-            if statistics:
-               stats.silverEnd("mission_%d-%d"%mission_number)
+            for i in range(mission_number[1]-1):
+               swipe((10,100),(10,690))
+               
+            time.sleep(1)
             
-            return False
-         
-         left_click(mission_button_coords)
-         time.sleep(int(uniform(1,2)))
-         #printAction( "Navigating to mission %d-%d..."%mission_number, newline=True )
-         scroll(0,1000)
-         time.sleep(.3)
-         swipe((10,100),(10,350))
-         time.sleep(.3)
-         
-         for i in range(mission_number[1]-1):
-            swipe((10,100),(10,690))
+            repeat = repeat + 1
             
-         time.sleep(1)
-         
-         repeat = repeat + 1
-         
-         
-         #if repeat > 30:
-            #print( "30 mission iterations. Assuming error and exiting." )
-            #return False
+            
+            #if repeat > 30:
+               #print( "30 mission iterations. Assuming error and exiting." )
+               #return False
          
       else:
          left_click(mission_button_coords)
@@ -1538,6 +1558,7 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
             if mission_started:
                print( '' )
                printAction("Mission started. Returning.", newline=True)
+               time.sleep(1)
                back_key()
                time.sleep(int(uniform(1,2)))
                mission_success = True
@@ -1573,7 +1594,7 @@ def start_marvel(user):
    
       printAction("Searching for home screen...")
       login_success = False
-      for i in range(15):
+      for i in range(35):
          time.sleep(1)
          if locate_template('screens/home_screen.png', correlation_threshold=0.95):
             #time.sleep(1)
@@ -1682,6 +1703,8 @@ def getSilver():
 def farmMission32():
 
    play_mission((3,2), 2*23)
+   
+   fuseAndBoost('uncommon_ironman',['common_thing','common_blackcat'],fuse_alignment='tactics')
 
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
@@ -1717,7 +1740,7 @@ def randomUserStart():
       i = int(uniform(0,recently_launched.__len__()-0.000001))
       if recently_launched[i] == 0:
          recently_launched[i] = 1
-         return start_marvel(accounts.keys()[i])       
+         return start_marvel(accounts.keys()[i])
    
    
 def runAll24():
@@ -1736,13 +1759,11 @@ def runAll32():
          try:
             if randomUserStart():
                farmMission32()
-               if not i == 'l33tdump':
-                  fuseAndBoost('uncommon_ironman',['common_thing','common_blackcat'],fuse_alignment='tactics')
                exit_marvel()
          except:
             pass
-         time.sleep(60*uniform(1,3))
-      time.sleep(60*uniform(5,15))
+         time.sleep(60)
+      #time.sleep(60*uniform(5,15))
 
                
          
@@ -1947,4 +1968,27 @@ if __name__ == "__main__":
 #   replay_all_macros()
 #   find_mission()
 #   fuse_ironman()
-   pass
+   #pass
+
+   
+   #import sys
+   #import select
+   #import termios
+   #import tty
+
+   #def getkey():
+      #old_settings = termios.tcgetattr(sys.stdin)
+      #tty.setraw(sys.stdin.fileno())
+      #select.select([sys.stdin], [], [], 0)
+      #answer = sys.stdin.read(1)
+      #termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+      #return answer
+
+   #print "Menu\
+   #1) Say Foo\
+   #2) Say Bar"
+
+   #answer=getkey()
+
+   #if "1" in answer: print "foo"
+   #elif "2" in answer: print "bar"

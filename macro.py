@@ -104,6 +104,7 @@ class Stats:
 
       except:
          printAction("WARNING: Unable to read silver status for statistics...", newline=True)
+ 
 
 # IMEI = 358150 04 524460 6
 # 35     - British Approvals Board of Telecommunications (all phones)
@@ -1250,7 +1251,7 @@ def boostCard(card_name, cards_list, alignment='all'):
 #   clicked_cards = []
    number_of_cards_selected = 0
    
-   for i in range(15):
+   for i in range(13):
       take_screenshot_adb()
       for card in cards_list:
          card_coords = locate_template("screens/card_%s.png"%card, correlation_threshold=0.95, offset=(214,86), ybounds=(300,800), reuse_last_screenshot=True)
@@ -1677,15 +1678,29 @@ def fuseAndBoost(card_type, cards_list, fuse_alignment='all', boost_alignment='a
    
 def farmMission24():
 
-   play_mission((2,4), 2*23)
-
-   info = getMyPageStatus()
-   roster_count, roster_capacity = info['roster']
+   play_mission((2,4), 50)
+      
+   fuseAndBoost('uncommon_ironman',
+                ['common_thing','common_blackcat','common_spiderwoman','common_sandman'],
+                fuse_alignment='tactics')
    
-   if not roster_count or roster_count > 50:
-      printAction("Roster exceeds 30 cards. Sell and fuse baby!!!", newline=True)
-      sellAllCards(all_common_cards)
-      fuseAllCards('uncommon_ironman', 'tactics')
+   try:
+      info = getMyPageStatus()
+      roster_count, roster_capacity = info['roster']
+      
+      if not roster_count or roster_count > 60:
+         printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
+         sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
+   except:
+      pass
+   
+#   info = getMyPageStatus()
+#   roster_count, roster_capacity = info['roster']
+#   
+#   if not roster_count or roster_count > 50:
+#      printAction("Roster exceeds 30 cards. Sell and fuse baby!!!", newline=True)
+#      sellAllCards(all_common_cards)
+#      fuseAllCards('uncommon_ironman', 'tactics')
       
 def getSilver():
    
@@ -1696,16 +1711,27 @@ def getSilver():
    
    roster_count, roster_capacity = info['roster']
    
-   if not roster_count or roster_count > 50:
+   if not roster_count or roster_count > 55:
       printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
       sellAllCards(['common_medusa', 'common_enchantress'])
       
 def farmMission32():
 
-   play_mission((3,2), 2*23)
+   play_mission((3,2), 40)
    
-   fuseAndBoost('uncommon_ironman',['common_thing','common_blackcat'],fuse_alignment='tactics')
-
+   fuseAndBoost('uncommon_ironman',
+                ['common_thing','common_blackcat','common_spiderwoman','common_sandman'],
+                fuse_alignment='tactics')
+   
+   try:
+      info = getMyPageStatus()
+      roster_count, roster_capacity = info['roster']
+      
+      if not roster_count or roster_count > 55:
+         printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
+         sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
+   except:
+      pass
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
 #   
@@ -1723,35 +1749,43 @@ def farmMission32():
 #users = ['JoInge', 'JoJanR', 'JollyMa']
 recently_launched = [0]*accounts.__len__()
 #
-def randomUserStart():
+def getIndex(user):
+   for i,usr in enumerate(accounts):
+      if accounts.keys()[i] == user:
+         return i
+   return -1
+
+def randomUserStart(user_list=accounts.keys()):
      
    global recently_launched
    
    need_reset = True
-   for val in recently_launched:
-      if val == 0:
+   for user in user_list:
+      if recently_launched[getIndex(user)] == 0:
          need_reset = False
          break
          
    if need_reset:
-      recently_launched = [0, 0, 0]
+      for user in user_list:
+         recently_launched[getIndex(user)] = 0
          
    while True:
-      i = int(uniform(0,recently_launched.__len__()-0.000001))
-      if recently_launched[i] == 0:
-         recently_launched[i] = 1
-         return start_marvel(accounts.keys()[i])
+      i = int(uniform(0,user_list.__len__()-0.000001))
+      if recently_launched[getIndex(user_list[i])] == 0:
+         recently_launched[getIndex(user_list[i])] = 1
+         return start_marvel(user_list[i])
    
    
 def runAll24():
    while True:
       for i in accounts.keys():
-         if randomUserStart():
-            farmMission24()
-            exit_marvel()
-         time.sleep(uniform(10,60))
-         
-      time.sleep(60*uniform(15,35))
+         try:
+            if randomUserStart():
+               farmMission24()
+               exit_marvel()
+         except:
+            pass
+         time.sleep(3*60)
       
 def runAll32():
    while True:
@@ -1762,7 +1796,7 @@ def runAll32():
                exit_marvel()
          except:
             pass
-         time.sleep(60)
+         time.sleep(3*60)
       #time.sleep(60*uniform(5,15))
 
                
@@ -1802,7 +1836,31 @@ def startAndRestartWhenQuit():
             break
 
          time.sleep(2)
+         
+def adjustBrightness(percent=10):
+   
+   Popen("adb shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su"%percent, stdout=PIPE, shell=True).stdout.read()
+      
+         
+def sleepToCharge(preferred=60):
+   
+   
+   output = Popen("adb shell cat /sys/class/power_supply/battery/capacity", stdout=PIPE, shell=True).stdout.read()
+   had_to_rest = False
+   while int(output) < 20:
+      if not had_to_rest:
+#         lock_phone()
+         print("BATTERY below 20\%. Need to sleep for a bit.")
+         had_to_rest = True
+         
+      output = Popen("adb shell cat /sys/class/power_supply/battery/capacity", stdout=PIPE, shell=True).stdout.read()         
+      time.sleep(60)
 
+#   if had_to_rest:
+#      unlock_phone()
+      
+   time.sleep(preferred)
+   
             
 def custom1():
    
@@ -1948,12 +2006,37 @@ def custom4():
       except:
          pass
       
-      time.sleep(60*uniform(1,3)) 
+      time.sleep(60*uniform(1,3))
+      
+def custom5():
+
+   adjustBrightness()
+   while True:
+      for i in accounts.keys():
+         if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
+            try:
+               if randomUserStart(['JoInge','JollyMa','JoJanR']):
+                  farmMission24()
+                  exit_marvel()
+            except:
+               pass
+            sleepToCharge(60)
+         
+      for i in accounts.keys():
+         if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86':
+            try:
+               if randomUserStart(['l33tdump','Rolfy86','kinemb86']):
+                  farmMission32()
+                  exit_marvel()
+            except:
+               pass
+            sleepToCharge(60)
 
 
 if __name__ == "__main__":
    
-   runAll32()
+   custom5()
+#   runAll32()
 #   custom4()
 #   play_mission((3,2))
 #   eventKillEnemies()

@@ -15,11 +15,15 @@ accounts = {'JoInge'  :'Mdt9oFSV',
             'JoJanR'  :'Mdt9oFSV',
             'l33tdump':'dumpl33t',
             'Rolfy86' :'acura1986',
-            'kinemb86':'kinemb86'}
-            #MonaBB86 bb86mona
+            'kinemb86':'kinemb86',
+            'MonaBB86':'bb86mona'}
 
 
-def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'lemi28', 'goma7777', 'Fragment08', 'cintax33', 'deathsxwill', 'jclen11', 'Drimdal', 'erictt 55']
+def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'lemi28', 'goma7777',
+         'Fragment08', 'cintax33', 'deathsxwill', 'jclen11', 'Drimdal', 'erictt 55',
+         'Deepblue4550', 'Y0liis', 'Hirkyflobbie', 'Primo911', 'Monito5', 'Cintax33',
+         'Bigpapi11239899', 'Shanefearn', 'Badbadhorse', 'Quachrtq', 'Jumpymcspasm',
+         'Gibsupsup1', 'Solvicious']
 
 timeout = 90 # minutes
 ip      = "10.0.0.15"
@@ -178,7 +182,7 @@ def printAction(str,res=None,newline=False):
       printResult(res)
       
 def printNotify(message):
-   print("NOTIFICATION: "+str)
+   print("NOTIFICATION: "+message)
    notify()
    print("Type Enter to continue (will do so anyways in 30s)")
    
@@ -650,16 +654,26 @@ def getMyPageStatus():
    
    print("Get MyPage info...")
    
-   gotoMyPage()
-   
-   printAction("Locating status screen...")
-   swipe((240,600),(240,200))
-   time.sleep(.5)
-   
-   mypage_status_corner = locate_template("screens/mypage_status_upper_left_corner.png")
-   printResult(mypage_status_corner)
-   
-   if not mypage_status_corner:
+   entered_mypage = False
+   for i in range(2):
+      gotoMyPage()
+      
+      printAction("Locating status screen...")
+      swipe((240,600),(240,200))
+      time.sleep(.5)
+      
+      mypage_status_corner = locate_template("screens/mypage_status_upper_left_corner.png")
+      printResult(mypage_status_corner)
+      
+      if mypage_status_corner:
+         entered_mypage = True
+         break
+      
+      else:
+         left_click((200,200)) # Possibly daily reward screen
+         time.sleep(5)
+                  
+   if not entered_mypage:
       printAction( "Adjust scrolling, this isn't working.", newline=True)
       return False
 
@@ -1251,7 +1265,7 @@ def boostCard(card_name, cards_list, alignment='all'):
 #   clicked_cards = []
    number_of_cards_selected = 0
    
-   for i in range(13):
+   for i in range(11):
       take_screenshot_adb()
       for card in cards_list:
          card_coords = locate_template("screens/card_%s.png"%card, correlation_threshold=0.95, offset=(214,86), ybounds=(300,800), reuse_last_screenshot=True)
@@ -1476,8 +1490,7 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
             sleep(1)
-            break
-         
+
          else:
             printAction( "Navigating to missions list...", newline=True )
             left_click((181,774)) # mission button
@@ -1578,6 +1591,82 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
    if statistics:
       stats.silverEnd("mission_%d-%d"%mission_number)
           
+          
+def playNewestMission(repeat=50):
+
+   print( "MISSION: Newest..." )
+
+   for i in range(repeat+1):
+      printAction("Searching for newest mission button...")
+      mission_newest_button = locate_template("screens/mission_newest_button.png", correlation_threshold=0.95,
+                                             offset=(193,14))
+      printResult(mission_newest_button)
+                  
+      if not mission_newest_button:
+         
+         # Double check that the return from mission actually was registered.
+         mission_started = locate_template('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
+         if mission_started:
+            printAction("Seems we failed to return from mission. Retrying.", newline=True)
+            back_key()
+            sleep(1)
+         
+         else:
+
+            gotoMyPage()
+         
+            printAction("Searching for newest mission button...")
+            mission_newest_button = locate_template("screens/mission_newest_button.png", correlation_threshold=0.95,
+                                                   offset=(193,14), retries=5, swipe_size=[(240,600),(240,295)])
+            printResult(mission_newest_button)
+            if not mission_newest_button:
+               return False
+               
+            time.sleep(1)
+            
+            repeat = repeat + 1
+                    
+      else:
+         left_click(mission_newest_button)
+         printAction( "Avaiting mission screen..." )
+         mission_success = False
+         for i in range(10):
+            time.sleep(int(uniform(1,2)))
+            
+            out_of_energy = locate_template('screens/out_of_energy.png', correlation_threshold=0.985, print_coeff=False)
+            #printResult(out_of_energy)
+            
+            mission_started = locate_template('screens/mission_bar.png', correlation_threshold=0.985)
+            #printResult(mission_started)
+               
+            if out_of_energy:
+               print( '' )
+               printAction("No energy left! Exiting.", newline=True)
+               back_key()
+               
+#               if statistics:
+#                  stats.silverEnd("mission_%d-%d"%mission_number)
+               
+               return True
+               
+            if mission_started:
+               print( '' )
+               printAction("Mission started. Returning.", newline=True)
+               time.sleep(1)
+               back_key()
+               time.sleep(int(uniform(1,2)))
+               mission_success = True
+               
+#               if statistics:
+#                  stats.add("mission_%d-%d"%mission_number, 1)
+                  
+               break
+         
+         if not mission_success:
+            printAction("Timeout when waiting for mission screen", newline=True)
+#            if statistics:
+#               stats.silverEnd("mission_%d-%d"%mission_number)
+            return False
 
 def start_marvel(user):
    
@@ -1676,6 +1765,17 @@ def fuseAndBoost(card_type, cards_list, fuse_alignment='all', boost_alignment='a
       else:
          return
    
+   
+def test():
+   info = getMyPageStatus()
+   roster_count, roster_capacity = info['roster']
+   
+   print(roster_count)
+   if not roster_count or roster_count > 60:
+      printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
+      sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
+
+
 def farmMission24():
 
    play_mission((2,4), 50)
@@ -2023,10 +2123,11 @@ def custom5():
             sleepToCharge(60)
          
       for i in accounts.keys():
-         if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86':
+         if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
             try:
                if randomUserStart(['l33tdump','Rolfy86','kinemb86']):
-                  farmMission32()
+                  playNewestMission()
+#                  farmMission32()
                   exit_marvel()
             except:
                pass
@@ -2035,6 +2136,7 @@ def custom5():
 
 if __name__ == "__main__":
    
+#   test()
    custom5()
 #   runAll32()
 #   custom4()

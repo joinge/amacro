@@ -1485,12 +1485,28 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
       if not mission_button_coords:
          
          # Double check that the return from mission actually was registered.
-         mission_started = locate_template('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
+         mission_started  = locate_template('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
+         top_mission_list = locate_template('screens/mission_top_decor.png', print_coeff=False, reuse_last_screenshot=True)
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
-            sleep(1)
-
+            time.sleep(1)
+            repeat = repeat + 1
+            
+         # Are we simply at the top of the missions list?
+         elif top_mission_list:
+            printAction("Top of mission screen detected. Realigning...", newline=True)
+            scroll(0,1000)
+            time.sleep(.3)
+            swipe((10,100),(10,350))
+            time.sleep(.3)
+            
+            for i in range(mission_number[1]-1):
+               swipe((10,100),(10,690))
+               
+            time.sleep(1)
+            repeat = repeat + 1
+            
          else:
             printAction( "Navigating to missions list...", newline=True )
             left_click((181,774)) # mission button

@@ -1963,7 +1963,7 @@ def sleepToCharge(preferred=60):
    
    output = Popen("adb shell cat /sys/class/power_supply/battery/capacity", stdout=PIPE, shell=True).stdout.read()
    had_to_rest = False
-   while int(output) < 20:
+   while int(output) < 70:
       if not had_to_rest:
 #         lock_phone()
          print("BATTERY below 20\%. Need to sleep for a bit.")
@@ -2124,24 +2124,25 @@ def custom4():
       
       time.sleep(60*uniform(1,3))
       
-def custom5():
+def custom5(start_end=False):
 
    adjustBrightness()
    while True:
-      for i in accounts.keys():
-         if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
-            try:
-               if randomUserStart(['JoInge','JollyMa','JoJanR']):
-                  farmMission24()
-                  exit_marvel()
-            except:
-               pass
-            sleepToCharge(3*60)
+      if not start_end:
+         for i in accounts.keys():
+            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
+               try:
+                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
+                     farmMission24()
+                     exit_marvel()
+               except:
+                  pass
+               sleepToCharge(60)
          
       for i in accounts.keys():
          if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
             try:
-               if randomUserStart(['l33tdump','Rolfy86','kinemb86']):
+               if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
                   playNewestMission()
 #                  farmMission32()
                   exit_marvel()

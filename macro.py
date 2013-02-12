@@ -2136,7 +2136,7 @@ def custom5():
                   exit_marvel()
             except:
                pass
-            sleepToCharge(60)
+            sleepToCharge(3*60)
          
       for i in accounts.keys():
          if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':

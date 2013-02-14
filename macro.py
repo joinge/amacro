@@ -19,10 +19,10 @@ accounts = {'JoInge'  :'Mdt9oFSV',
             'MonaBB86':'bb86mona'}
 
 
-def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'lemi28', 'goma7777',
+def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'lemi28', 'goma7777', 'Y0liis', 'Jumpymcspasm',
          'Fragment08', 'cintax33', 'deathsxwill', 'jclen11', 'Drimdal', 'erictt 55',
-         'Deepblue4550', 'Y0liis', 'Hirkyflobbie', 'Primo911', 'Monito5', 'Cintax33',
-         'Bigpapi11239899', 'Shanefearn', 'Badbadhorse', 'Quachrtq', 'Jumpymcspasm',
+         'Deepblue4550',  'Hirkyflobbie', 'Primo911', 'Monito5', 'Cintax33',
+         'Bigpapi11239899', 'Shanefearn', 'Badbadhorse', 'Quachrtq', 
          'Gibsupsup1', 'Solvicious']
 
 timeout = 90 # minutes

@@ -19,11 +19,11 @@ accounts = {'JoInge'  :'Mdt9oFSV',
             'MonaBB86':'bb86mona'}
 
 
-def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'lemi28', 'goma7777',
-         'Fragment08', 'cintax33', 'deathsxwill', 'jclen11', 'Drimdal', 'erictt 55',
-         'Deepblue4550', 'Y0liis', 'Hirkyflobbie', 'Primo911', 'Monito5', 'Cintax33',
-         'Bigpapi11239899', 'Shanefearn', 'Badbadhorse', 'Quachrtq', 'Jumpymcspasm',
-         'Gibsupsup1', 'Solvicious']
+def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'Y0liis', 'goma7777', 'Jumpymcspasm', 'Solvicious',
+         'Fragment08', 'Hirkyflobble', 'deathsxwill', 'Drimdal', 'erictt 55',
+         'Deepblue4550', 'Primo911', 'Monito5',
+         'Bigpapi11239899', 'Shanefearn', 'Badbadhorse', 'Quachrtq', 
+         'Gibsupsup1', 'cintax33', 'jclen11', 'lemi28']
 
 timeout = 90 # minutes
 ip      = "10.0.0.15"
@@ -688,7 +688,7 @@ def getMyPageStatus():
       print("Cards: %d/%d"%cards_in_roster)
       info['roster'] = cards_in_roster
       if cards_in_roster[1] - cards_in_roster[0] < 15:
-         printNotify("Roster is soon full!!!")
+         print("WARNING: Roster is soon full!!!")
 
    except:
       printAction("Unable to determine roster size.", newline=True)
@@ -1848,6 +1848,8 @@ def farmMission32():
          sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
    except:
       pass
+   
+   printNotify("Done processing this player!!!")
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
 #   
@@ -1963,7 +1965,7 @@ def sleepToCharge(preferred=60):
    
    output = Popen("adb shell cat /sys/class/power_supply/battery/capacity", stdout=PIPE, shell=True).stdout.read()
    had_to_rest = False
-   while int(output) < 70:
+   while int(output) < 50:
       if not had_to_rest:
 #         lock_phone()
          print("BATTERY below 20\%. Need to sleep for a bit.")
@@ -2134,6 +2136,7 @@ def custom5(start_end=False):
                try:
                   if randomUserStart(['JoInge','JollyMa','JoJanR']):
                      farmMission24()
+                     
                      exit_marvel()
                except:
                   pass

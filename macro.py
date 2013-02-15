@@ -2154,10 +2154,38 @@ def custom5(start_end=False):
             sleepToCharge(60)
 
 
+def event1(start_end=False):
+
+   adjustBrightness()
+   while True:
+      if not start_end:
+         for i in accounts.keys():
+            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
+               try:
+                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
+                     farmMission32()                
+                     exit_marvel()
+               except:
+                  pass
+               sleepToCharge(60)
+         
+      for i in accounts.keys():
+         if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
+            try:
+               if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
+                  playNewestMission()
+#                  farmMission32()
+                  exit_marvel()
+            except:
+               pass
+            sleepToCharge(60)
+            
+
 if __name__ == "__main__":
    
+   event1()
 #   test()
-   custom5()
+#   custom5()
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))

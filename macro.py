@@ -1810,6 +1810,7 @@ def farmMission24():
    except:
       pass
    
+   printNotify("Done processing this player!!!")
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
 #   

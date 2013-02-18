@@ -735,82 +735,104 @@ def gotoEventHome():
    return True
 
    
-def eventPlayMission():
+def eventPlayMission(repeat=50):
 
    print( "Playing event mission..." )
 
-   gotoMyPage()
-
-   printAction("Searching for event mission button...")
-   event_mission_button = locate_template("screens/event_newest_event_mission_button.png", correlation_threshold=0.95,
-                                          offset=(109,23), retries=5, click=True, swipe_size=[(240,600),(240,295)])
-   printResult(event_mission_button)
-   if not event_mission_button:
-      return False
-      
-   printAction( "Avaiting mission screen..." )
-   mission_success = False
+   for i in range(repeat+1):
+      gotoMyPage()
    
-   for i in range(10):
-      time.sleep(1)
+      printAction("Searching for event mission button...")
+      event_mission_button = locate_template("screens/event_newest_event_mission_button.png", correlation_threshold=0.95,
+                                             offset=(109,23), retries=5, swipe_size=[(240,600),(240,295)])
+      printResult(event_mission_button)
       
-      mission_boss  = locate_template('screens/event_mission_boss_screen.png', print_coeff=False)
-      out_of_energy = locate_template('screens/out_of_energy.png', print_coeff=False, reuse_last_screenshot=True)
-      #printResult(out_of_energy)
-      
-      mission_started = locate_template('screens/mission_bar.png', correlation_threshold=0.985, reuse_last_screenshot=True)
-      #printResult(mission_started)
-      
-      if mission_boss:
-         go_to_boss = locate_template("screens/event_mission_go_to_boss.png",
-                                      offset=(130,16), retries=5, click=True, ybounds=(0,600), swipe_size=[(240,600),(240,295)])
-         if not go_to_boss:
-            print( '' )
-            printAction("Unable to find \"go to boss\" button...", newline=True)
-            return False
+      if not event_mission_button:
          
-         printResult(False)
-         printAction( "Raid boss detected. Playing the boss...", newline=True )
+         # Double check that the return from mission actually was registered.
+         mission_started = locate_template('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
+         if mission_started:
+            printAction("Seems we failed to return from mission. Retrying.", newline=True)
+            back_key()
+            time.sleep(1)
          
-         face_the_enemy = locate_template("screens/face_the_enemy_button.png",
-                                          offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
-         if not face_the_enemy:
-            printAction("Unable to find \"face the enemy\" button...", newline=True)
-            return False
+         else:
 
-         fight_enemy =  locate_template("screens/event_mission_boss_fight_button.png", correlation_threshold=0.9,
-                                          offset=(85,24), retries=5, click=True)
-         if not fight_enemy:
-            printAction("Unable to find \"FIGHT\" button...", newline=True)
+            gotoMyPage()
+         
+            printAction("Searching for event mission button...")
+            event_mission_button = locate_template("screens/event_newest_event_mission_button.png", correlation_threshold=0.95,
+                                                   offset=(109,23), retries=5, swipe_size=[(240,600),(240,295)])
+            printResult(event_mission_button)
+      
+            repeat = repeat + 1
+                    
+      else:
+         left_click(event_mission_button)
+         printAction( "Avaiting mission screen..." )
+         mission_success = False
+         
+         for i in range(10):
+            time.sleep(1)
+            
+            mission_boss  = locate_template('screens/event_mission_boss_screen.png', print_coeff=False)
+            out_of_energy = locate_template('screens/out_of_energy.png', print_coeff=False, reuse_last_screenshot=True)
+            #printResult(out_of_energy)
+            
+            mission_started = locate_template('screens/mission_bar.png', correlation_threshold=0.985, reuse_last_screenshot=True)
+            #printResult(mission_started)
+            
+            if mission_boss:
+               go_to_boss = locate_template("screens/event_mission_go_to_boss.png",
+                                            offset=(130,16), retries=5, click=True, ybounds=(0,600), swipe_size=[(240,600),(240,295)])
+               if not go_to_boss:
+                  print( '' )
+                  printAction("Unable to find \"go to boss\" button...", newline=True)
+                  return False
+               
+               printResult(False)
+               printAction( "Raid boss detected. Playing the boss...", newline=True )
+               
+               face_the_enemy = locate_template("screens/face_the_enemy_button.png",
+                                                offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+               if not face_the_enemy:
+                  printAction("Unable to find \"face the enemy\" button...", newline=True)
+                  return False
+      
+               fight_enemy =  locate_template("screens/event_mission_boss_fight_button.png", correlation_threshold=0.9,
+                                                offset=(85,24), retries=5, click=True)
+               if not fight_enemy:
+                  printAction("Unable to find \"FIGHT\" button...", newline=True)
+                  return False
+               
+               confirm =  locate_template("screens/event_mission_boss_confirm_button.png", correlation_threshold=0.9,
+                                                offset=(85,24), retries=5, click=True)
+               if not confirm:
+                  printAction("Unable to find \"FIGHT\" button...", newline=True)
+                  return False
+               
+               return True
+               
+               
+            if out_of_energy:
+               print( '' )
+               printAction("No energy left! Exiting.", newline=True)
+               back_key()
+               time.sleep(1)
+               return True
+               
+            if mission_started:
+               print( '' )
+               printAction("Mission started. Returning.", newline=True)
+               back_key()
+               time.sleep(1)
+               mission_success = True           
+
+         if not mission_success:
+            printAction("Timeout when waiting for mission screen", newline=True)
             return False
-         
-         confirm =  locate_template("screens/event_mission_boss_confirm_button.png", correlation_threshold=0.9,
-                                          offset=(85,24), retries=5, click=True)
-         if not confirm:
-            printAction("Unable to find \"FIGHT\" button...", newline=True)
-            return False
-         
-         return True
-         
-         
-      if out_of_energy:
-         print( '' )
-         printAction("No energy left! Exiting.", newline=True)
-         back_key()
-         time.sleep(1)
-         return True
-         
-      if mission_started:
-         print( '' )
-         printAction("Mission started. Returning.", newline=True)
-         back_key()
-         time.sleep(1)
-         mission_success = True           
-         return True
-   
-   if not mission_success:
-      printAction("Timeout when waiting for mission screen", newline=True)
-      return False
+            
+
 
 def eventFindEnemy(find_enraged=True, watchdog=10):
    
@@ -1629,7 +1651,10 @@ def playNewestMission(repeat=50):
          
          else:
 
-            gotoMyPage()
+#            gotoMyPage()
+
+            left_click((181,774)) # mission button
+            time.sleep(3)
          
             printAction("Searching for newest mission button...")
             mission_newest_button = locate_template("screens/mission_newest_button.png", correlation_threshold=0.95,

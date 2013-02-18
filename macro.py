@@ -2133,9 +2133,9 @@ def custom5(start_end=False):
    while True:
       if not start_end:
          for i in accounts.keys():
-            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
+            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR' or i=='Rolfy86':
                try:
-                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
+                  if randomUserStart(['JoInge','JollyMa','JoJanR','Rolfy86']):
                      farmMission24()
                      
                      exit_marvel()
@@ -2144,9 +2144,9 @@ def custom5(start_end=False):
                sleepToCharge(60)
          
       for i in accounts.keys():
-         if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
+         if i == 'l33tdump' or i=='kinemb86' or i=='MonaBB86':
             try:
-               if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
+               if randomUserStart(['l33tdump','kinemb86','MonaBB86']):
                   playNewestMission()
 #                  farmMission32()
                   exit_marvel()
@@ -2184,9 +2184,9 @@ def event1(start_end=False):
 
 if __name__ == "__main__":
    
-   event1()
+#   event1()
 #   test()
-#   custom5()
+   custom5()
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))

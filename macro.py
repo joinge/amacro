@@ -1647,7 +1647,7 @@ def playNewestMission(repeat=50):
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
-            sleep(1)
+            time.sleep(1)
          
          else:
 
@@ -1658,7 +1658,7 @@ def playNewestMission(repeat=50):
          
             printAction("Searching for newest mission button...")
             mission_newest_button = locate_template("screens/mission_newest_button.png", correlation_threshold=0.95,
-                                                   offset=(193,14), retries=5, swipe_size=[(240,600),(240,295)])
+                                                   offset=(193,14), retries=5, swipe_size=[(240,500),(240,295)])
             printResult(mission_newest_button)
             if not mission_newest_button:
                return False

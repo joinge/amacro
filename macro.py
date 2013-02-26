@@ -1647,7 +1647,7 @@ def playNewestMission(repeat=50):
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
-            sleep(1)
+            time.sleep(1)
          
          else:
 
@@ -1658,7 +1658,7 @@ def playNewestMission(repeat=50):
          
             printAction("Searching for newest mission button...")
             mission_newest_button = locate_template("screens/mission_newest_button.png", correlation_threshold=0.95,
-                                                   offset=(193,14), retries=5, swipe_size=[(240,600),(240,295)])
+                                                   offset=(193,14), retries=5, swipe_size=[(240,500),(240,295)])
             printResult(mission_newest_button)
             if not mission_newest_button:
                return False
@@ -1852,6 +1852,7 @@ def farmMission24FuseAndSell():
    except:
       pass
    
+   printNotify("Done processing this player!!!")
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
 #   
@@ -2174,10 +2175,10 @@ def custom5(start_end=False):
    while True:
       if not start_end:
          for i in accounts.keys():
-            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
+            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR' or i=='Rolfy86':
                try:
-                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
-                     farmMission24FuseAndBoost()
+                  if randomUserStart(['JoInge','JollyMa','JoJanR','Rolfy86']):
+                     farmMission24()
                      
                      exitMarvel()
                except:
@@ -2185,9 +2186,9 @@ def custom5(start_end=False):
                sleepToCharge(60)
          
       for i in accounts.keys():
-         if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
+         if i == 'l33tdump' or i=='kinemb86' or i=='MonaBB86':
             try:
-               if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
+               if randomUserStart(['l33tdump','kinemb86','MonaBB86']):
                   playNewestMission()
 #                  farmMission32()
                   exitMarvel()

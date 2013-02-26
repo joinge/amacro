@@ -1770,7 +1770,7 @@ def start_marvel_jollyma():
 def start_marvel_jojanr():
    return start_marvel('JoJanR')
    
-def exit_marvel():
+def exitMarvel():
    check_if_vnc_error()
    
    Popen("adb shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android", stdout=PIPE, shell=True).stdout.read()
@@ -1817,7 +1817,7 @@ def test():
       sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
 
 
-def farmMission24():
+def farmMission24FuseAndBoost():
 
    play_mission((2,4), 50)
       
@@ -1832,6 +1832,23 @@ def farmMission24():
       if not roster_count or roster_count > 60:
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
          sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
+   except:
+      pass
+   
+def farmMission24FuseAndSell():
+
+   play_mission((2,4), 50)
+   
+   fuseAllCards('uncommon_ironman', 'tactics')
+      
+   sellAllCards(all_common_cards)   
+         
+   try:
+      info = getMyPageStatus()
+      roster_count, roster_capacity = info['roster']
+      
+      if not roster_count or roster_count > 60:
+         printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
    except:
       pass
    
@@ -1924,8 +1941,8 @@ def runAll24():
       for i in accounts.keys():
          try:
             if randomUserStart():
-               farmMission24()
-               exit_marvel()
+               farmMission24FuseAndBoost()
+               exitMarvel()
          except:
             pass
          time.sleep(3*60)
@@ -1936,7 +1953,7 @@ def runAll32():
          try:
             if randomUserStart():
                farmMission32()
-               exit_marvel()
+               exitMarvel()
          except:
             pass
          time.sleep(3*60)
@@ -1950,7 +1967,7 @@ def runAll43():
          try:
             if randomUserStart():
                play_mission((4,3), 2*23)
-               exit_marvel()
+               exitMarvel()
          except:
             pass
          time.sleep(60*uniform(1,5))
@@ -2014,7 +2031,7 @@ def custom1():
       try:
          if start_marvel_jojanr():
             play_mission((3,2), 2*23)
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2023,7 +2040,7 @@ def custom1():
       try:
          if start_marvel_joinge():
             play_mission((3,2), 2*23)
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2032,7 +2049,7 @@ def custom1():
       try:
          if start_marvel_jollyma():
             play_mission((3,2), 2*23)
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2048,7 +2065,7 @@ def custom2():
          if start_marvel_joinge():
             play_mission((4,3), 2*23)
 #            getMyPageStatus()
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2059,7 +2076,7 @@ def custom2():
          if start_marvel_jojanr():
             play_mission((4,3), 2*23)
 #            getMyPageStatus()
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2070,7 +2087,7 @@ def custom2():
          if start_marvel_jollyma():
             play_mission((4,3), 2*23)
 #            getMyPageStatus()
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2086,7 +2103,7 @@ def custom3():
             eventPlay()
             play_mission((3,2), 2*23)
 #            getMyPageStatus()
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2097,7 +2114,7 @@ def custom3():
             eventPlay()
             play_mission((3,2), 2*23)
 #            getMyPageStatus()
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2108,7 +2125,7 @@ def custom3():
             eventPlay()
             play_mission((3,2), 2*23)
 #            getMyPageStatus()
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2134,7 +2151,7 @@ def custom4():
             eventPlay()
             play_mission((3,2), 2*23)
 #            getMyPageStatus()
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2145,7 +2162,7 @@ def custom4():
             eventPlay()
             play_mission((3,2), 2*23)
 #            getMyPageStatus()
-            exit_marvel()
+            exitMarvel()
       except:
          pass
       
@@ -2160,9 +2177,9 @@ def custom5(start_end=False):
             if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
                try:
                   if randomUserStart(['JoInge','JollyMa','JoJanR']):
-                     farmMission24()
+                     farmMission24FuseAndBoost()
                      
-                     exit_marvel()
+                     exitMarvel()
                except:
                   pass
                sleepToCharge(60)
@@ -2173,11 +2190,52 @@ def custom5(start_end=False):
                if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
                   playNewestMission()
 #                  farmMission32()
-                  exit_marvel()
+                  exitMarvel()
             except:
                pass
             sleepToCharge(60)
 
+def custom6():
+
+   adjustBrightness()
+   while True:
+      try:
+         if randomUserStart():
+            farmMission24FuseAndBoost()
+            
+            exitMarvel()
+      except:
+         pass
+      sleepToCharge(60)
+      
+      
+def custom7(start_end=False):
+
+   adjustBrightness()
+   while True:
+      if not start_end:
+         for i in accounts.keys():
+            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
+               try:
+                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
+                     farmMission24FuseAndBoost()
+                     
+                     exitMarvel()
+               except:
+                  pass
+               sleepToCharge(60)
+         
+      for i in accounts.keys():
+         if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
+            try:
+               if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
+                  farmMission24FuseAndSell()
+                  exitMarvel()
+            except:
+               pass
+            sleepToCharge(60)
+
+   
 
 def event1(start_end=False):
 
@@ -2189,7 +2247,7 @@ def event1(start_end=False):
                try:
                   if randomUserStart(['JoInge','JollyMa','JoJanR']):
                      farmMission32()                
-                     exit_marvel()
+                     exitMarvel()
                except:
                   pass
                sleepToCharge(60)
@@ -2200,7 +2258,7 @@ def event1(start_end=False):
                if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
                   playNewestMission()
 #                  farmMission32()
-                  exit_marvel()
+                  exitMarvel()
             except:
                pass
             sleepToCharge(60)
@@ -2208,9 +2266,9 @@ def event1(start_end=False):
 
 if __name__ == "__main__":
    
-   event1()
+#   event1()
 #   test()
-#   custom5()
+   custom6()
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))
@@ -2220,7 +2278,7 @@ if __name__ == "__main__":
 #   runAll()
 #   startAndRestartWhenQuit()
 #   getMyPageStatus()
-#   farmMission24()
+#   farmMission24FuseAndBoost()
 #   replay_all_macros()
 #   getIMEI() 
 #   replay_all_macros()

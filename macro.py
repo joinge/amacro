@@ -2207,6 +2207,19 @@ def sleepToCharge(preferred=60):
       
    time.sleep(preferred)
    
+def cyclePlayers():
+
+   adjustBrightness()
+   while True:
+      for i in accounts.keys():
+         try:
+            if randomUserStart():
+               notify()
+               blockUntilQuit()
+               exitMarvel()
+         except:
+            pass
+
             
 def custom1():
    
@@ -2360,26 +2373,26 @@ def custom5(start_end=False):
    while True:
       if not start_end:
          for i in accounts.keys():
-            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR' or i=='Rolfy86':
+            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
                try:
-                  if randomUserStart(['JoInge','JollyMa','JoJanR','Rolfy86']):
-                     farmMission24()
-                     
+                  if start_marvel(i):
+                     farmMission24FuseAndBoost()
                      exitMarvel()
                except:
                   pass
                sleepToCharge(60)
          
-      for i in accounts.keys():
-         if i == 'l33tdump' or i=='kinemb86' or i=='MonaBB86':
-            try:
-               if randomUserStart(['l33tdump','kinemb86','MonaBB86']):
-                  playNewestMission()
-#                  farmMission32()
-                  exitMarvel()
-            except:
-               pass
-            sleepToCharge(60)
+      else:
+         for i in accounts.keys():
+            if i == 'l33tdump' or i=='kinemb86' or i=='MonaBB86' or i=='Rolfy86':
+               try:
+                  if start_marvel(i):
+                     playNewestMission()
+   #                  farmMission32()
+                     exitMarvel()
+               except:
+                  pass
+               sleepToCharge(60)
 
 def custom6():
 

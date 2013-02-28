@@ -1136,19 +1136,27 @@ def selectCard(card_name, alignment='all'):
 #   swipe((240,630),(240,198))
    swipe((1,630),(479,100))
    time.sleep(.5)
-   swipe((1,630),(479,400))
-   time.sleep(.5)
+#   swipe((1,630),(479,400))
+#   time.sleep(.5)
 #   clicked_cards = []
    number_of_cards_selected = 0
    
 #   card_coords = locateTemplate("screens/card_%s.png"%card_name, correlation_threshold=0.95, offset=(214,86),
 #                                ybounds=(0,600), swipe_ref=['list_select_button_area',()])
+
+   # Cards with stapled lines are skipped (base card)
+   top = locateTemplate("screens/list_top_separator.png")
+   if not top:
+      printResult(False)
+      printAction("Could not find the top of list? Weird.", newline=True)
+      return False
+   
+   swipeReference("screens/list_top_separator.png", destination=(20,90), print_coeff=True, reuse_last_screenshot=True)
    
    for i in range(15):
       card_coords = locateTemplate("screens/card_%s.png"%card_name, correlation_threshold=0.95, offset=(214,86), ybounds=(0,550))
-      
-      if card_coords:
-         select_bar = locateTemplate("screens/list_select_button_area.png", offset=(144,26), ybounds=(150,550), reuse_last_screenshot=True)
+      select_bar = locateTemplate("screens/list_select_button_area.png", offset=(18,26), ybounds=(150,550), reuse_last_screenshot=True)
+      if card_coords and select_bar:
          left_click([select_bar[0],select_bar[1]+150])
          number_of_cards_selected += 1
          time.sleep(.5)
@@ -1156,7 +1164,7 @@ def selectCard(card_name, alignment='all'):
       
 #      swipe((1,600),(479,500))
 #      time.sleep(1)
-      swipeReference("screens/list_select_button_area.png", destination=(20,90), ybounds=(150,600), print_coeff=True, reuse_last_screenshot=True)
+      swipeReference("screens/list_line_separator.png", destination=(20,90), ybounds=(150,600), print_coeff=True, reuse_last_screenshot=True)
 #      swipe((1,600),(479,295)) # scroll one card at a time
       time.sleep(1)
       
@@ -1447,54 +1455,20 @@ def fuseCard(card_type, alignment='all'):
          break
 
    printResult(change_base_card_coords or base_card_menu)
-
-   listSortAlignment(alignment)
-   time.sleep(1)
-      
-#   printAction("Making sure that \"Fuse this Card\" button exists...")
-   swipe((240,630),(240,220))
-   time.sleep(.5)
-   
-#   fuse_this_card = locateTemplate("screens/fuse_this_card_button.png", offset=(225,19))
-#   printResult(fuse_this_card)
-   
-#   if not fuse_this_card:
-#      printAction( "We should be on the base card menu, but aren't.", newline=True)
-#      return False
-
-   printAction("Searching for a base card...")
-   for i in range(10):
-      swipe((10,600),(10,380)) # scroll half a card at the time
-      time.sleep(.5)
-      base_card_coords = locateTemplate("screens/card_%s.png"%card_type, offset=(225,305))
-                     
-      if base_card_coords and base_card_coords[1]<505:
-         time.sleep(.5)
-         left_click(base_card_coords)
-         time.sleep(3)
-         break
-      
-   printResult(base_card_coords)
-   if not base_card_coords:
+     
+   printAction("Searching for a base card...", newline=True)   
+   success = selectCard(card_type, alignment=alignment)
+   printResult(success)
+   if not success:
       printAction( "Unable to find a base card.", newline=True)
       return False
          
-   printAction("Searching for a fuser card...")
-   for i in range(10):
-      swipe((10,600),(10,380)) # scroll half a card at the time
-      time.sleep(.5)
-      ironman_fuser_coords = locateTemplate("screens/card_%s.png"%card_type, offset=(240,315))
-            
-      if ironman_fuser_coords and ironman_fuser_coords[1]<515:
-         time.sleep(.5)
-         left_click(ironman_fuser_coords)
-         break
-   
-   printResult(ironman_fuser_coords) 
-   if not ironman_fuser_coords:
+   printAction("Searching for a fuser card...", newline=True)
+   success = selectCard(card_type, alignment=alignment)
+   if not success:
       printAction( "Unable to find the fuser. This is strange and should not happen.", newline=True)
       return False
-         
+            
    printAction("Clicking \"fuse this card\" button...")
    fuse_this_card_button_coords = locateTemplate("screens/fusion_fuse_this_card_button.png", offset=(106,16), retries=5)
    printResult(fuse_this_card_button_coords)
@@ -2367,32 +2341,19 @@ def custom4():
       
       time.sleep(60*uniform(1,3))
       
-def custom5(start_end=False):
+def custom5():
 
    adjustBrightness()
    while True:
-      if not start_end:
-         for i in accounts.keys():
-            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
-               try:
-                  if start_marvel(i):
-                     farmMission24FuseAndBoost()
-                     exitMarvel()
-               except:
-                  pass
-               sleepToCharge(60)
+      for i in accounts.keys():
+         try:
+            if start_marvel(i):
+               farmMission24FuseAndBoost()
+               exitMarvel()
+         except:
+            pass
+         sleepToCharge(60)
          
-      else:
-         for i in accounts.keys():
-            if i == 'l33tdump' or i=='kinemb86' or i=='MonaBB86' or i=='Rolfy86':
-               try:
-                  if start_marvel(i):
-                     playNewestMission()
-   #                  farmMission32()
-                     exitMarvel()
-               except:
-                  pass
-               sleepToCharge(60)
 
 def custom6():
 
@@ -2545,7 +2506,7 @@ def event2(start_end=False):
          pass
       
       sleepToCharge(60)
-      
+
 def event3(start_end=False):
 
    trade_list = ['ssr+_thing_stoneskin',
@@ -2587,10 +2548,14 @@ def event3(start_end=False):
       sleepToCharge(60)
 
 if __name__ == "__main__":
-#   
+
+   fuseAndBoost('uncommon_ironman',
+                ['common_thing','common_blackcat','common_spiderwoman','common_sandman'],
+                fuse_alignment='tactics')
+#   fuseCard('uncommon_ironman', alignment='tactics')
 #   test()
 #   tradeCards(receiver='jollyma', cards_list=['rare+_ironman'], alignment='all')
-   tradeCards(receiver='jollyma', cards_list=['ssr+_thing_stoneskin', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife'], alignment='all')
+#   tradeCards(receiver='jollyma', cards_list=['ssr+_thing_stoneskin', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife'], alignment='all')
 
 #   selectCard('rare+_ironman', alignment='all')
 #   event1()

@@ -2067,6 +2067,26 @@ def farmMission32():
       pass
    
    printNotify("Done processing this player!!!")
+   
+
+def farmMission32FuseAndBoost():
+
+   play_mission((3,2), 50)
+      
+   fuseAndBoost('uncommon_ironman',
+                ['common_thing','common_blackcat','common_spiderwoman','common_sandman'],
+                fuse_alignment='tactics')
+   
+   try:
+      info = getMyPageStatus()
+      roster_count, roster_capacity = info['roster']
+      
+      if not roster_count or roster_count > 60:
+         printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
+         sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
+   except:
+      pass
+   
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
 #   
@@ -2390,15 +2410,28 @@ def custom6b():
    adjustBrightness()
    while True:
       for i in accounts.keys():
-         try:
-            if start_marvel(i):
-               farmMission24FuseAndBoost()
-               notify()
-               blockUntilQuit()
-               exitMarvel()
-         except:
-            pass
-         sleepToCharge(60)
+            if i=='JoInge' or i=='JollyMa' or i=='JoJanR':
+               try:
+                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
+                     farmMission32FuseAndBoost()
+                     notify()
+                     blockUntilQuit()
+                     exitMarvel()
+               except:
+                  pass
+               sleepToCharge(60)
+               
+      for i in accounts.keys():
+            if i=='l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
+               try:
+                  if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
+                     farmMission32FuseAndBoost()
+                     notify()
+                     blockUntilQuit()
+                     exitMarvel()
+               except:
+                  pass
+               sleepToCharge(60)
       
 def custom7(start_end=False):
 

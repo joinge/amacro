@@ -157,8 +157,16 @@ def sumIMEIDigits(number,nsum=0,even=True):
 
 def notify():
    
-   Popen("mplayer audio/ringtones/BentleyDubs.ogg >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
+#   Popen("mplayer audio/ringtones/BentleyDubs.ogg >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
    
+   Popen("adb shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su", stdout=PIPE, shell=True).stdout.read()
+   time.sleep(.2)
+   Popen("adb shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su", stdout=PIPE, shell=True).stdout.read()
+   time.sleep(.2)
+   Popen("adb shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su", stdout=PIPE, shell=True).stdout.read()
+   time.sleep(.2)
+   Popen("adb shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su", stdout=PIPE, shell=True).stdout.read()
+
 def printResult(res):
    if res:
       sys.stdout.write(":)")
@@ -437,9 +445,9 @@ def readImage(image_file, xbounds=None, ybounds=None):
          return image[ybounds[0]:ybounds[1],xbounds[0]:xbounds[1]].copy()
       
       
-def swipeReference(template, destination=(0,0), print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False):
+def swipeReference(template, destination=(0,0), threshold=0.96, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False):
    
-   ref = locateTemplate(template, retries=2, print_coeff=print_coeff, xbounds=xbounds, ybounds=ybounds, reuse_last_screenshot=False)
+   ref = locateTemplate(template, threshold=threshold, retries=2, print_coeff=print_coeff, xbounds=xbounds, ybounds=ybounds, reuse_last_screenshot=reuse_last_screenshot)
    
    if not ref:
       printAction("Unable to navigate to swipe reference...", newline=True)
@@ -459,7 +467,7 @@ def swipeReference(template, destination=(0,0), print_coeff=False, xbounds=None,
    return ref
    
 
-def locateTemplate(template, correlation_threshold=0.96, offset=(0,0), retries=1, interval=1, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
+def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=1, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
                     click=False, scroll_size=[], swipe_size=[], swipe_ref=['',(0,0)]):
    try:
       image_template = cv2.imread(template)
@@ -490,7 +498,7 @@ def locateTemplate(template, correlation_threshold=0.96, offset=(0,0), retries=1
          sys.stdout.flush()
 #         print( " %.2f"%result.max(), end='' )
          
-      if result.max() > correlation_threshold:
+      if result.max() > threshold:
          template_coords = np.unravel_index(result.argmax(),result.shape)
          template_coords = np.array([template_coords[1],template_coords[0]])
          object_coords = tuple(template_coords + np.array(offset))
@@ -671,6 +679,7 @@ def getMyPageStatus():
       else:
          left_click((200,200)) # Possibly daily reward screen
          time.sleep(5)
+         printNotify('Unable to read MyPage. Daily reward?', 60)
                   
    if not entered_mypage:
       printAction( "Adjust scrolling, this isn't working.", newline=True)
@@ -742,7 +751,7 @@ def eventPlayMission(repeat=50):
       gotoMyPage()
    
       printAction("Searching for event mission button...")
-      event_mission_button = locateTemplate("screens/event_newest_event_mission_button.png", correlation_threshold=0.95,
+      event_mission_button = locateTemplate("screens/event_newest_event_mission_button.png", threshold=0.95,
                                              offset=(109,23), retries=5, swipe_size=[(240,600),(240,295)])
       printResult(event_mission_button)
       
@@ -760,7 +769,7 @@ def eventPlayMission(repeat=50):
             gotoMyPage()
          
             printAction("Searching for event mission button...")
-            event_mission_button = locateTemplate("screens/event_newest_event_mission_button.png", correlation_threshold=0.95,
+            event_mission_button = locateTemplate("screens/event_newest_event_mission_button.png", threshold=0.95,
                                                    offset=(109,23), retries=5, swipe_size=[(240,600),(240,295)])
             printResult(event_mission_button)
       
@@ -778,7 +787,7 @@ def eventPlayMission(repeat=50):
             out_of_energy = locateTemplate('screens/out_of_energy.png', print_coeff=False, reuse_last_screenshot=True)
             #printResult(out_of_energy)
             
-            mission_started = locateTemplate('screens/mission_bar.png', correlation_threshold=0.985, reuse_last_screenshot=True)
+            mission_started = locateTemplate('screens/mission_bar.png', threshold=0.985, reuse_last_screenshot=True)
             #printResult(mission_started)
             
             if mission_boss:
@@ -798,13 +807,13 @@ def eventPlayMission(repeat=50):
                   printAction("Unable to find \"face the enemy\" button...", newline=True)
                   return False
       
-               fight_enemy =  locateTemplate("screens/event_mission_boss_fight_button.png", correlation_threshold=0.9,
+               fight_enemy =  locateTemplate("screens/event_mission_boss_fight_button.png", threshold=0.9,
                                                 offset=(85,24), retries=5, click=True)
                if not fight_enemy:
                   printAction("Unable to find \"FIGHT\" button...", newline=True)
                   return False
                
-               confirm =  locateTemplate("screens/event_mission_boss_confirm_button.png", correlation_threshold=0.9,
+               confirm =  locateTemplate("screens/event_mission_boss_confirm_button.png", threshold=0.9,
                                                 offset=(85,24), retries=5, click=True)
                if not confirm:
                   printAction("Unable to find \"FIGHT\" button...", newline=True)
@@ -847,7 +856,7 @@ def eventFindEnemy(find_enraged=True, watchdog=10):
          if not ref:
             return info
          time.sleep(1)
-         event_enemy_corner = locateTemplate("screens/event_enemy_info.png", correlation_threshold=.80, ybounds=(0,400), reuse_last_screenshot=False)
+         event_enemy_corner = locateTemplate("screens/event_enemy_info.png", threshold=.80, ybounds=(0,400), reuse_last_screenshot=False)
          if event_enemy_corner:
             break
          else:
@@ -861,7 +870,7 @@ def eventFindEnemy(find_enraged=True, watchdog=10):
       
       if find_enraged:
          printAction("Checking if enemy is enraged...")
-         increased_raid_rating = locateTemplate("screens/event_3_times_raid_rating.png", correlation_threshold=.85, retries=3, ybounds=(0,450))
+         increased_raid_rating = locateTemplate("screens/event_3_times_raid_rating.png", threshold=.85, retries=3, ybounds=(0,450))
          printResult(increased_raid_rating)
          if increased_raid_rating:
             is_enraged = True
@@ -911,7 +920,7 @@ def eventFindEnemy(find_enraged=True, watchdog=10):
 def eventKillEnemies():
    
    printAction("Locating the \"face enemy\" button...")
-   event_face_enemy = locateTemplate("screens/event_mission_button.png", offset=(240,-54), correlation_threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
+   event_face_enemy = locateTemplate("screens/event_mission_button.png", offset=(240,-54), threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
    printResult(event_face_enemy)
    if not event_face_enemy:
       printAction("Unable to locate \"face enemy\" button...")
@@ -940,7 +949,7 @@ def eventKillEnemies():
          if not event_enemies_in_area:
             return False
          event_face_enemy = locateTemplate("screens/event_mission_button.png",
-            offset=(240,-54), correlation_threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
+            offset=(240,-54), threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
          if not event_face_enemy:
             return False
          take_screenshot_adb()
@@ -950,8 +959,8 @@ def eventKillEnemies():
       
       time.sleep(2)
       printAction("Searching for \"go support\" or \"attack\" button...")
-      support        = locateTemplate("screens/event_go_support_button.png", correlation_threshold=0.92, reuse_last_screenshot=True, click=True)
-      attack_villain = locateTemplate("screens/event_attack_button.png", correlation_threshold=0.92, reuse_last_screenshot=True, click=True)
+      support        = locateTemplate("screens/event_go_support_button.png", threshold=0.92, reuse_last_screenshot=True, click=True)
+      attack_villain = locateTemplate("screens/event_attack_button.png", threshold=0.92, reuse_last_screenshot=True, click=True)
       printResult(bool(support or attack_villain))
       if not attack_villain and not support:
          printAction("Unable to find an enemy to attack!", newline=True)
@@ -963,7 +972,7 @@ def eventKillEnemies():
       printAction("Searching for deck select button...")
       for j in range(5):
          swipe((10,400),(10,200))
-         select_deck = locateTemplate("screens/select_deck_button.png", correlation_threshold=.96, offset=(-144,17), ybounds=(0,600), click=True)
+         select_deck = locateTemplate("screens/select_deck_button.png", threshold=.96, offset=(-144,17), ybounds=(0,600), click=True)
          if select_deck:
             break
       printResult(select_deck)
@@ -992,7 +1001,7 @@ def eventKillEnemies():
          
          if not face_the_enemy and not face_the_enemy2:
             
-            out_of_power = locateTemplate('screens/event_out_of_power.png', correlation_threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
+            out_of_power = locateTemplate('screens/event_out_of_power.png', threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
             if out_of_power:
                print( '' )
                printAction("No attack power left! Exiting.", newline=True)
@@ -1033,7 +1042,7 @@ def eventKillEnemies():
             for i in range(10):
                time.sleep(1)
                
-               out_of_power    = locateTemplate('screens/event_out_of_power.png',   correlation_threshold=0.985, print_coeff=False)
+               out_of_power    = locateTemplate('screens/event_out_of_power.png',   threshold=0.985, print_coeff=False)
                mission_started = locateTemplate('screens/event_fight_screen.png',   reuse_last_screenshot=True)
                end_of_battle   = locateTemplate('screens/event_battle_results.png', reuse_last_screenshot=True)
                #printResult(mission_started)
@@ -1108,8 +1117,8 @@ def eventPlay():
 def listSortAlignment(alignment_type):
    
    printAction("Making sure alignment is set to \"%s\"..."%alignment_type)
-   alignment_button             = locateTemplate("screens/alignment_button_%s.png"%alignment_type, correlation_threshold=0.95, offset=(56,22))
-   alignment_button_highlighted = locateTemplate("screens/alignment_button_%s_highlighted.png"%alignment_type, correlation_threshold=0.95, offset=(56,22))
+   alignment_button             = locateTemplate("screens/alignment_button_%s.png"%alignment_type, threshold=0.95, offset=(56,22))
+   alignment_button_highlighted = locateTemplate("screens/alignment_button_%s_highlighted.png"%alignment_type, threshold=0.95, offset=(56,22))
    printResult(alignment_button or alignment_button_highlighted)
       
    if not alignment_button_highlighted:
@@ -1154,7 +1163,7 @@ def selectCard(card_name, alignment='all'):
    swipeReference("screens/list_top_separator.png", destination=(20,90), print_coeff=True, reuse_last_screenshot=True)
    
    for i in range(15):
-      card_coords = locateTemplate("screens/card_%s.png"%card_name, correlation_threshold=0.95, offset=(214,86), ybounds=(0,550))
+      card_coords = locateTemplate("screens/card_%s.png"%card_name, threshold=0.95, offset=(214,86), ybounds=(0,550))
       select_bar = locateTemplate("screens/list_select_button_area.png", offset=(18,26), ybounds=(150,550), reuse_last_screenshot=True)
       if card_coords and select_bar:
          left_click([select_bar[0],select_bar[1]+150])
@@ -1164,7 +1173,11 @@ def selectCard(card_name, alignment='all'):
       
 #      swipe((1,600),(479,500))
 #      time.sleep(1)
-      swipeReference("screens/list_line_separator.png", destination=(20,90), ybounds=(150,600), print_coeff=True, reuse_last_screenshot=True)
+      line_separator = swipeReference("screens/list_line_separator.png", destination=(20,90), ybounds=(150,600), threshold=0.85, print_coeff=True, reuse_last_screenshot=True)
+      if not line_separator:
+         printResult(False)
+         printAction("Assuming no more cards can be found...", newline=True)
+         break
 #      swipe((1,600),(479,295)) # scroll one card at a time
       time.sleep(1)
       
@@ -1197,7 +1210,7 @@ def markCards(cards_list, alignment='all'):
    for i in range(15):
       take_screenshot_adb()
       for card in cards_list:
-         card_coords = locateTemplate("screens/card_%s.png"%card, correlation_threshold=0.95, offset=(214,86), ybounds=(300,800), reuse_last_screenshot=True)
+         card_coords = locateTemplate("screens/card_%s.png"%card, threshold=0.95, offset=(214,86), ybounds=(300,800), reuse_last_screenshot=True)
          
          if card_coords:
             left_click([card_coords[0],card_coords[1]+300])
@@ -1353,7 +1366,7 @@ def boostCard(card_name, cards_list, alignment='all'):
    for i in range(11):
       take_screenshot_adb()
       for card in cards_list:
-         card_coords = locateTemplate("screens/card_%s.png"%card, correlation_threshold=0.95, offset=(214,86), ybounds=(300,800), reuse_last_screenshot=True)
+         card_coords = locateTemplate("screens/card_%s.png"%card, threshold=0.95, offset=(214,86), ybounds=(300,800), reuse_last_screenshot=True)
          
          if card_coords:
             left_click([card_coords[0],card_coords[1]+300])
@@ -1454,6 +1467,7 @@ def fuseCard(card_type, alignment='all'):
       if base_card_menu:
          break
 
+   time.sleep(1)
    printResult(change_base_card_coords or base_card_menu)
      
    printAction("Searching for a base card...", newline=True)   
@@ -1463,6 +1477,7 @@ def fuseCard(card_type, alignment='all'):
       printAction( "Unable to find a base card.", newline=True)
       return False
          
+   time.sleep(2)
    printAction("Searching for a fuser card...", newline=True)
    success = selectCard(card_type, alignment=alignment)
    if not success:
@@ -1476,12 +1491,12 @@ def fuseCard(card_type, alignment='all'):
    if not fuse_this_card_button_coords:
       return False
    
-   time.sleep(3)
+   time.sleep(1)
    left_click(fuse_this_card_button_coords)
    time.sleep(4) # The fusion thing takes some time.
    
    printAction("Waiting for first fusion screen...")
-   rarity_upgraded = locateTemplate("screens/fusion_rarity_upgraded.png", correlation_threshold=0.98, offset=(243,70), retries=10)
+   rarity_upgraded = locateTemplate("screens/fusion_rarity_upgraded.png", threshold=0.98, offset=(243,70), retries=10)
    
 #   if not ironman_fused_screen1:
 #      return False
@@ -1661,7 +1676,7 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
    for i in range(repeat+1):
       check_if_vnc_error()
       printAction("Searching for mission %d-%d button..."%mission_number)
-      mission_button_coords = locateTemplate("screens/mission_%d_%d.png"%mission_number, correlation_threshold=0.992, offset=(215,170), retries=3)
+      mission_button_coords = locateTemplate("screens/mission_%d_%d.png"%mission_number, threshold=0.992, offset=(215,170), retries=3)
       printResult(mission_button_coords)
       if not mission_button_coords:
          
@@ -1705,14 +1720,14 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
             
             time.sleep(3)
             printAction( "Locating mission %d button..."%mission_number[0] )
-            mission_button_coords = locateTemplate('screens/mission_list_%d.png'%mission_number[0], retries=5, correlation_threshold=0.92, offset=(170,10))
+            mission_button_coords = locateTemplate('screens/mission_list_%d.png'%mission_number[0], retries=5, threshold=0.92, offset=(170,10))
             printResult(mission_button_coords)
             if not mission_button_coords:
    #            time.sleep(1)
                printAction( "Locating mission %d button..."%mission_number[0] )
                swipe((20,600),(20,80))
                time.sleep(int(uniform(1,2)))
-               mission_button_coords = locateTemplate('screens/mission_list_%d.png'%mission_number[0], correlation_threshold=0.92)
+               mission_button_coords = locateTemplate('screens/mission_list_%d.png'%mission_number[0], threshold=0.92)
                printResult(mission_button_coords)
                
             if not mission_button_coords:
@@ -1750,10 +1765,10 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
          for i in range(10):
             time.sleep(int(uniform(1,2)))
             
-            out_of_energy = locateTemplate('screens/out_of_energy.png', correlation_threshold=0.985, print_coeff=False)
+            out_of_energy = locateTemplate('screens/out_of_energy.png', threshold=0.985, print_coeff=False)
             #printResult(out_of_energy)
             
-            mission_started = locateTemplate('screens/mission_bar.png', correlation_threshold=0.985)
+            mission_started = locateTemplate('screens/mission_bar.png', threshold=0.985)
             #printResult(mission_started)
                
             if out_of_energy:
@@ -1795,7 +1810,7 @@ def playNewestMission(repeat=50):
 
    for i in range(repeat+1):
       printAction("Searching for newest mission button...")
-      mission_newest_button = locateTemplate("screens/mission_newest_button.png", correlation_threshold=0.95,
+      mission_newest_button = locateTemplate("screens/mission_newest_button.png", threshold=0.95,
                                              offset=(193,14))
       printResult(mission_newest_button)
                   
@@ -1816,7 +1831,7 @@ def playNewestMission(repeat=50):
             time.sleep(3)
          
             printAction("Searching for newest mission button...")
-            mission_newest_button = locateTemplate("screens/mission_newest_button.png", correlation_threshold=0.95,
+            mission_newest_button = locateTemplate("screens/mission_newest_button.png", threshold=0.95,
                                                    offset=(193,14), retries=5, swipe_size=[(240,500),(240,295)])
             printResult(mission_newest_button)
             if not mission_newest_button:
@@ -1833,10 +1848,10 @@ def playNewestMission(repeat=50):
          for i in range(10):
             time.sleep(int(uniform(1,2)))
             
-            out_of_energy = locateTemplate('screens/out_of_energy.png', correlation_threshold=0.985, print_coeff=False)
+            out_of_energy = locateTemplate('screens/out_of_energy.png', threshold=0.985, print_coeff=False)
             #printResult(out_of_energy)
             
-            mission_started = locateTemplate('screens/mission_bar.png', correlation_threshold=0.985)
+            mission_started = locateTemplate('screens/mission_bar.png', threshold=0.985)
             #printResult(mission_started)
                
             if out_of_energy:
@@ -1877,7 +1892,7 @@ def start_marvel(user):
       check_if_vnc_error()
       #printAction("Searching for
       printAction("Searching for login screen...")
-      login_screen_coords = locateTemplate('screens/login_screen.png', correlation_threshold=0.95, retries=15, interval=1)
+      login_screen_coords = locateTemplate('screens/login_screen.png', threshold=0.95, retries=15, interval=1)
       printResult(login_screen_coords)
       if login_screen_coords:
          adb_login( login_screen_coords, user )
@@ -1886,7 +1901,7 @@ def start_marvel(user):
       login_success = False
       for i in range(35):
          time.sleep(1)
-         if locateTemplate('screens/home_screen.png', correlation_threshold=0.95):
+         if locateTemplate('screens/home_screen.png', threshold=0.95):
             #time.sleep(1)
             left_click((346,551)) # kills ads
             time.sleep(4)
@@ -2359,15 +2374,31 @@ def custom6():
 
    adjustBrightness()
    while True:
-      try:
-         if randomUserStart():
-            farmMission24FuseAndBoost()
-            
-            exitMarvel()
-      except:
-         pass
-      sleepToCharge(60)
+      for i in accounts.keys():
+         try:
+            if start_marvel(i):
+               farmMission24FuseAndBoost()
+               printNotify('Complete trade and event.', 60*30)
+               exitMarvel()
+         except:
+            pass
+         sleepToCharge(60)
       
+      
+def custom6b():
+
+   adjustBrightness()
+   while True:
+      for i in accounts.keys():
+         try:
+            if start_marvel(i):
+               farmMission24FuseAndBoost()
+               notify()
+               blockUntilQuit()
+               exitMarvel()
+         except:
+            pass
+         sleepToCharge(60)
       
 def custom7(start_end=False):
 

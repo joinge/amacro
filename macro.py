@@ -402,8 +402,30 @@ def lock_phone():
 
 def take_screenshot_adb():
 
-   Popen("adb shell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
-          adb pull  /sdcard/screenshot.png screens/screenshot.png >error.log 2>&1", stdout=PIPE, shell=True).stdout.read()
+#   Popen("adb shell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
+#          adb pull  /sdcard/screenshot.png screens/screenshot.png >error.log 2>&1", stdout=PIPE, shell=True).stdout.read()
+          
+#   Popen("adb shell screencap -p | sed 's/\r$//' > screens/screenshot.png", stdout=PIPE, shell=True).stdout.read()
+
+#   Popen("adb shell screencap | sed 's/\r$//' > img.raw;\
+#          dd bs=800 count=1920 if=img.raw of=img.tmp >/dev/null 2>&1;\
+#          ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img.tmp screens/screenshot.png >/dev/null 2>&1",
+#          stdout=PIPE, shell=True).stdout.read()
+      
+   ################
+   # CURRENT BEST #
+   ################
+       
+   Popen("adb shell screencap | sed 's/\r$//' > img.raw", stdout=PIPE, shell=True).stdout.read()
+   
+   f = open('img.raw', 'rb')
+   f1 = open('img1.raw', 'w')
+   f.read(12) # ignore 3 first pixels (otherwise the image gets offset)
+   rest = f.read() # read rest
+   f1.write(rest)
+    
+   Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img1.raw screens/screenshot.png >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
+
    
    # adb pull /dev/graphics/fb0 img.raw
    # dd bs=800 count=1920 if=img.raw of=img.tmp
@@ -1133,7 +1155,8 @@ def listSortAlignment(alignment_type):
 
 def selectCard(card_name, alignment='all'):
    
-   listSortAlignment(alignment)
+   if alignment != 'none':
+      listSortAlignment(alignment)
    
    ########
    # TODO # Sort mechanism
@@ -1186,6 +1209,7 @@ def selectCard(card_name, alignment='all'):
       printAction("Could not find any of the specified cards...", newline=True)
       return False
    
+   printResult(True)
    return True
    
 
@@ -1382,7 +1406,7 @@ def boostCard(card_name, cards_list, alignment='all'):
       printAction("Could not find any of the specified cards...", newline=True)
       return False
    
-   printResult(True)    
+   printResult(True)
    printAction("Clicking \"Boost\" button...")
 #   scroll(0,500)
    boost_now = locateTemplate("screens/boost_green_button.png", offset=(58,17), retries=2)
@@ -1431,7 +1455,7 @@ def fuseCard(card_type, alignment='all'):
    stats = Stats()
    
    printAction("Clicking fusion button...")
-   fusion_button_coords = locateTemplate("screens/fusion_button.png", offset=(60,26))
+   fusion_button_coords = locateTemplate("screens/fusion_button.png", offset=(60,26), retries=2 )
    fusion_button2_coords = locateTemplate("screens/fusion_button2.png", offset=(60,26))
    printResult(fusion_button_coords or fusion_button2_coords)
    
@@ -1479,7 +1503,8 @@ def fuseCard(card_type, alignment='all'):
          
    time.sleep(2)
    printAction("Searching for a fuser card...", newline=True)
-   success = selectCard(card_type, alignment=alignment)
+#   swipe((240,600),(240,100))
+   success = selectCard(card_type, alignment='none')
    if not success:
       printAction( "Unable to find the fuser. This is strange and should not happen.", newline=True)
       return False
@@ -1892,7 +1917,7 @@ def start_marvel(user):
       check_if_vnc_error()
       #printAction("Searching for
       printAction("Searching for login screen...")
-      login_screen_coords = locateTemplate('screens/login_screen.png', threshold=0.95, retries=15, interval=1)
+      login_screen_coords = locateTemplate('screens/login_screen.png', threshold=0.95, retries=25, interval=1)
       printResult(login_screen_coords)
       if login_screen_coords:
          adb_login( login_screen_coords, user )
@@ -2395,14 +2420,24 @@ def custom6():
    adjustBrightness()
    while True:
       for i in accounts.keys():
-         try:
-            if start_marvel(i):
-               farmMission24FuseAndBoost()
-               printNotify('Complete trade and event.', 60*30)
-               exitMarvel()
-         except:
-            pass
-         sleepToCharge(60)
+            if i=='JoInge' or i=='JollyMa' or i=='JoJanR':
+               try:
+                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
+                     farmMission24FuseAndBoost()
+                     exitMarvel()
+               except:
+                  pass
+               sleepToCharge(60)
+               
+      for i in accounts.keys():
+            if i=='l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
+               try:
+                  if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
+                     farmMission32FuseAndBoost()
+                     exitMarvel()
+               except:
+                  pass
+               sleepToCharge(60)
       
       
 def custom6b():
@@ -2413,7 +2448,7 @@ def custom6b():
             if i=='JoInge' or i=='JollyMa' or i=='JoJanR':
                try:
                   if randomUserStart(['JoInge','JollyMa','JoJanR']):
-                     farmMission32FuseAndBoost()
+                     farmMission24FuseAndBoost()
                      notify()
                      blockUntilQuit()
                      exitMarvel()

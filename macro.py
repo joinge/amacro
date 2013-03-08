@@ -2253,6 +2253,22 @@ def cyclePlayers():
                exitMarvel()
          except:
             pass
+         
+         
+def checkTraining():
+   
+   while( True ):
+      gotoMyPage()
+      time.sleep(2)
+      ref = locateTemplate('screens/training_searching_text.png', threshold=0.95, interval=1)
+      printResult(ref)
+      
+      if not ref:
+         break
+      
+      time.sleep(1)
+      
+   notify()
 
             
 def custom1():
@@ -2462,7 +2478,8 @@ def custom6b():
                   if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
                      farmMission32FuseAndBoost()
                      notify()
-                     blockUntilQuit()
+                     time.sleep(30)
+#                     blockUntilQuit()
                      exitMarvel()
                except:
                   pass

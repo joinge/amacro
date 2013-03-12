@@ -10,6 +10,13 @@ import numpy as np
 import re, time, os, sys, ast, select
 import cv2
 
+
+# Bootlist:
+#
+# Valhalla25, airman54, nashie88, waygrumpy, xzitrempire(35), xQueenJenniecx, choiiflames, jonathanxxx, 
+#
+#
+
 accounts = {'JoInge'  :'Mdt9oFSV',
             'JollyMa' :'Mdt9oFSV',
             'JoJanR'  :'Mdt9oFSV',
@@ -2665,9 +2672,13 @@ def event3(start_end=False):
 
 if __name__ == "__main__":
 
-   fuseAndBoost('uncommon_ironman',
-                ['common_thing','common_blackcat','common_spiderwoman','common_sandman'],
-                fuse_alignment='tactics')
+   pass
+#   import gui.gui as gui
+#   gui.main()
+
+#   fuseAndBoost('uncommon_ironman',
+#                ['common_thing','common_blackcat','common_spiderwoman','common_sandman'],
+#                fuse_alignment='tactics')
 #   fuseCard('uncommon_ironman', alignment='tactics')
 #   test()
 #   tradeCards(receiver='jollyma', cards_list=['rare+_ironman'], alignment='all')

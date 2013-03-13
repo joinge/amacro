@@ -2672,7 +2672,7 @@ def event3(start_end=False):
 
 if __name__ == "__main__":
 
-   pass
+#   start_marvel('JoInge')
 #   import gui.gui as gui
 #   gui.main()
 
@@ -2687,7 +2687,7 @@ if __name__ == "__main__":
 #   selectCard('rare+_ironman', alignment='all')
 #   event1()
 #   test()
-#   custom6()
+   custom6()
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))

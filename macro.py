@@ -708,7 +708,7 @@ def getMyPageStatus():
       else:
          left_click((200,200)) # Possibly daily reward screen
          time.sleep(5)
-         printNotify('Unable to read MyPage. Daily reward?', 60)
+#         printNotify('Unable to read MyPage. Daily reward?', 60)
                   
    if not entered_mypage:
       printAction( "Adjust scrolling, this isn't working.", newline=True)

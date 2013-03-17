@@ -593,7 +593,10 @@ def abort_if_vnc_died():
 def preOCR(image_name, color_mask=(1,1,1), threshold=180, invert=True, xbounds=None, ybounds=None):
    
    import scipy.interpolate as interpolate
+   import pylab as pl
    
+   DEBUG = False
+
    image = readImage(image_name,xbounds,ybounds)
 #   image = readImage(image_name)
    
@@ -602,12 +605,24 @@ def preOCR(image_name, color_mask=(1,1,1), threshold=180, invert=True, xbounds=N
    image[:,:,1] = image[:,:,1]*color_mask[1]
    image[:,:,2] = image[:,:,2]*color_mask[2]
    
+   if DEBUG:
+      pl.imshow(image)
+      pl.show()
+   
    # Convert to grey scale
    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+   
+   if DEBUG:
+      pl.imshow(image,cmap=pl.cm.Greys_r)
+      pl.show()
    
    # Normalize
    img_min, img_max = image.min(), image.max()
    image = 255*(image-float(img_min))/(float(img_max)-img_min)
+   
+   if DEBUG:
+      pl.imshow(image,cmap=pl.cm.Greys_r)
+      pl.show()
    
    #Upinterpolate
    M,N = image.shape
@@ -623,6 +638,10 @@ def preOCR(image_name, color_mask=(1,1,1), threshold=180, invert=True, xbounds=N
    #Inversion
    if invert:
       image = 255-image
+      
+   if DEBUG:
+      pl.imshow(image,cmap=pl.cm.Greys_r)
+      pl.show()
       
    # Thresholding
    img = image**20
@@ -773,45 +792,67 @@ def gotoEventHome():
    return True
 
    
-def eventPlayMission(repeat=50):
+def eventPlayMission(repeat=5):
 
    print( "Playing event mission..." )
-
-   for i in range(repeat+1):
-      gotoMyPage()
    
-      printAction("Searching for event mission button...")
-      event_mission_button = locateTemplate("screens/event_newest_event_mission_button.png", threshold=0.95,
-                                             offset=(109,23), retries=5, swipe_size=[(240,600),(240,295)])
-      printResult(event_mission_button)
+   swipe((240,100),(240,750))
+   swipe((240,100),(240,750))
+   swipe((240,100),(240,750))
+   swipe((240,100),(240,750))
+   time.sleep(1)
+   
+   for i in range(repeat+1):     
       
-      if not event_mission_button:
-         
+      printAction("Searching for event mission \"Proceed\" button...")
+      proceed = locateTemplate("screens/proceed_button.png", threshold=0.95, offset=(109,23))
+      printResult(proceed)
+      
+      if not proceed:
+      
          # Double check that the return from mission actually was registered.
          mission_started = locateTemplate('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
+         event_mission_button = locateTemplate("screens/event_mission_button.png", threshold=0.95, offset=(109,23), reuse_last_screenshot=True)
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
             time.sleep(1)
          
+         elif event_mission_button:
+            printAction("Searching for event mission button...")
+            left_click(event_mission_button)
+            printResult(event_mission_button)
+            time.sleep(3)
+            scroll(0,1000)
+            time.sleep(1)
+            
+            repeat = repeat + 1
+            
          else:
 
-            gotoMyPage()
-         
+            gotoEventHome()
+                       
             printAction("Searching for event mission button...")
-            event_mission_button = locateTemplate("screens/event_newest_event_mission_button.png", threshold=0.95,
+            event_mission_button = locateTemplate("screens/event_mission_button.png", threshold=0.95,
                                                    offset=(109,23), retries=5, swipe_size=[(240,600),(240,295)])
             printResult(event_mission_button)
-      
+                  
+            if event_mission_button:
+               left_click(event_mission_button)
+               time.sleep(3)
+                  
             repeat = repeat + 1
-                    
+                             
+         
       else:
-         left_click(event_mission_button)
+         
+         left_click(proceed)
+      
          printAction( "Avaiting mission screen..." )
          mission_success = False
          
-         for i in range(10):
-            time.sleep(1)
+         for i in range(2):
+            time.sleep(3)
             
             mission_boss  = locateTemplate('screens/event_mission_boss_screen.png', print_coeff=False)
             out_of_energy = locateTemplate('screens/out_of_energy.png', print_coeff=False, reuse_last_screenshot=True)
@@ -864,7 +905,8 @@ def eventPlayMission(repeat=50):
                printAction("Mission started. Returning.", newline=True)
                back_key()
                time.sleep(1)
-               mission_success = True           
+               mission_success = True
+               break   
 
          if not mission_success:
             printAction("Timeout when waiting for mission screen", newline=True)
@@ -877,7 +919,8 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
    printAction("Searching for a decent foe...")
    info = {'is_enraged':False}
    keep_assessing = True
-   swipe((10,400),(10,200))
+   swipe((10,600),(10,200))
+   take_screenshot_adb()
    while keep_assessing and watchdog > 0:
       keep_assessing = False
       is_enraged = False
@@ -911,8 +954,8 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
       
       printAction("Running OCR to figure out badass name and level...")
    #   printAction("Preprocessing image")
-   
-      badguy_image  = preOCR("screens/screenshot.png",xbounds=(110,370),ybounds=(event_enemy_corner[1]-49,event_enemy_corner[1]-18))
+
+      badguy_image  = preOCR("screens/screenshot.png",xbounds=(110,370),ybounds=(84,114))
       badguy_string = runOCR( badguy_image, mode='line')
    
       badguy_name  = re.sub(r' Lv.+', '', badguy_string)
@@ -932,14 +975,14 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
       except:
          print( 'WARNING: Unable to convert enemy health to int.' )
       
-      try:
-         if int(badguy_level) < 50  or (int(badguy_level) > 85 and not find_enraged):
-            printAction("Villain has a level outside [50,85]. Moving on...", newline=True)
-            keep_assessing = True
-            watchdog = watchdog - 1
-            swipe((10,400),(10,350))
-      except:
-         pass
+#      try:
+#         if int(badguy_level) < 50  or (int(badguy_level) > 85 and not find_enraged):
+#            printAction("Villain has a level outside [50,85]. Moving on...", newline=True)
+#            keep_assessing = True
+#            watchdog = watchdog - 1
+#            swipe((10,400),(10,350))
+#      except:
+#         pass
       
       info['badguy_name']  = badguy_name
       info['badguy_level'] = badguy_level
@@ -963,14 +1006,18 @@ def eventKillEnemies(find_enraged=False):
       take_screenshot_adb()
 #      if not i:
 #         swipeReference("screens/event_enemy_info_frame.png", destination=(0,80), reuse_last_screenshot=False)
-      enraged_enemy_found = False
+      enemy_found = False
       for j in range(5):
          info = eventFindEnemy(find_enraged=find_enraged)
-         if info['is_enraged']:
-            enraged_enemy_found = True
-            break
+         
+         try:
+            if info['is_enraged'] or (info['badguy_name'] and not find_enraged):
+               enemy_found = True
+               break
+         except:
+            pass
 #        scroll(0,-1000)
-         printAction('Unable to find enraged enemy. Retrying in 30 sec (%d/5)...'%(j+1), newline=True)
+         printAction('Unable to find enemy. Retrying in 30 sec (%d/5)...'%(j+1), newline=True)
          time.sleep(30)
   
          gotoEventHome()
@@ -984,7 +1031,7 @@ def eventKillEnemies(find_enraged=False):
             return False
          take_screenshot_adb()
          
-      if not enraged_enemy_found:
+      if not enemy_found:
          return False
       
       time.sleep(2)
@@ -998,113 +1045,148 @@ def eventKillEnemies(find_enraged=False):
 #      left_click(event_enemy_corner+np.array((66,164)))
 #      left_click(event_enemy_corner+np.array((66,164)))
       time.sleep(1)
-      
-      printAction("Searching for deck select button...")
-      for j in range(5):
-         swipe((10,400),(10,200))
-         select_deck = locateTemplate("screens/select_deck_button.png", threshold=.96, offset=(-144,17), ybounds=(0,600), click=True)
-         if select_deck:
-            break
-      printResult(select_deck)
-         
-      printAction("Selecting raider deck...")
-      raider_deck = locateTemplate("screens/select_deck_raider.png", offset=(205,35), click=True)
-      printResult(raider_deck)
-      if not raider_deck:
-         return False
-   
-      printAction("Hitting select button...")
-      select_button = locateTemplate("screens/select_button.png", offset=(60,16), click=True)
-      printResult(select_button)
-      if not select_button:
-         return False
+      swipe((20,600),(20,200))
+      time.sleep(1)
+#      printAction("Searching for deck select button...")
+#      for j in range(5):
+#         swipe((10,400),(10,200))
+#         select_deck = locateTemplate("screens/select_deck_button.png", threshold=.96, offset=(-144,17), ybounds=(0,600), click=True)
+#         if select_deck:
+#            break
+#      printResult(select_deck)
+#         
+#      printAction("Selecting raider deck...")
+#      raider_deck = locateTemplate("screens/select_deck_raider.png", offset=(205,35), click=True)
+#      printResult(raider_deck)
+#      if not raider_deck:
+#         return False
+#   
+#      printAction("Hitting select button...")
+#      select_button = locateTemplate("screens/select_button.png", offset=(60,16), click=True)
+#      printResult(select_button)
+#      if not select_button:
+#         return False
                   
       # Assess the timer structure. It will basically count number of swipes, shitty.
-      weird_bool = True
-      watchdog = 15
-      while watchdog > 0:
+#      weird_bool = True
+#      watchdog = 15
+#      while watchdog > 0:
 #      for j in range(10):
-         if weird_bool:
-            printAction("Attempting to locate \"face the enemy\" button...")
-         face_the_enemy  = locateTemplate("screens/event_face_the_enemy_button.png", offset=(116,17), ybounds=(0,500))        
-         face_the_enemy2 = locateTemplate("screens/event_face_the_enemy_button2.png", offset=(116,17), ybounds=(0,500), reuse_last_screenshot=True) 
+#         if weird_bool:
+      printAction("Attacking with the highest RDS option...")
          
-         if not face_the_enemy and not face_the_enemy2:
-            
-            out_of_power = locateTemplate('screens/event_out_of_power.png', threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
-            if out_of_power:
-               print( '' )
-               printAction("No attack power left! Exiting.", newline=True)
-               return False
-            
-            end_of_battle = locateTemplate('screens/event_battle_results.png', reuse_last_screenshot=True)
-            if end_of_battle:
-               print( '' )
-               printAction("Villain taken down. Returning.", newline=True)
-               return True
-            
-#            time.sleep(3)
-            swipe((240,400),(240,200)) # This sometimes cause trouble with the face the enemy button
-            time.sleep(1)
-            weird_bool = False
-            watchdog = watchdog - 1
-            if not watchdog:
-               printResult(False)
-               printAction("Timeout when hoping for low-power termination ..", newline=True)
-               return True
-            
-         else:
-            printResult(True)
-            printAction( "Checking if \"ask for support\" option is available..." )
-            ask_for_support = locateTemplate("screens/event_ask_for_support_button.png", offset=(112,15), click=True)
-            printResult(ask_for_support)
-            
-            if ask_for_support:
-               printAction( "Support asked for. Starting over...", newline=True )
-               return True
-            
-            left_click(face_the_enemy)
-            time.sleep(3)
-            
-            printAction( "Avaiting mission screen..." )
-
-            mission_success = False
-            for i in range(10):
-               time.sleep(1)
+      attack_blitz  = locateTemplate("screens/event_attack_blitz.png",  threshold=0.90, offset=(74,24), click=True)   
+      attack_normal = locateTemplate("screens/event_attack_normal.png", threshold=0.90, offset=(74,24), click=True, reuse_last_screenshot=True)  
+      attack_light  = locateTemplate("screens/event_attack_light.png",  threshold=0.90, offset=(74,24), click=True, reuse_last_screenshot=True)
                
-               out_of_power    = locateTemplate('screens/event_out_of_power.png',   threshold=0.985, print_coeff=False)
-               mission_started = locateTemplate('screens/event_fight_screen.png',   reuse_last_screenshot=True)
-               end_of_battle   = locateTemplate('screens/event_battle_results.png', reuse_last_screenshot=True)
-               #printResult(mission_started)
-                  
-               if out_of_power:
-                  print( '' )
-                  printAction("No attack power left! Exiting.", newline=True)
-#                  back_key()
-                  return False
-               
-               if end_of_battle:
-                  print( '' )
-                  printAction("Villain taken down. Returning.", newline=True)
-                  return True
-                  
-               if mission_started:
-                  print( '' )
-                  printAction("Mission started. Returning.", newline=True)
-                  back_key()
-                  time.sleep(int(uniform(1,2)))
-                  mission_success = True
-                  weird_bool = True
-                  break
-               
-               # Sometimes one end up at the same screen too. Handle this.
-               
+      if not attack_blitz and not attack_normal and not attack_light:
+         
+         printResult(False)
+         return False
             
-            weird_bool = True
-            if not mission_success:
-               printResult(False)
-               printAction("Timeout when waiting for mission screen. Defeated?", newline=True)
-               return True        
+      printAction("Confirming that enemy is taken down...")
+      confirmed = False
+      taken_out = False
+      for i in range(10):
+         left_click((200,200))
+         final_blow = locateTemplate("screens/event_final_blow_button.png", threshold=0.85, offset=(74,24), click=True)
+         confirm    = locateTemplate("screens/event_mission_boss_confirm_button.png",  offset=(74,24), click=True, reuse_last_screenshot=True)
+         time.sleep(2)   
+      
+         if final_blow:
+            taken_out = True
+      
+         if confirm:
+            confirmed = True
+            break
+         
+      if not confirmed:
+         return False
+      
+      time.sleep(2)
+      if taken_out:
+         printAction("Villain taken down. Collecting reward...")
+         swipe((20,600),(20,200))
+         time.sleep(1)
+         reward    = locateTemplate("screens/event_get_your_reward_button.png",  offset=(115,14), click=True, reuse_last_screenshot=True)
+         printResult(reward)
+      
+      
+      
+#            out_of_power = locateTemplate('screens/event_out_of_power.png', threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
+#            if out_of_power:
+#               print( '' )
+#               printAction("No attack power left! Exiting.", newline=True)
+#               return False
+#            
+#            end_of_battle = locateTemplate('screens/event_battle_results.png', reuse_last_screenshot=True)
+#            if end_of_battle:
+#               print( '' )
+#               printAction("Villain taken down. Returning.", newline=True)
+#               return True
+#            
+##            time.sleep(3)
+#            swipe((240,400),(240,200)) # This sometimes cause trouble with the face the enemy button
+#            time.sleep(1)
+#            weird_bool = False
+#            watchdog = watchdog - 1
+#            if not watchdog:
+#               printResult(False)
+#               printAction("Timeout when hoping for low-power termination ..", newline=True)
+#               return True
+            
+      printResult(True)
+      printAction( "Checking if \"ask for support\" option is available..." )
+      ask_for_support = locateTemplate("screens/event_ask_for_support_button.png", offset=(112,15), click=True)
+      printResult(ask_for_support)
+      
+      if ask_for_support:
+         printAction( "Support asked for. Starting over...", newline=True )
+         return True
+         
+      time.sleep(3)
+#         left_click(face_the_enemy)
+#         time.sleep(3)
+#         
+#         printAction( "Avaiting mission screen..." )
+#
+#         mission_success = False
+#         for i in range(10):
+#            time.sleep(1)
+#            
+##            out_of_power    = locateTemplate('screens/event_out_of_power.png',   threshold=0.985, print_coeff=False)
+#            mission_started = locateTemplate('screens/event_fight_screen.png',   reuse_last_screenshot=True)
+#            end_of_battle   = locateTemplate('screens/event_battle_results.png', reuse_last_screenshot=True)
+#            #printResult(mission_started)
+#               
+##            if out_of_power:
+##               print( '' )
+##               printAction("No attack power left! Exiting.", newline=True)
+###                  back_key()
+##               return False
+#            
+#            if end_of_battle:
+#               print( '' )
+#               printAction("Villain taken down. Returning.", newline=True)
+#               return True
+#               
+##            if mission_started:
+##               print( '' )
+##               printAction("Mission started. Returning.", newline=True)
+##               back_key()
+##               time.sleep(int(uniform(1,2)))
+##               mission_success = True
+##               weird_bool = True
+##               break
+#            
+#            # Sometimes one end up at the same screen too. Handle this.
+#            
+#         
+#         weird_bool = True
+#         if not mission_success:
+#            printResult(False)
+#            printAction("Timeout when waiting for mission screen. Defeated?", newline=True)
+#            return True        
         
          
          
@@ -1130,10 +1212,11 @@ def eventPlay():
          offset=(154,89), retries=5, ybounds=(0,400), swipe_size=[(240,600),(240,295)])
       printResult(event_enemies_in_area)
       
+      success = True
       if event_enemies_in_area:
          success = eventKillEnemies()
       else:
-         success = eventPlayMission()
+         dummy = eventPlayMission()
       
       if not success:
          return False   
@@ -2696,6 +2779,7 @@ if __name__ == "__main__":
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()
+#   eventPlay()
 #   runAll()
 #   startAndRestartWhenQuit()
 #   getMyPageStatus()

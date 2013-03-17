@@ -94,6 +94,11 @@ class Example(QtGui.QWidget):
          btn[-1].resize(btn[-1].sizeHint())
          btn[-1].move(50, 50+25*i)
          
+      btn = QtGui.QPushButton('Take Screenshot', self)
+      btn.clicked.connect(macro.take_screenshot_adb)
+      btn.resize(btn.sizeHint())
+      btn.move(200,50)
+      
 #      self.terminal.resize(self.terminal.sizeHint())
 #      self.terminal.move(100, 100)
 #      QtGui.QWidget(self.terminal)

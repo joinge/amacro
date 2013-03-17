@@ -759,15 +759,16 @@ def gotoEventHome():
    
    gotoMyPage()
          
-   printAction("Clicking Fantastic 4 button...")
-   event_fantastic4 = locateTemplate("screens/event_fantastic4_button.png", offset=(56,21), retries=5)
+   printAction("Clicking event info button...")
+   swipe((20,600),(20,200))
+   event_fantastic4 = locateTemplate("screens/event_info_button.png", offset=(56,21), retries=5, click=True, swipe_size=[(20,600),(20,350)])
    printResult(event_fantastic4)
    
    if not event_fantastic4:
       printAction( "Huh? Unable to find Fantastic 4 event button!!! That is bad.", newline=True)
       return False
    
-   left_click(event_fantastic4)
+#   left_click(event_fantastic4)
    time.sleep(3)
    return True
 
@@ -871,7 +872,7 @@ def eventPlayMission(repeat=50):
             
 
 
-def eventFindEnemy(find_enraged=True, watchdog=10):
+def eventFindEnemy(find_enraged=False, watchdog=10):
    
    printAction("Searching for a decent foe...")
    info = {'is_enraged':False}
@@ -881,7 +882,7 @@ def eventFindEnemy(find_enraged=True, watchdog=10):
       keep_assessing = False
       is_enraged = False
       for j in range(10):
-         ref = swipeReference("screens/event_enemy_info_frame.png", destination=(0,80), ybounds=(150,500), reuse_last_screenshot=True)
+         ref = swipeReference("screens/event_enemy_info_frame.png", threshold=0.85, destination=(0,80), ybounds=(150,500), reuse_last_screenshot=True)
          if not ref:
             return info
          time.sleep(1)
@@ -946,7 +947,7 @@ def eventFindEnemy(find_enraged=True, watchdog=10):
       
    return info
       
-def eventKillEnemies():
+def eventKillEnemies(find_enraged=False):
    
    printAction("Locating the \"face enemy\" button...")
    event_face_enemy = locateTemplate("screens/event_mission_button.png", offset=(240,-54), threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
@@ -964,7 +965,7 @@ def eventKillEnemies():
 #         swipeReference("screens/event_enemy_info_frame.png", destination=(0,80), reuse_last_screenshot=False)
       enraged_enemy_found = False
       for j in range(5):
-         info = eventFindEnemy(find_enraged=True)
+         info = eventFindEnemy(find_enraged=find_enraged)
          if info['is_enraged']:
             enraged_enemy_found = True
             break
@@ -2687,10 +2688,11 @@ if __name__ == "__main__":
 #   selectCard('rare+_ironman', alignment='all')
 #   event1()
 #   test()
-   custom6()
+#   custom6()
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))
+   eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()

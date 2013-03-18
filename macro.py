@@ -2753,6 +2753,39 @@ def event3(start_end=False):
          pass
       
       sleepToCharge(60)
+      
+      
+def event6():
+
+   adjustBrightness()
+   while True:
+      for i in accounts.keys():
+            if i=='JoInge' or i=='JollyMa' or i=='JoJanR':
+               try:
+                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
+                     try:
+                        eventPlay()
+                     except:
+                        pass
+                     farmMission24FuseAndBoost()
+                     exitMarvel()
+               except:
+                  pass
+               sleepToCharge(60)
+               
+      for i in accounts.keys():
+            if i=='l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
+               try:
+                  if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
+                     try:
+                        eventPlay()
+                     except:
+                        pass
+                     farmMission32FuseAndBoost()
+                     exitMarvel()
+               except:
+                  pass
+#               sleepToCharge(60)
 
 if __name__ == "__main__":
 

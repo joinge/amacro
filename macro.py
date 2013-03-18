@@ -1100,7 +1100,12 @@ def eventKillEnemies(find_enraged=False):
          
          battle_results = locateTemplate("screens/event_battle_results.png",  offset=(74,24))
          if battle_results:
+            confirmed = True
+            printResults(True)
             break
+         
+      if not confirmed:
+         printResults(False)
       
 #         if final_blow:
 #            taken_out = True
@@ -1147,7 +1152,8 @@ def eventKillEnemies(find_enraged=False):
 #               printAction("Timeout when hoping for low-power termination ..", newline=True)
 #               return True
 
-      printAction( "Checking if \"ask for support\" or \"collect reward\" is available...", newline=True )
+      printAction( "Checking if \"ask for support\" or \"collect reward\" is available..." )
+      success = False
       for i in range(6):
          ask_for_support = locateTemplate("screens/event_ask_for_support_button.png", offset=(112,15), click=True, swipe_size=[])
          reward          = locateTemplate("screens/event_get_your_reward_button.png", offset=(115,14), click=True, reuse_last_screenshot=True)
@@ -1157,15 +1163,21 @@ def eventKillEnemies(find_enraged=False):
             time.sleep(1)
             
          elif ask_for_support:
+            printResult(True)
+            success = True
             printAction( "Found \"ask for support\" button. Clicking it...", newline=True )
             left_click(ask_for_support)
             break
             
          elif reward:
+            printResult(True)
+            success = True
             printAction( "Found \"reward\" button. Clicking it...", newline=True )
             left_click(ask_for_support)
             break
          
+      if not success:
+         printResult(False)
       time.sleep(3)
 #         left_click(face_the_enemy)
 #         time.sleep(3)

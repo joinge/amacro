@@ -2806,8 +2806,8 @@ def event6():
                         eventPlay()
                      except:
                         pass
-                     playNewestMission()
-#                     farmMission32FuseAndBoost()
+#                     playNewestMission()
+                     farmMission32FuseAndBoost()
                      exitMarvel()
                except:
                   pass

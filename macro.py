@@ -1811,6 +1811,7 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
             
    print( "Playing mission %d-%d..."%mission_number )
 
+   initial_run = True
    for i in range(repeat+1):
       check_if_vnc_error()
       printAction("Searching for mission %d-%d button..."%mission_number)
@@ -1821,14 +1822,14 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
          # Double check that the return from mission actually was registered.
          mission_started  = locateTemplate('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
          top_mission_list = locateTemplate('screens/mission_top_decor.png', print_coeff=False, reuse_last_screenshot=True)
-         if mission_started:
+         if mission_started and not initial_run:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
             time.sleep(1)
             repeat = repeat + 1
             
          # Are we simply at the top of the missions list?
-         elif top_mission_list:
+         elif top_mission_list and not initial_run:
             printAction("Top of mission screen detected. Realigning...", newline=True)
             scroll(0,1000)
             time.sleep(.3)
@@ -1843,6 +1844,7 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
             
          else:
             printAction( "Navigating to missions list...", newline=True )
+            initial_run = False
             left_click((181,774)) # mission button
             time.sleep(3)
             scroll(0,1000)
@@ -1897,6 +1899,7 @@ def play_mission(mission_number=(3,2), repeat=50, statistics=True):
                #return False
          
       else:
+         initial_run = False
          left_click(mission_button_coords)
          printAction( "Avaiting mission screen..." )
          mission_success = False

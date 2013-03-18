@@ -1099,19 +1099,22 @@ def eventKillEnemies(find_enraged=False):
          if confirm:
             confirmed = True
             break
-         
+      
+      confirmed = True
+      taken_out = True
+      
       if not confirmed:
          return False
       
-      time.sleep(2)
-      if taken_out:
-         printAction("Villain taken down. Collecting reward...")
-         swipe((20,600),(20,200))
-         time.sleep(1)
-         reward    = locateTemplate("screens/event_get_your_reward_button.png",  offset=(115,14), click=True, reuse_last_screenshot=True)
-         printResult(reward)
-      
-      
+#      time.sleep(2)
+#      if taken_out:
+#         printAction("Villain taken down. Collecting reward...")
+#         swipe((20,600),(20,200))
+#         time.sleep(1)
+#         reward    = locateTemplate("screens/event_get_your_reward_button.png",  offset=(115,14), click=True, reuse_last_screenshot=True)
+#         printResult(reward)
+#      
+#      
       
 #            out_of_power = locateTemplate('screens/event_out_of_power.png', threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
 #            if out_of_power:
@@ -1137,7 +1140,7 @@ def eventKillEnemies(find_enraged=False):
             
       printResult(True)
       printAction( "Checking if \"ask for support\" option is available..." )
-      ask_for_support = locateTemplate("screens/event_ask_for_support_button.png", offset=(112,15), click=True)
+      ask_for_support = locateTemplate("screens/event_ask_for_support_button.png", offset=(112,15), click=True, retries=6, swipe_size=[(240,600),(240,295)])
       printResult(ask_for_support)
       
       if ask_for_support:
@@ -2781,7 +2784,8 @@ def event6():
                         eventPlay()
                      except:
                         pass
-                     farmMission32FuseAndBoost()
+                     playNewestMission()
+#                     farmMission32FuseAndBoost()
                      exitMarvel()
                except:
                   pass

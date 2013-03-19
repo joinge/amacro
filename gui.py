@@ -51,6 +51,9 @@ from functools import partial
 #    main.show()
 #    sys.exit(app.exec_())
 
+
+   
+
 class EmittingStream(QtCore.QObject):
 
    textWritten = QtCore.pyqtSignal(str)
@@ -94,10 +97,15 @@ class Example(QtGui.QWidget):
          btn[-1].resize(btn[-1].sizeHint())
          btn[-1].move(50, 50+25*i)
          
-      btn = QtGui.QPushButton('Take Screenshot', self)
+      btn = QtGui.QPushButton('Take screenshot', self)
       btn.clicked.connect(macro.take_screenshot_adb)
       btn.resize(btn.sizeHint())
       btn.move(200,50)
+      
+      btn = QtGui.QPushButton('GIMP', self)
+      btn.clicked.connect(macro.gimpScreenshot)
+      btn.resize(btn.sizeHint())
+      btn.move(200,75)
       
 #      self.terminal.resize(self.terminal.sizeHint())
 #      self.terminal.move(100, 100)

@@ -1096,16 +1096,17 @@ def eventKillEnemies(find_enraged=False):
          left_click((200,200))
          final_blow = locateTemplate("screens/event_final_blow_button.png", threshold=0.85, offset=(74,24), click=True)
          confirm    = locateTemplate("screens/event_mission_boss_confirm_button.png",  offset=(74,24), click=True, reuse_last_screenshot=True)
+         decor      = locateTemplate("screens/mission_top_decor.png",  reuse_last_screenshot=True)
          time.sleep(1)
          
          battle_results = locateTemplate("screens/event_battle_results.png",  offset=(74,24))
-         if battle_results:
+         if battle_results or decor:
             confirmed = True
-            printResults(True)
+            printResult(True)
             break
          
       if not confirmed:
-         printResults(False)
+         printResult(False)
       
 #         if final_blow:
 #            taken_out = True
@@ -2824,6 +2825,10 @@ def event6():
                except:
                   pass
 #               sleepToCharge(60)
+
+def gimpScreenshot():
+   
+   Popen("gimp ./screens/screenshot.png", stdout=PIPE, shell=True)
 
 if __name__ == "__main__":
 

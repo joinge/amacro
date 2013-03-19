@@ -1094,9 +1094,9 @@ def eventKillEnemies(find_enraged=False):
       taken_out = False
       for i in range(10):
          left_click((200,200))
-#         final_blow = locateTemplate("screens/event_final_blow_button.png", threshold=0.85, offset=(74,24), click=True)
-#         confirm    = locateTemplate("screens/event_mission_boss_confirm_button.png",  offset=(74,24), click=True, reuse_last_screenshot=True)
-         time.sleep(2)
+         final_blow = locateTemplate("screens/event_final_blow_button.png", threshold=0.85, offset=(74,24), click=True)
+         confirm    = locateTemplate("screens/event_mission_boss_confirm_button.png",  offset=(74,24), click=True, reuse_last_screenshot=True)
+         time.sleep(1)
          
          battle_results = locateTemplate("screens/event_battle_results.png",  offset=(74,24))
          if battle_results:

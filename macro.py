@@ -780,11 +780,11 @@ def gotoEventHome():
          
    printAction("Clicking event info button...")
    swipe((20,600),(20,200))
-   event_fantastic4 = locateTemplate("screens/event_info_button.png", offset=(56,21), retries=5, click=True, swipe_size=[(20,600),(20,350)])
-   printResult(event_fantastic4)
+   event_button = locateTemplate("screens/event_info_button.png", offset=(56,21), retries=5, click=True, swipe_size=[(20,600),(20,350)])
+   printResult(event_button)
    
-   if not event_fantastic4:
-      printAction( "Huh? Unable to find Fantastic 4 event button!!! That is bad.", newline=True)
+   if not event_button:
+      printAction( "Huh? Unable to find event button!!! That is bad.", newline=True)
       return False
    
 #   left_click(event_fantastic4)
@@ -1238,7 +1238,7 @@ def eventPlay():
       
    print("PLAYING EVENT")
    
-   for i in range(10):
+   for i in range(3):
       
       gotoEventHome()
   
@@ -2820,7 +2820,7 @@ def event6():
                      except:
                         pass
 #                     playNewestMission()
-                     farmMission32FuseAndBoost()
+                     farmMission24FuseAndBoost()
                      exitMarvel()
                except:
                   pass

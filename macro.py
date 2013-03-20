@@ -795,7 +795,7 @@ def gotoEventHome():
    return True
 
    
-def eventPlayMission(repeat=2):
+def eventPlayMission(repeat=1):
 
    print( "Playing event mission..." )
    

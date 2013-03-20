@@ -174,6 +174,9 @@ def notify():
    time.sleep(.2)
    Popen("adb shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su", stdout=PIPE, shell=True).stdout.read()
 
+def notifyWork():
+   Popen("ssh me@$(curl -L work.joinge.net) \"mplayer /home/me/macro/audio/ringtones/CanisMajor.ogg\" >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
+
 def printResult(res):
    if res:
       sys.stdout.write(":)")

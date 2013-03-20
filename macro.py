@@ -2801,7 +2801,16 @@ def event6():
    adjustBrightness()
    while True:
       for i in accounts.keys():
-            if i=='JoInge' or i=='JollyMa' or i=='JoJanR':
+            if i=='JoInge':
+               try:
+                  start_marvel('JoInge')
+                  notifyWork()
+                  printNotify('Complete event.', 60*10)
+                  farmMission24FuseAndBoost()
+                  exitMarvel()
+               except:
+                  pass
+            elif i=='JollyMa' or i=='JoJanR':
                try:
                   if randomUserStart(['JoInge','JollyMa','JoJanR']):
                      try:

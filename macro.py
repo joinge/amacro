@@ -795,7 +795,7 @@ def gotoEventHome():
    return True
 
    
-def eventPlayMission(repeat=5):
+def eventPlayMission(repeat=2):
 
    print( "Playing event mission..." )
    
@@ -1750,6 +1750,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
    left_click(trade)
    time.sleep(2)
    
+   one_or_more_card_found = False
    for card in cards_list:
       printAction("Adding another card for trade...")
       trade_card = locateTemplate("screens/trade_card_button.png", offset=(59,17), retries=3, ybounds=((450,800)))
@@ -1766,9 +1767,20 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       
       cards_found = selectCard(card, alignment=alignment)
       printResult(cards_found)
-      if not cards_found:
-         printAction( "No cards were found. Returning.", newline=True)
-         return False
+      if cards_found:
+         one_or_more_card_found  = True
+      else:
+         printAction( "Can't find this card, returning to trade page.", newline=True)
+         scroll(0,1000)
+         time.sleep(2)
+         back = locateTemplate("screens/trade_back_to_trade_button.png", offset=(190,19), retries=2, click=True)
+         if not back:
+            printAction( "Unable to return from trade page. This should not happen.", newline=True)
+         break
+      
+   if not one_or_more_card_found:
+      printAction( "No cards were found. Returning.", newline=True)
+      return False
    
    printAction("Trading for 1 silver...")
    trade_silver = locateTemplate("screens/trade_silver_button.png", offset=(59,17), retries=2, ybounds=((0,550)))

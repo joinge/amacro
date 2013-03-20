@@ -2799,11 +2799,11 @@ def event3(start_end=False):
 def event6():
 
    adjustBrightness()
+   notifyWork()
+   printNotify('Complete event for JoInge.', 60*10)
    while True:
       try:
          start_marvel('JoInge')
-         notifyWork()
-         printNotify('Complete event.', 60*10)
          farmMission24FuseAndBoost()
          exitMarvel()
       except:
@@ -2811,7 +2811,7 @@ def event6():
       for i in accounts.keys():
          if i=='JollyMa' or i=='JoJanR':
             try:
-               if randomUserStart(['JollyMa','JoJanR']):
+               if randomUserStart(['JoInge','JollyMa','JoJanR']):
                   try:
                      eventPlay()
                   except:

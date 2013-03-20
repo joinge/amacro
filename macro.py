@@ -2800,28 +2800,27 @@ def event6():
 
    adjustBrightness()
    while True:
+      try:
+         start_marvel('JoInge')
+         notifyWork()
+         printNotify('Complete event.', 60*10)
+         farmMission24FuseAndBoost()
+         exitMarvel()
+      except:
+         pass
       for i in accounts.keys():
-            if i=='JoInge':
-               try:
-                  start_marvel('JoInge')
-                  notifyWork()
-                  printNotify('Complete event.', 60*10)
+         if i=='JollyMa' or i=='JoJanR':
+            try:
+               if randomUserStart(['JollyMa','JoJanR']):
+                  try:
+                     eventPlay()
+                  except:
+                     pass
                   farmMission24FuseAndBoost()
                   exitMarvel()
-               except:
-                  pass
-            elif i=='JollyMa' or i=='JoJanR':
-               try:
-                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
-                     try:
-                        eventPlay()
-                     except:
-                        pass
-                     farmMission24FuseAndBoost()
-                     exitMarvel()
-               except:
-                  pass
-               sleepToCharge(60)
+            except:
+               pass
+            sleepToCharge(30)
                
       for i in accounts.keys():
             if i=='l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
@@ -2836,7 +2835,7 @@ def event6():
                      exitMarvel()
                except:
                   pass
-#               sleepToCharge(60)
+               sleepToCharge(30)
 
 def gimpScreenshot():
    

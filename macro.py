@@ -1764,7 +1764,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       time.sleep(3)
       printResult(trade_card)
       
-      cards_found = selectCard(card, alignment='all')
+      cards_found = selectCard(card, alignment=alignment)
       printResult(cards_found)
       if not cards_found:
          printAction( "No cards were found. Returning.", newline=True)
@@ -2811,7 +2811,7 @@ def event6():
       for i in accounts.keys():
          if i=='JollyMa' or i=='JoJanR':
             try:
-               if randomUserStart(['JoInge','JollyMa','JoJanR']):
+               if randomUserStart(['JollyMa','JoJanR']):
                   try:
                      eventPlay()
                   except:
@@ -2837,6 +2837,24 @@ def event6():
                   pass
                sleepToCharge(30)
 
+def tradeToJollyMa():
+
+   trade_list = ['rare+_ironman']*10
+   adjustBrightness()
+          
+   for i in accounts.keys():
+         if i=='l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
+            try:
+               if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
+                  tradeCards(receiver='JollyMa', cards_list=trade_list, alignment='tactics')
+                  exitMarvel()
+            except:
+               pass
+            sleepToCharge(30)
+   notify()
+      
+
+
 def gimpScreenshot():
    
    Popen("gimp ./screens/screenshot.png", stdout=PIPE, shell=True)
@@ -2855,6 +2873,7 @@ if __name__ == "__main__":
 #   tradeCards(receiver='jollyma', cards_list=['rare+_ironman'], alignment='all')
 #   tradeCards(receiver='jollyma', cards_list=['ssr+_thing_stoneskin', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife'], alignment='all')
 
+   tradeToJollyMa()
 #   selectCard('rare+_ironman', alignment='all')
 #   event1()
 #   test()
@@ -2862,7 +2881,7 @@ if __name__ == "__main__":
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))
-   eventPlay()
+#   eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()

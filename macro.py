@@ -36,7 +36,8 @@ timeout = 90 # minutes
 ip      = "10.0.0.15"
 
 PAD = 60
-all_common_cards = ['common_spiderwoman','common_sandman','common_enchantress','common_mockingbird','common_thing','common_beast','common_vulture','common_bullseye']
+all_feeder_cards = ['common_spiderwoman','common_sandman','common_thing','common_blackcat','common_enchantress','common_mockingbird','common_beast','common_vulture','common_bullseye']
+
 
 class Stats:
    def __init__(self):
@@ -2165,7 +2166,7 @@ def farmMission24FuseAndBoost():
    play_mission((2,4), 50)
       
    fuseAndBoost('uncommon_ironman',
-                ['common_thing','common_blackcat','common_spiderwoman','common_sandman'],
+                all_feeder_cards,
                 fuse_alignment='tactics')
    
    try:
@@ -2184,7 +2185,7 @@ def farmMission24FuseAndSell():
    
    fuseAllCards('uncommon_ironman', 'tactics')
       
-   sellAllCards(all_common_cards)   
+   sellAllCards(all_feeder_cards)   
          
    try:
       info = getMyPageStatus()
@@ -2201,7 +2202,7 @@ def farmMission24FuseAndSell():
 #   
 #   if not roster_count or roster_count > 50:
 #      printAction("Roster exceeds 30 cards. Sell and fuse baby!!!", newline=True)
-#      sellAllCards(all_common_cards)
+#      sellAllCards(all_feeder_cards)
 #      fuseAllCards('uncommon_ironman', 'tactics')
       
 def getSilver():
@@ -2222,7 +2223,7 @@ def farmMission32():
    play_mission((3,2), 40)
    
    fuseAndBoost('uncommon_ironman',
-                ['common_thing','common_blackcat','common_spiderwoman','common_sandman'],
+#                all_feeder_cards,
                 fuse_alignment='tactics')
    
    try:

@@ -721,7 +721,8 @@ def getMyPageStatus():
       swipe((240,600),(240,200))
       time.sleep(.5)
       
-      mypage_status_corner = locateTemplate("screens/mypage_status_upper_left_corner.png")
+      mypage_status_corner = swipeReference("screens/mypage_status_upper_left_corner.png", destination=(0,80))
+#      mypage_status_corner = locateTemplate("screens/mypage_status_upper_left_corner.png")
       printResult(mypage_status_corner)
       
       if mypage_status_corner:
@@ -738,7 +739,8 @@ def getMyPageStatus():
       return False
 
    printAction("Running OCR to figure out cards in roster...")
-   cards_in_roster_image  = preOCR("screens/screenshot.png",color_mask=(0,1,0),xbounds=(238,282),ybounds=(mypage_status_corner[1]+274,mypage_status_corner[1]+287))
+   take_screenshot_adb()
+   cards_in_roster_image  = preOCR("screens/screenshot.png",color_mask=(0,1,0),xbounds=(92,185),ybounds=(195,241))
    cards_in_roster_string = runOCR(cards_in_roster_image,mode='line')
 
    cards_in_roster_numbers = re.findall(r'\d+', cards_in_roster_string)
@@ -756,7 +758,7 @@ def getMyPageStatus():
       cv2.imwrite( 'tmp_last_error.png', cards_in_roster_image )
       
    printAction("Running OCR to figure out amount of silver...")
-   silver_image  = preOCR("screens/screenshot.png",color_mask=(1,1,0),xbounds=(242,307),ybounds=(mypage_status_corner[1]+300,mypage_status_corner[1]+320))
+   silver_image  = preOCR("screens/screenshot.png",color_mask=(1,1,0),xbounds=(332,446),ybounds=(272,312))
    silver_string = runOCR( silver_image, mode='line', lang='event_enemy' )
 #   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
 #   silver_numbers = re.sub(r',', '', silver_numbers)
@@ -1238,7 +1240,7 @@ def eventKillEnemies(find_enraged=False):
 
       
    
-def eventPlay():
+def eventPlay(find_enraged=False):
       
    print("PLAYING EVENT")
    
@@ -1253,7 +1255,7 @@ def eventPlay():
       
       success = True
       if event_enemies_in_area:
-         success = eventKillEnemies()
+         success = eventKillEnemies(find_enraged=find_enraged)
       else:
          dummy = eventPlayMission()
       
@@ -2860,7 +2862,7 @@ def event7():
             try:
                if randomUserStart(['JoInge','JollyMa','JoJanR']):
                   try:
-                     eventPlay()
+                     eventPlay(find_enraged=True)
                   except:
                      pass
                   farmMission24FuseAndBoost()
@@ -2874,7 +2876,7 @@ def event7():
                try:
                   if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
                      try:
-                        eventPlay()
+                        eventPlay(find_enraged=True)
                      except:
                         pass
 #                     playNewestMission()
@@ -2921,7 +2923,7 @@ if __name__ == "__main__":
 #   tradeCards(receiver='jollyma', cards_list=['rare+_ironman'], alignment='all')
 #   tradeCards(receiver='jollyma', cards_list=['ssr+_thing_stoneskin', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife'], alignment='all')
 
-   tradeToJollyMa()
+#   tradeToJollyMa()
 #   selectCard('rare+_ironman', alignment='all')
 #   event1()
 #   test()
@@ -2936,7 +2938,7 @@ if __name__ == "__main__":
 #   eventPlay()
 #   runAll()
 #   startAndRestartWhenQuit()
-#   getMyPageStatus()
+   getMyPageStatus()
 #   farmMission24FuseAndBoost()
 #   replay_all_macros()
 #   getIMEI() 

@@ -10,6 +10,8 @@ import numpy as np
 import re, time, os, sys, ast, select
 import cv2
 
+ABC = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ']
+abc = ['abcdefghijklmnopqrstuvwxyz']
 
 # Bootlist:
 #
@@ -162,6 +164,42 @@ def sumIMEIDigits(number,nsum=0,even=True):
 #   
 #   if res:
 #      printResult(res)
+
+baseN = [
+"Jax",
+"Damon",
+"Dexter",
+"Axel",
+"Cason",
+"Titus",
+"Kace",
+"Maximus",
+"Ryker",
+"Harley",
+"Ajax",
+"Zander",
+"Zeke",
+"Zenon",
+"Phoenix",
+"Rocco",
+"Jett",
+"Gunner",
+"Pierce",
+"Cadmus",      
+]
+
+def createAccounts(baseNames=baseN):
+   
+   endNames = []
+   endEmails = []
+   endPasswords = []
+   
+   for i in baseNames:
+      
+      print i
+      
+   
+   
 
 def notify():
    
@@ -2921,7 +2959,7 @@ if __name__ == "__main__":
 #   tradeCards(receiver='jollyma', cards_list=['rare+_ironman'], alignment='all')
 #   tradeCards(receiver='jollyma', cards_list=['ssr+_thing_stoneskin', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife'], alignment='all')
 
-   tradeToJollyMa()
+#   tradeToJollyMa()
 #   selectCard('rare+_ironman', alignment='all')
 #   event1()
 #   test()

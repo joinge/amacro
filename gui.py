@@ -107,6 +107,20 @@ class Example(QtGui.QWidget):
       btn.resize(btn.sizeHint())
       btn.move(200,75)
       
+      devices = macro.adbDevices()
+#      listWidget = QtGui.QRadioButton()
+
+      for i,device in enumerate(devices):
+         btn = QtGui.QRadioButton(device, self)
+#         btn.setToolTip('This is a <b>QPushButton</b> widget')
+         btn.clicked.connect(partial(macro.setActiveDevice, device))
+         btn.resize(btn.sizeHint())
+         btn.move(50, 350+25*i)
+      
+#      listWidget.resize(200,200)
+#      listWidget.move(300,75)
+#      listWidget.show()
+      
 #      self.terminal.resize(self.terminal.sizeHint())
 #      self.terminal.move(100, 100)
 #      QtGui.QWidget(self.terminal)

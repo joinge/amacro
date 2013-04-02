@@ -16,6 +16,23 @@ import cv2
 # Valhalla25, airman54, nashie88, waygrumpy, xzitrempire(35), xQueenJenniecx, choiiflames, jonathanxxx, 
 #
 #
+#http://www.neoseeker.com/forums/59268/t1810708-card-skilling-forumla/#9
+
+# RarityDifferencevalue / 4 * (1+feeder_skill_level) * (1/TargetSkillLevel)
+
+#
+#The rarity difference values
+#
+#If the feeder card is:
+#2 rarities higher - 160
+#1 rarity high - 80
+#Same rarity - 60
+#1 rarity lower - 40
+#2 rarities lower - 24
+#3 rarities lower - 16
+#4 rarities lower - 2
+
+
 
 accounts = {'JoInge'  :'Mdt9oFSV',
             'JollyMa' :'Mdt9oFSV',
@@ -36,8 +53,30 @@ timeout = 90 # minutes
 ip      = "10.0.0.15"
 
 PAD = 60
-all_feeder_cards = ['common_spiderwoman','common_sandman','common_thing','common_blackcat','common_enchantress','common_mockingbird','common_beast','common_vulture','common_bullseye']
+all_feeder_cards = [
+'common_spiderwoman',
+'common_sandman',
+'common_beast',
+'common_blackcat',
+'common_blackpanther',
+'common_bullseye',
+'common_enchantress',
+'common_falcon',
+'common_iceman',
+'common_invisiblewoman',
+'common_kingpin',
+'common_medusa',
+'common_mockingbird',
+'common_mrfantastic',
+'common_psylocke',
+'common_sif',
+'common_thing',
+'common_valkyrie',
+'common_vision',
+'common_vulture'
+]
 
+sell_cards = ['common_mrfantastic']
 
 class Stats:
    def __init__(self):
@@ -819,6 +858,7 @@ def eventPlayMission(repeat=1):
          # Double check that the return from mission actually was registered.
          mission_started = locateTemplate('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
          event_mission_button = locateTemplate("screens/event_mission_button.png", threshold=0.95, offset=(109,23), print_coeff=False, reuse_last_screenshot=True)
+         go_to_boss = locateTemplate("screens/event_mission_go_to_boss.png", offset=(130,16), click=True, print_coeff=False, reuse_last_screenshot=True)
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
@@ -831,6 +871,29 @@ def eventPlayMission(repeat=1):
             time.sleep(3)
             scroll(0,1000)
             time.sleep(1)
+            
+            repeat = repeat + 1
+            
+         elif go_to_boss:
+            printAction( "Raid boss detected. Playing the boss...", newline=True )
+            
+            face_the_enemy = locateTemplate("screens/face_the_enemy_button.png",
+                                             offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+            if not face_the_enemy:
+               printAction("Unable to find \"face the enemy\" button...", newline=True)
+               return False
+   
+            fight_enemy =  locateTemplate("screens/event_mission_boss_fight_button.png", threshold=0.9,
+                                             offset=(85,24), retries=5, click=True)
+            if not fight_enemy:
+               printAction("Unable to find \"FIGHT\" button...", newline=True)
+               return False
+            
+            confirm =  locateTemplate("screens/event_mission_boss_confirm_button.png", threshold=0.9,
+                                             offset=(85,24), retries=10, click=True)
+            if not confirm:
+               printAction("Unable to find \"FIGHT\" button...", newline=True)
+               return False
             
             repeat = repeat + 1
             
@@ -864,45 +927,13 @@ def eventPlayMission(repeat=1):
          for i in range(2):
             time.sleep(3)
             
-            mission_boss  = locateTemplate('screens/event_mission_boss_screen.png', print_coeff=False)
-            out_of_energy = locateTemplate('screens/out_of_energy.png', print_coeff=False, reuse_last_screenshot=True)
+#            mission_boss  = locateTemplate('screens/event_mission_boss_screen.png', print_coeff=False)
+            out_of_energy = locateTemplate('screens/out_of_energy.png', print_coeff=False)
             #printResult(out_of_energy)
             
-            mission_started = locateTemplate('screens/mission_bar.png', threshold=0.985, reuse_last_screenshot=True)
+            mission_started = locateTemplate('screens/mission_bar.png', reuse_last_screenshot=True)
             #printResult(mission_started)
-            
-            if mission_boss:
-               go_to_boss = locateTemplate("screens/event_mission_go_to_boss.png",
-                                            offset=(130,16), retries=5, click=True, ybounds=(0,600), swipe_size=[(240,600),(240,295)])
-               if not go_to_boss:
-                  print( '' )
-                  printAction("Unable to find \"go to boss\" button...", newline=True)
-                  return False
-               
-               printResult(False)
-               printAction( "Raid boss detected. Playing the boss...", newline=True )
-               
-               face_the_enemy = locateTemplate("screens/face_the_enemy_button.png",
-                                                offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
-               if not face_the_enemy:
-                  printAction("Unable to find \"face the enemy\" button...", newline=True)
-                  return False
-      
-               fight_enemy =  locateTemplate("screens/event_mission_boss_fight_button.png", threshold=0.9,
-                                                offset=(85,24), retries=5, click=True)
-               if not fight_enemy:
-                  printAction("Unable to find \"FIGHT\" button...", newline=True)
-                  return False
-               
-               confirm =  locateTemplate("screens/event_mission_boss_confirm_button.png", threshold=0.9,
-                                                offset=(85,24), retries=5, click=True)
-               if not confirm:
-                  printAction("Unable to find \"FIGHT\" button...", newline=True)
-                  return False
-               
-               return True
-               
-               
+
             if out_of_energy:
                print( '' )
                printAction("No energy left! Exiting.", newline=True)
@@ -1256,6 +1287,8 @@ def eventPlay(find_enraged=False):
       success = True
       if event_enemies_in_area:
          success = eventKillEnemies(find_enraged=find_enraged)
+         if not success:
+            success = eventKillEnemies(find_enraged=False)
       else:
          dummy = eventPlayMission()
       
@@ -2055,7 +2088,7 @@ def playNewestMission(repeat=50):
 #               stats.silverEnd("mission_%d-%d"%mission_number)
             return False
 
-def start_marvel(user):
+def start_marvel(user,attempts=3):
    
    def attempt_start(user):
       unlock_phone()
@@ -2096,7 +2129,7 @@ def start_marvel(user):
       
          
    all_ok = False
-   for i in range(3):
+   for i in range(attempts):
       print( '' )
       print("Login attempt %d on account %s..."%(i,user))
       login_ok = attempt_start(user)
@@ -2177,7 +2210,7 @@ def farmMission24FuseAndBoost():
       
       if not roster_count or roster_count > 60:
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
-         sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
+         sellAllCards(all_feeder_cards)
    except:
       pass
    
@@ -2647,7 +2680,8 @@ def custom7(start_end=False):
                except:
                   pass
                sleepToCharge(60)
-         
+      
+      start_end = False
       for i in accounts.keys():
          if i == 'l33tdump' or i=='Rolfy86' or i=='kinemb86' or i=='MonaBB86':
             try:
@@ -2658,7 +2692,42 @@ def custom7(start_end=False):
                pass
             sleepToCharge(60)
 
-   
+def custom8(start_end=False):
+
+   adjustBrightness()
+   while True:
+      if not start_end:
+         for i in accounts.keys():
+            if i== 'JoInge' or i=='JollyMa' or i=='JoJanR':
+               try:
+                  if randomUserStart(['JoInge','JollyMa','JoJanR']):
+                     farmMission24FuseAndBoost()
+                     exitMarvel()
+               except:
+                  pass
+               sleepToCharge(60)
+           
+      start_end = False 
+      for i in accounts.keys():
+         if i=='l33tdump' or i=='Rolfy86':
+            try:
+               if randomUserStart(['l33tdump','Rolfy86']):
+                  farmMission24FuseAndBoost()
+                  exitMarvel()
+            except:
+               pass
+            sleepToCharge(60)
+               
+      
+      for i in accounts.keys():
+         if i=='kinemb86' or i=='MonaBB86':
+            try:
+               if randomUserStart(['kinemb86','MonaBB86']):
+                  farmMission24FuseAndSell()
+                  exitMarvel()
+            except:
+               pass
+            sleepToCharge(60)
 
 def event1(start_end=False):
 
@@ -2914,9 +2983,9 @@ if __name__ == "__main__":
 #   start_marvel('JoInge')
 #   import gui.gui as gui
 #   gui.main()
-
+#   boostCard( 'uncommon_ironman', all_feeder_cards, alignment='tactics' )
 #   fuseAndBoost('uncommon_ironman',
-#                ['common_thing','common_blackcat','common_spiderwoman','common_sandman'],
+#                all_feeder_cards,
 #                fuse_alignment='tactics')
 #   fuseCard('uncommon_ironman', alignment='tactics')
 #   test()
@@ -2931,14 +3000,14 @@ if __name__ == "__main__":
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))
-#   eventPlay()
+   eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()
 #   eventPlay()
 #   runAll()
 #   startAndRestartWhenQuit()
-   getMyPageStatus()
+#   getMyPageStatus()
 #   farmMission24FuseAndBoost()
 #   replay_all_macros()
 #   getIMEI() 

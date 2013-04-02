@@ -10,6 +10,8 @@ import numpy as np
 import re, time, os, sys, ast, select
 import cv2
 
+ACTIVE_DEVICE = ''
+YOUWAVE = False
 ABC = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 abc = ['abcdefghijklmnopqrstuvwxyz']
 
@@ -127,7 +129,7 @@ class Stats:
 # 6      - Check digit
 
 def getIMEI():
-   output = Popen("adb shell dumpsys iphonesubinfo | grep Device | sed s/\".*= \"//", stdout=PIPE, shell=True).stdout.read()
+   output = Popen("adb %s shell dumpsys iphonesubinfo | grep Device | sed s/\".*= \"//"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    print( output )
    return int(output)
 #   358150045244606
@@ -188,30 +190,146 @@ baseN = [
 "Cadmus",      
 ]
 
+emails = [
+'gmail.com',
+'yahoo.com',
+'hotmail.com',
+'live.com' ]
+
+fakeAccounts = {
+ 'AjaxUF': 'UFAjax11',
+ 'AxelUJp83': 'UJAxelUJ83',
+ 'CadmusFu1': 'FFCadmusF',
+ 'CasonZfd72': 'fdZfdCason',
+ 'DamonMJlm5': 'Damon5lmlm',
+ 'DexterOcw': 'DexterO',
+ 'GunnerMFog2': 'MFGunnerMFMF',
+ 'HarleyCeg52': 'egegCeg',
+ 'JaxDwf67': 'wfJaxwfD',
+ 'JettHsl': 'slHJett',
+ 'KaceUZal': 'alKace',
+ 'MaximusMKhv': 'MKMaximusMaximus',
+ 'PhoenixFBws': 'wsPhoenix',
+ 'PierceNZb15': '15Piercebb',
+ 'RoccoSj4': 'jjRoccoS',
+ 'RykerSec8': 'RykerecSS',
+ 'TitusFa': 'TitusF',
+ 'ZanderKd76': '76Zander76K',
+ 'ZekeWPg18': 'g18gWP',
+ 'ZenonMIsk16': 'ZenonMI1616'}
+
+fakeEmails = {
+ 'AjaxUF': 'ajaxuf@live.com',
+ 'AxelUJp83': 'AxelppUJp@live.com',
+ 'CadmusFu1': 'CadmusFuu1@live.com',                                                                    
+ 'CasonZfd72': 'Casonfd72ZZ@hotmail.com',                                                               
+ 'DamonMJlm5': 'Damon555lm@live.com',                                                                   
+ 'DexterOcw': 'DexterOcwcwcw@yahoo.com',                                                                
+ 'GunnerMFog2': 'Gunner2MFMFMF@hotmail.com',                                                            
+ 'HarleyCeg52': 'Harleyeg52egeg@live.com',                                                              
+ 'JaxDwf67': 'Jax67wf67wf@yahoo.com',                                                                   
+ 'JettHsl': 'Jettsl@yahoo.com',                                                                         
+ 'KaceUZal': 'KaceUZUZ@hotmail.com',                                                                    
+ 'MaximusMKhv': 'Maximushvhv@live.com',                                                                 
+ 'PhoenixFBws': 'PhoenixFBws@live.com',                                                                 
+ 'PierceNZb15': 'Pierce15bbb@hotmail.com',                                                              
+ 'RoccoSj4': 'Roccoj4jj@yahoo.com',                                                                     
+ 'RykerSec8': 'Ryker8S8S@yahoo.com',
+ 'TitusFa': 'TitusFFaF@live.com',
+ 'ZanderKd76': 'ZanderK76d76@live.com',
+ 'ZekeWPg18': 'Zeke18gg18@live.com',
+ 'ZenonMIsk16': 'ZenonMIsk1616@live.com'}
+
+fakeID = {
+ 'AjaxUF': '656041561545352',
+ 'AxelUJp83': 'AxelppUJp@live.com',
+ 'CadmusFu1': 'CadmusFuu1@live.com',                                                                    
+ 'CasonZfd72': 'Casonfd72ZZ@hotmail.com',                                                               
+ 'DamonMJlm5': 'Damon555lm@live.com',                                                                   
+ 'DexterOcw': 'DexterOcwcwcw@yahoo.com',                                                                
+ 'GunnerMFog2': 'Gunner2MFMFMF@hotmail.com',                                                            
+ 'HarleyCeg52': 'Harleyeg52egeg@live.com',                                                              
+ 'JaxDwf67': 'Jax67wf67wf@yahoo.com',                                                                   
+ 'JettHsl': 'Jettsl@yahoo.com',                                                                         
+ 'KaceUZal': 'KaceUZUZ@hotmail.com',                                                                    
+ 'MaximusMKhv': 'Maximushvhv@live.com',                                                                 
+ 'PhoenixFBws': 'PhoenixFBws@live.com',                                                                 
+ 'PierceNZb15': 'Pierce15bbb@hotmail.com',                                                              
+ 'RoccoSj4': 'Roccoj4jj@yahoo.com',                                                                     
+ 'RykerSec8': 'Ryker8S8S@yahoo.com',
+ 'TitusFa': 'TitusFFaF@live.com',
+ 'ZanderKd76': 'ZanderK76d76@live.com',
+ 'ZekeWPg18': 'Zeke18gg18@live.com',
+ 'ZenonMIsk16': 'ZenonMIsk1616@live.com'}
+
 def createAccounts(baseNames=baseN):
    
    endNames = []
    endEmails = []
    endPasswords = []
    
+   f = open('new_accounts.txt', 'w')
+   e = open('new_emails.txt', 'w')
+   
+   f.write( '{' )
+   e.write( '{' )
+   
    for i in baseNames:
       
-      print i
+      name = i
+      print( i )
       
+      randNums = ''.join(np.random.uniform(9,size=int(np.random.uniform(0,3))).astype(int).astype('str'))
+      randABC = ''.join([ABC[0][j] for j in np.random.uniform(0,26,size=int(np.random.uniform(3))).astype(int)])
+      randAbc = ''.join([abc[0][j] for j in np.random.uniform(0,26,size=int(np.random.uniform(3))).astype(int)])
+      
+      tmp = [i,randNums,randABC,randAbc]
+      tmp2 = [randNums,randABC,randAbc]
+      password = ''.join([tmp[j] for j in np.random.uniform(0,4,size=4).astype(int)])
+      email = i + ''.join([tmp2[j] for j in np.random.uniform(0,3,size=4).astype(int)]) + '@' + emails[int(np.random.uniform(4))]
+      name = i + randABC + randAbc + randNums
+
+      f.write( "\'%s\':\'%s\',\n"%( name, password ) )
+      e.write( "\'%s\':\'%s\',\n"%( name, email ) )
    
+   f.write( '}' )
+   e.write( '}' )
+
+def adbDevices():
+   
+   device_string = Popen("adb devices | grep : | sed s/\s*device//", stdout=PIPE, shell=True).stdout.read()
+
+   device_string = re.sub("\t", '', device_string)
+   lines = re.split("\n+", device_string)
+   
+   device_list = []
+   for l in lines:
+      if l!='':
+         device_list.append(l)
+         
+   return device_list
+
+
+def setActiveDevice(device,youwave=False):
+   global ACTIVE_DEVICE
+   global YOUWAVE
+   
+   ACTIVE_DEVICE = "-s "+device
+   
+   YOUWAVE = youwave
    
 
 def notify():
    
 #   Popen("mplayer audio/ringtones/BentleyDubs.ogg >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
    
-   Popen("adb shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su", stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(.2)
-   Popen("adb shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su", stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(.2)
-   Popen("adb shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su", stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(.2)
-   Popen("adb shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su", stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
 
 def notifyWork():
    Popen("ssh me@$(curl -L work.joinge.net) \"mplayer /home/me/macro/audio/ringtones/CanisMajor.ogg\" >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
@@ -291,14 +409,14 @@ def connect_adb_wifi():
       
 def clear_marvel_cache():
    printAction("Clearing Marvel cache...", newline=True)
-   macro_output = Popen("adb shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android", stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(5)
 
    #if macro_output == None:
    #   raise Exception("Unable to clear Marvel cache")
 
 def launch_marvel():
-   macro_output = Popen("adb shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity", stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    #if macro_output == None:
    #   raise Exception("Unable to start Marvel")
 
@@ -308,7 +426,7 @@ def launch_marvel():
       
 
 def adb_input(text):
-   macro_output = Popen("adb shell input text %s"%(text), stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell input text %s"%(ACTIVE_DEVICE,text), stdout=PIPE, shell=True).stdout.read()
 
 def adb_event_batch(events):
    
@@ -319,7 +437,7 @@ def adb_event_batch(events):
          
       sendevent_string += "sendevent /dev/input/event%d %d %d %d"%event
         
-   Popen("adb shell \"%s\""%sendevent_string, stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell \"%s\""%(ACTIVE_DEVICE,sendevent_string), stdout=PIPE, shell=True).stdout.read()
       
 #   print( "adb shell %s"%sendevent_string )
       
@@ -335,12 +453,13 @@ def adb_event(event_no=2, a=None, b=None ,c=None):
                         0003 3a - ABS_MT_PRESSURE       : value 0, min 0, max 30, fuzz 0, flat 0, resolution 0
    """
    
-   macro_output = Popen("adb shell sendevent /dev/input/event%d %d %d %d"%(event_no,a,b,c), stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell sendevent /dev/input/event%d %d %d %d"%(ACTIVE_DEVICE,event_no,a,b,c), stdout=PIPE, shell=True).stdout.read()
 #   time.sleep(0.5)  
    #adbSend("/dev/input/event2",3,48,10);
    
 def left_click(loc):
-   
+    
+   global YOUWAVE
 #   adb_event( 2, 0x0003, 0x0039, 0x00000d45 )
 #   adb_event( 2, 0x0003, 0x0035, loc[0] )
 #   adb_event( 2, 0x0003, 0x0036, loc[1] )
@@ -352,16 +471,33 @@ def left_click(loc):
 
    # TODO: use input tap x y
    
-   adb_event_batch( [
-      ( 2, 0x0003, 0x0039, 0x00000d45 ),
-      ( 2, 0x0003, 0x0035, loc[0]     ),
-      ( 2, 0x0003, 0x0036, loc[1]     ),
-      ( 2, 0x0003, 0x0030, 0x00000032 ),
-      ( 2, 0x0003, 0x003a, 0x00000002 ),
-      ( 2, 0x0000, 0x0000, 0x00000000 ),
-      ( 2, 0x0003, 0x0039, 0xffffffff ),
-      ( 2, 0x0000, 0x0000, 0x00000000 )
-      ] )
+   if not YOUWAVE:
+      adb_event_batch( [
+         ( 2, 0x0003, 0x0039, 0x00000d45 ),
+         ( 2, 0x0003, 0x0035, loc[0]     ),
+         ( 2, 0x0003, 0x0036, loc[1]     ),
+         ( 2, 0x0003, 0x0030, 0x00000032 ),
+         ( 2, 0x0003, 0x003a, 0x00000002 ),
+         ( 2, 0x0000, 0x0000, 0x00000000 ),
+         ( 2, 0x0003, 0x0039, 0xffffffff ),
+         ( 2, 0x0000, 0x0000, 0x00000000 )
+         ] )
+   
+   else:      
+      adb_event_batch( [
+         ( 1, 0x0004, 0x0004, 0x00090001 ),
+         ( 1, 0x0001, 0x0110, 0x00000001 ),
+         ( 1, 0x0003, 0x0000, int(loc[0]*2**15/480.0)),
+         ( 1, 0x0003, 0x0001, int(loc[1]*2**15/640.0)),
+         ( 1, 0x0000, 0x0000, 0x00000000 ),
+         ( 1, 0x0004, 0x0004, 0x00090001 ),
+         ( 1, 0x0001, 0x0110, 0x00000000 ),
+         ( 1, 0x0000, 0x0000, 0x00000000 ),
+         ( 1, 0x0003, 0x0000, 0x00004400 ),
+         ( 1, 0x0003, 0x0001, 0x00003300 ),
+         ( 1, 0x0000, 0x0000, 0x00000000 )
+         ] )
+   
    
    
 def enter_text( text ):
@@ -398,13 +534,13 @@ def power_key():
    
 def back_key():
    
-   Popen("adb shell input keyevent 4", stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell input keyevent 4"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    
    
    
 def swipe(start,stop):
 
-   Popen("adb shell input swipe %d %d %d %d"%(start[0],start[1],stop[0],stop[1]), stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell input swipe %d %d %d %d"%(ACTIVE_DEVICE,start[0],start[1],stop[0],stop[1]), stdout=PIPE, shell=True).stdout.read()
    
 def linear_swipe(start,stop,steps=1):
    xloc = np.linspace(start[0],stop[0],steps+1)
@@ -429,9 +565,12 @@ def linear_swipe(start,stop,steps=1):
    adb_event( 2, 0x0000, 0x0000, 0x00000000 )
    
 
+   
+   
+
 def scroll(dx,dy):
    
-   Popen("adb shell input trackball roll %d %d"%(dx,dy), stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell input trackball roll %d %d"%(ACTIVE_DEVICE,dx,dy), stdout=PIPE, shell=True).stdout.read()
    
   
    
@@ -465,7 +604,7 @@ def take_screenshot_adb():
    # CURRENT BEST #
    ################
        
-   Popen("adb shell screencap | sed 's/\r$//' > img.raw", stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    
    f = open('img.raw', 'rb')
    f1 = open('img1.raw', 'w')
@@ -473,8 +612,10 @@ def take_screenshot_adb():
    rest = f.read() # read rest
    f1.write(rest)
     
-   Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img1.raw screens/screenshot.png >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
-
+   if not YOUWAVE:
+      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img1.raw screens/screenshot.png >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
+   else:
+      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img1.raw screens/screenshot.png >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
    
    # adb pull /dev/graphics/fb0 img.raw
    # dd bs=800 count=1920 if=img.raw of=img.tmp
@@ -2157,7 +2298,7 @@ def start_marvel_jojanr():
 def exitMarvel():
    check_if_vnc_error()
    
-   Popen("adb shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android", stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    
 #   clear_marvel_cache() # A little harsh...?
    lock_phone()
@@ -2340,6 +2481,10 @@ def randomUserStart(user_list=accounts.keys()):
          recently_launched[getIndex(user_list[i])] = 1
          return start_marvel(user_list[i])
    
+def startFakeAccounts():
+   
+   for user in fakeAccounts.keys():
+      start_marvel(user)
    
 def runAll24():
    while True:
@@ -2385,7 +2530,7 @@ def blockUntilQuit():
    print("Waiting until game is killed.")
    time.sleep(3)
    while True:
-      if not re.findall('MARVEL',Popen('adb shell ps', shell=True, stdout=PIPE).stdout.read()):
+      if not re.findall('MARVEL',Popen('adb %s shell ps'%ACTIVE_DEVICE, shell=True, stdout=PIPE).stdout.read()):
          break
       time.sleep(3)
    print("Game was killed. Moving on...")
@@ -2397,20 +2542,20 @@ def startAndRestartWhenQuit():
       randomUserStart()
          
       while True:
-         if not re.findall('MARVEL',Popen('adb shell ps', shell=True, stdout=PIPE).stdout.read()):
+         if not re.findall('MARVEL',Popen('adb %s shell ps'%ACTIVE_DEVICE, shell=True, stdout=PIPE).stdout.read()):
             break
 
          time.sleep(2)
          
 def adjustBrightness(percent=10):
    
-   Popen("adb shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su"%percent, stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su"%(ACTIVE_DEVICE,percent), stdout=PIPE, shell=True).stdout.read()
       
          
 def sleepToCharge(preferred=60):
    
    
-   output = Popen("adb shell cat /sys/class/power_supply/battery/capacity", stdout=PIPE, shell=True).stdout.read()
+   output = Popen("adb %s shell cat /sys/class/power_supply/battery/capacity"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    had_to_rest = False
    while int(output) < 50:
       if not had_to_rest:
@@ -2418,7 +2563,7 @@ def sleepToCharge(preferred=60):
          print("BATTERY below 20\%. Need to sleep for a bit.")
          had_to_rest = True
          
-      output = Popen("adb shell cat /sys/class/power_supply/battery/capacity", stdout=PIPE, shell=True).stdout.read()         
+      output = Popen("adb %s shell cat /sys/class/power_supply/battery/capacity"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()         
       time.sleep(60)
 
 #   if had_to_rest:
@@ -2949,6 +3094,11 @@ def gimpScreenshot():
 
 if __name__ == "__main__":
 
+   setActiveDevice("10.0.10.2:5558", True)
+   take_screenshot_adb()
+#   playNewestMission()
+#   startFakeAccounts()
+#   createAccounts()
 #   start_marvel('JoInge')
 #   import gui.gui as gui
 #   gui.main()
@@ -2976,7 +3126,7 @@ if __name__ == "__main__":
 #   eventPlay()
 #   runAll()
 #   startAndRestartWhenQuit()
-   getMyPageStatus()
+#   getMyPageStatus()
 #   farmMission24FuseAndBoost()
 #   replay_all_macros()
 #   getIMEI() 

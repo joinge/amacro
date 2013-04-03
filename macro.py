@@ -125,7 +125,7 @@ class Stats:
             self.info = ast.literal_eval(s.read())
             s.close()
       except:
-         pass
+         print( "ERROR: Unable to open stats.txt")
       
 #      if os.path.getsize('stats.txt') > 0:
 #         s = open('stats.txt','a')
@@ -643,7 +643,10 @@ def take_screenshot_adb():
    # CURRENT BEST #
    ################
        
-   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+#   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   
+   Popen("adb shell /system/bin/screencap /sdcard/img.raw > error.log 2>&1;\
+          adb pull  /sdcard/img.raw img.raw >error.log 2>&1", stdout=PIPE, shell=True).stdout.read()
    
    f = open('img.raw', 'rb')
    f1 = open('img1.raw', 'w')
@@ -2391,7 +2394,7 @@ def farmMission24FuseAndBoost():
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
          sellAllCards(all_feeder_cards)
    except:
-      pass
+      print( "ERROR: Trouble when reading MyPage status or when reading roster count" )
    
 def farmMission24FuseAndSell():
 
@@ -2408,7 +2411,7 @@ def farmMission24FuseAndSell():
       if not roster_count or roster_count > 60:
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
    except:
-      pass
+      print( "ERROR: Trouble when reading MyPage status or when reading roster count" )
    
    printNotify("Done processing this player!!!")
 #   info = getMyPageStatus()
@@ -2448,7 +2451,7 @@ def farmMission32():
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
          sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
    except:
-      pass
+      print( "ERROR: Trouble when reading MyPage status or when reading roster count" )
    
    printNotify("Done processing this player!!!")
    
@@ -2469,7 +2472,7 @@ def farmMission32FuseAndBoost():
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
          sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
    except:
-      pass
+      print( "ERROR: Trouble when reading MyPage status or when reading roster count" )
    
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
@@ -2887,7 +2890,7 @@ def custom8(start_end=False):
                      farmMission24FuseAndBoost()
                      exitMarvel()
                except:
-                  pass
+                  print( "ERROR: Some exception occured when processing %s"%i )
                sleepToCharge(60)
            
       start_end = False 
@@ -2898,7 +2901,7 @@ def custom8(start_end=False):
                   farmMission24FuseAndBoost()
                   exitMarvel()
             except:
-               pass
+               print( "ERROR: Some exception occured when processing %s"%i )
             sleepToCharge(60)
                
       
@@ -2909,7 +2912,7 @@ def custom8(start_end=False):
                   farmMission24FuseAndSell()
                   exitMarvel()
             except:
-               pass
+               print( "ERROR: Some exception occured when processing %s"%i )
             sleepToCharge(60)
 
 def event1(start_end=False):

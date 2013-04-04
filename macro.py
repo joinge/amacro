@@ -359,8 +359,11 @@ def setActiveDevice(device,youwave):
       ACTIVE_DEVICE = device
       ADB_ACTIVE_DEVICE = "-s "+device
    
-   if youwave!=None:
-      YOUWAVE = youwave.isChecked()
+   try:
+      if youwave!=None:
+         YOUWAVE = youwave.isChecked()
+   except:
+      YOUWAVE = youwave
    
 
 def notify():

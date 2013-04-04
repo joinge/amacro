@@ -87,7 +87,7 @@ class Example(QtGui.QWidget):
        
       QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
       
-      self.setToolTip('This is a <b>QWidget</b> widget')
+      self.setToolTip('Macro Control GUI')
 
       btn = []
       for i,user in enumerate(macro.accounts.keys()):
@@ -110,12 +110,21 @@ class Example(QtGui.QWidget):
       devices = macro.adbDevices()
 #      listWidget = QtGui.QRadioButton()
 
+
+#      x = bool(int(settings.value("pyuic4x", "0").toString()))
+#  ds    self.pyuic4xCheckBox.setChecked(x)
+
       for i,device in enumerate(devices):
          btn = QtGui.QRadioButton(device, self)
 #         btn.setToolTip('This is a <b>QPushButton</b> widget')
-         btn.clicked.connect(partial(macro.setActiveDevice, device))
+         btn.clicked.connect(partial(macro.setActiveDevice, device, None))
          btn.resize(btn.sizeHint())
          btn.move(50, 350+25*i)
+         
+      checkbox = QtGui.QCheckBox("Youwave?", self)
+      checkbox.toggled.connect(partial(macro.setActiveDevice, None, checkbox ))
+      checkbox.resize(checkbox.sizeHint())
+      checkbox.move(250, 350)
       
 #      listWidget.resize(200,200)
 #      listWidget.move(300,75)

@@ -11,6 +11,7 @@ import re, time, os, sys, ast, select
 import cv2
 
 ACTIVE_DEVICE = ''
+ADB_ACTIVE_DEVICE = ''
 YOUWAVE = False
 ABC = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 abc = ['abcdefghijklmnopqrstuvwxyz']
@@ -168,7 +169,7 @@ class Stats:
 # 6      - Check digit
 
 def getIMEI():
-   output = Popen("adb %s shell dumpsys iphonesubinfo | grep Device | sed s/\".*= \"//"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   output = Popen("adb %s shell dumpsys iphonesubinfo | grep Device | sed s/\".*= \"//"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    print( output )
    return int(output)
 #   358150045244606
@@ -336,7 +337,7 @@ def createAccounts(baseNames=baseN):
 
 def adbDevices():
    
-   device_string = Popen("adb devices | grep : | sed s/\s*device//", stdout=PIPE, shell=True).stdout.read()
+   device_string = Popen("adb devices | grep -e \"[A-Z0-9]\s*device\" | sed s/\s*device//", stdout=PIPE, shell=True).stdout.read()
 
    device_string = re.sub("\t", '', device_string)
    lines = re.split("\n+", device_string)
@@ -349,26 +350,30 @@ def adbDevices():
    return device_list
 
 
-def setActiveDevice(device,youwave=False):
+def setActiveDevice(device,youwave):
    global ACTIVE_DEVICE
+   global ADB_ACTIVE_DEVICE
    global YOUWAVE
    
-   ACTIVE_DEVICE = "-s "+device
+   if device != None:
+      ACTIVE_DEVICE = device
+      ADB_ACTIVE_DEVICE = "-s "+device
    
-   YOUWAVE = youwave
+   if youwave!=None:
+      YOUWAVE = youwave.isChecked()
    
 
 def notify():
    
 #   Popen("mplayer audio/ringtones/BentleyDubs.ogg >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
    
-   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(.2)
-   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(.2)
-   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(.2)
-   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
 
 def notifyWork():
    Popen("ssh me@$(curl -L work.joinge.net) \"mplayer /home/me/macro/audio/ringtones/CanisMajor.ogg\" >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
@@ -448,14 +453,14 @@ def connect_adb_wifi():
       
 def clear_marvel_cache():
    printAction("Clearing Marvel cache...", newline=True)
-   macro_output = Popen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(5)
 
    #if macro_output == None:
    #   raise Exception("Unable to clear Marvel cache")
 
 def launch_marvel():
-   macro_output = Popen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    #if macro_output == None:
    #   raise Exception("Unable to start Marvel")
 
@@ -465,7 +470,7 @@ def launch_marvel():
       
 
 def adb_input(text):
-   macro_output = Popen("adb %s shell input text %s"%(ACTIVE_DEVICE,text), stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell input text %s"%(ADB_ACTIVE_DEVICE,text), stdout=PIPE, shell=True).stdout.read()
 
 def adb_event_batch(events):
    
@@ -476,7 +481,7 @@ def adb_event_batch(events):
          
       sendevent_string += "sendevent /dev/input/event%d %d %d %d"%event
         
-   Popen("adb %s shell \"%s\""%(ACTIVE_DEVICE,sendevent_string), stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell \"%s\""%(ADB_ACTIVE_DEVICE,sendevent_string), stdout=PIPE, shell=True).stdout.read()
       
 #   print( "adb shell %s"%sendevent_string )
       
@@ -492,7 +497,7 @@ def adb_event(event_no=2, a=None, b=None ,c=None):
                         0003 3a - ABS_MT_PRESSURE       : value 0, min 0, max 30, fuzz 0, flat 0, resolution 0
    """
    
-   macro_output = Popen("adb %s shell sendevent /dev/input/event%d %d %d %d"%(ACTIVE_DEVICE,event_no,a,b,c), stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell sendevent /dev/input/event%d %d %d %d"%(ADB_ACTIVE_DEVICE,event_no,a,b,c), stdout=PIPE, shell=True).stdout.read()
 #   time.sleep(0.5)  
    #adbSend("/dev/input/event2",3,48,10);
    
@@ -573,13 +578,13 @@ def power_key():
    
 def back_key():
    
-   Popen("adb %s shell input keyevent 4"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell input keyevent 4"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    
    
    
 def swipe(start,stop):
 
-   Popen("adb %s shell input swipe %d %d %d %d"%(ACTIVE_DEVICE,start[0],start[1],stop[0],stop[1]), stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell input swipe %d %d %d %d"%(ADB_ACTIVE_DEVICE,start[0],start[1],stop[0],stop[1]), stdout=PIPE, shell=True).stdout.read()
    
 def linear_swipe(start,stop,steps=1):
    xloc = np.linspace(start[0],stop[0],steps+1)
@@ -609,7 +614,7 @@ def linear_swipe(start,stop,steps=1):
 
 def scroll(dx,dy):
    
-   Popen("adb %s shell input trackball roll %d %d"%(ACTIVE_DEVICE,dx,dy), stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell input trackball roll %d %d"%(ADB_ACTIVE_DEVICE,dx,dy), stdout=PIPE, shell=True).stdout.read()
    
   
    
@@ -643,21 +648,21 @@ def take_screenshot_adb():
    # CURRENT BEST #
    ################
        
-#   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+#   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    
-   Popen("adb shell /system/bin/screencap /sdcard/img.raw > error.log 2>&1;\
-          adb pull  /sdcard/img.raw img.raw >error.log 2>&1", stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell /system/bin/screencap /sdcard/img.raw > error.log 2>&1;\
+          adb %s pull  /sdcard/img.raw img_%s.raw >error.log 2>&1"%(ADB_ACTIVE_DEVICE,ADB_ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    
-   f = open('img.raw', 'rb')
-   f1 = open('img1.raw', 'w')
+   f = open('img_%s.raw'%ACTIVE_DEVICE, 'rb')
+   f1 = open('img_%s1.raw'%ACTIVE_DEVICE, 'w')
    f.read(12) # ignore 3 first pixels (otherwise the image gets offset)
    rest = f.read() # read rest
    f1.write(rest)
     
    if not YOUWAVE:
-      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img1.raw screens/screenshot.png >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
+      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img_%s1.raw screens/screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    else:
-      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img1.raw screens/screenshot.png >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
+      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screens/screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    
    # adb pull /dev/graphics/fb0 img.raw
    # dd bs=800 count=1920 if=img.raw of=img.tmp
@@ -735,10 +740,10 @@ def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=1
       
       time.sleep(.1)
       try:
-         image_screen   = readImage("screens/screenshot.png", xbounds, ybounds)
+         image_screen   = readImage("screens/screenshot_%s.png"%ACTIVE_DEVICE, xbounds, ybounds)
 #         image_screen   = readImage("test.png", xbounds, ybounds)
       except:
-         print("ERROR: Unable to load screenshot.png. This is bad, and weird!!!")
+         print("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!"%ACTIVE_DEVICE)
          return False
       
       try:
@@ -961,7 +966,7 @@ def getMyPageStatus():
 
    printAction("Running OCR to figure out cards in roster...")
    take_screenshot_adb()
-   cards_in_roster_image  = preOCR("screens/screenshot.png",color_mask=(0,1,0),xbounds=(92,185),ybounds=(195,241))
+   cards_in_roster_image  = preOCR("screens/screenshot_%s.png"%ACTIVE_DEVICE,color_mask=(0,1,0),xbounds=(92,185),ybounds=(195,241))
    cards_in_roster_string = runOCR(cards_in_roster_image,mode='line')
 
    cards_in_roster_numbers = re.findall(r'\d+', cards_in_roster_string)
@@ -979,7 +984,7 @@ def getMyPageStatus():
       cv2.imwrite( 'tmp_last_error.png', cards_in_roster_image )
       
    printAction("Running OCR to figure out amount of silver...")
-   silver_image  = preOCR("screens/screenshot.png",color_mask=(1,1,0),xbounds=(332,446),ybounds=(272,312))
+   silver_image  = preOCR("screens/screenshot_%s.png"%ACTIVE_DEVICE,color_mask=(1,1,0),xbounds=(332,446),ybounds=(272,312))
    silver_string = runOCR( silver_image, mode='line', lang='event_enemy' )
 #   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
 #   silver_numbers = re.sub(r',', '', silver_numbers)
@@ -1178,7 +1183,7 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
       printAction("Running OCR to figure out badass name and level...")
    #   printAction("Preprocessing image")
 
-      badguy_image  = preOCR("screens/screenshot.png",xbounds=(110,370),ybounds=(84,114))
+      badguy_image  = preOCR("screens/screenshot_%s.png"%ACTIVE_DEVICE,xbounds=(110,370),ybounds=(84,114))
       badguy_string = runOCR( badguy_image, mode='line')
    
       badguy_name  = re.sub(r' Lv.+', '', badguy_string)
@@ -1189,7 +1194,7 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
             
       printAction("Running OCR to figure out enemy info...", newline=True)
       e = event_enemy_corner
-      enemy_image = preOCR("screens/screenshot.png",color_mask=(0,1,0),xbounds=(e[0],470),ybounds=(e[1],e[1]+144)) #old x: e[0]+250
+      enemy_image = preOCR("screens/screenshot_%s.png"%ACTIVE_DEVICE,color_mask=(0,1,0),xbounds=(e[0],470),ybounds=(e[1],e[1]+144)) #old x: e[0]+250
       enemy_info  = runOCR(enemy_image, mode='', lang='event_enemy')
    
       enemy_health = re.findall(r'\d+', enemy_info)
@@ -2334,7 +2339,7 @@ def start_marvel_jojanr():
 def exitMarvel():
    check_if_vnc_error()
    
-   Popen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    
 #   clear_marvel_cache() # A little harsh...?
    lock_phone()
@@ -2566,7 +2571,7 @@ def blockUntilQuit():
    print("Waiting until game is killed.")
    time.sleep(3)
    while True:
-      if not re.findall('MARVEL',Popen('adb %s shell ps'%ACTIVE_DEVICE, shell=True, stdout=PIPE).stdout.read()):
+      if not re.findall('MARVEL',Popen('adb %s shell ps'%ADB_ACTIVE_DEVICE, shell=True, stdout=PIPE).stdout.read()):
          break
       time.sleep(3)
    print("Game was killed. Moving on...")
@@ -2578,20 +2583,20 @@ def startAndRestartWhenQuit():
       randomUserStart()
          
       while True:
-         if not re.findall('MARVEL',Popen('adb %s shell ps'%ACTIVE_DEVICE, shell=True, stdout=PIPE).stdout.read()):
+         if not re.findall('MARVEL',Popen('adb %s shell ps'%ADB_ACTIVE_DEVICE, shell=True, stdout=PIPE).stdout.read()):
             break
 
          time.sleep(2)
          
 def adjustBrightness(percent=10):
    
-   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su"%(ACTIVE_DEVICE,percent), stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su"%(ADB_ACTIVE_DEVICE,percent), stdout=PIPE, shell=True).stdout.read()
       
          
 def sleepToCharge(preferred=60):
    
    
-   output = Popen("adb %s shell cat /sys/class/power_supply/battery/capacity"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   output = Popen("adb %s shell cat /sys/class/power_supply/battery/capacity"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    had_to_rest = False
    while int(output) < 50:
       if not had_to_rest:
@@ -2599,7 +2604,7 @@ def sleepToCharge(preferred=60):
          print("BATTERY below 20\%. Need to sleep for a bit.")
          had_to_rest = True
          
-      output = Popen("adb %s shell cat /sys/class/power_supply/battery/capacity"%ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()         
+      output = Popen("adb %s shell cat /sys/class/power_supply/battery/capacity"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()         
       time.sleep(60)
 
 #   if had_to_rest:
@@ -3162,12 +3167,13 @@ def tradeToJollyMa():
 
 def gimpScreenshot():
    
-   Popen("gimp ./screens/screenshot.png", stdout=PIPE, shell=True)
+   Popen("gimp ./screens/screenshot_%s.png"%ACTIVE_DEVICE, stdout=PIPE, shell=True)
 
 if __name__ == "__main__":
 
-   setActiveDevice("10.0.10.2:5558", True)
-   take_screenshot_adb()
+   setActiveDevice("10.0.0.18:5555", youwave=False)
+#   setActiveDevice("0123456789ABCDEF", youwave=False)
+#   take_screenshot_adb()
 #   playNewestMission()
 #   startFakeAccounts()
 #   createAccounts()
@@ -3191,7 +3197,7 @@ if __name__ == "__main__":
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))
-   eventPlay()
+#   eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()
@@ -3206,6 +3212,7 @@ if __name__ == "__main__":
 #   find_mission()
 #   fuse_ironman()
    #pass
+   start_marvel("JoJanR")
 
    
    #import sys

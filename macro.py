@@ -337,7 +337,7 @@ def createAccounts(baseNames=baseN):
 
 def adbDevices():
    
-   device_string = Popen("adb devices | grep -e \"[A-Z0-9]\s*device\" | sed s/\s*device//", stdout=PIPE, shell=True).stdout.read()
+   device_string = Popen("adb devices | grep -w device | sed s/device//", stdout=PIPE, shell=True).stdout.read()
 
    device_string = re.sub("\t", '', device_string)
    lines = re.split("\n+", device_string)

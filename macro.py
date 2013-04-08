@@ -2301,7 +2301,7 @@ def start_marvel(user,attempts=3):
             left_click((346,551)) # kills ads
             time.sleep(4)
             
-            left_click((346,551)) # kills ads
+#            left_click((346,551)) # kills ads
             login_success = True
             break
          

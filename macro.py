@@ -2280,28 +2280,96 @@ def playNewestMission(repeat=50):
 
 def start_marvel(user,attempts=3):
    
+   id_files = [
+      "databases/requests-journal",
+      "databases/webview.db-journal",
+      "databases/webviewCookiesChromium.db",
+      "files/.flurryagent.22e4372b",
+      "files/__MBG_CREDENTIALS",
+      "shared_prefs/CookiePrefsFile.xml",
+      "shared_prefs/Preference.xml" ]
+      
+   adb_copy_to_sdcard_cmd = ''
+   adb_copy_to_data_cmd = ''
+   for i,f in enumerate(id_files):
+      if i%5 == 0:
+         adb_copy_to_sdcard_cmd += "adb %s shell \""%ADB_ACTIVE_DEVICE
+         adb_copy_to_data_cmd   += "adb %s shell \""%ADB_ACTIVE_DEVICE
+      adb_copy_to_sdcard_cmd += "echo 'cp /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/%s /sdcard/pull_tmp/%s' | su; "%(f,f)
+      adb_copy_to_data_cmd   += "echo 'cp /sdcard/push_tmp/%s /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/%s' | su; "%(f,f)
+      if i%5 == 4:
+         adb_copy_to_sdcard_cmd += "\"; "
+         adb_copy_to_data_cmd += "\"; "
+   if (i-1)%5 != 4:
+      adb_copy_to_sdcard_cmd += "\"; "
+      adb_copy_to_data_cmd += "\"; "
+   
+#   adb_copy_to_sdcard_cmd = \
+#      "adb %s shell \
+#      \" rm -r /sdcard/pull_tmp;\
+#         mkdir /sdcard/pull_tmp;\
+#         mkdir /sdcard/pull_tmp/files;\
+#         mkdir /sdcard/pull_tmp/shared_prefs\";\
+#         adb %s shell \
+#      \" %s \";\
+#      adb %s pull /sdcard/pull_tmp ./users/%s\
+#      "%(ADB_ACTIVE_DEVICE,ADB_ACTIVE_DEVICE,adb_copy_to_sdcard_cmd,ADB_ACTIVE_DEVICE,user)
+
    def attempt_start(user):
       unlock_phone()
-      clear_marvel_cache()
-      launch_marvel()
-      check_if_vnc_error()
-      #printAction("Searching for
-      printAction("Searching for login screen...")
-      login_screen_coords = locateTemplate('screens/login_screen.png', threshold=0.95, retries=25, interval=1)
-      printResult(login_screen_coords)
-      if login_screen_coords:
-         adb_login( login_screen_coords, user )
-   
+      
+      if not os.path.isdir('./users'):
+         os.mkdir('./users')
+         
+      NEW_USER = False
+      if os.path.isdir('./users/%s'%user):
+         exitMarvel(False)
+         print(
+         Popen("adb %s shell rm -r /sdcard/push_tmp;\
+                adb push ./users/%s /sdcard/push_tmp;\
+                %s \
+                "%(ADB_ACTIVE_DEVICE,user,adb_copy_to_data_cmd),
+               stdout=PIPE, shell=True).stdout.read())
+         time.sleep(2)
+         launch_marvel()
+      
+      else:
+         NEW_USER = True
+         clear_marvel_cache()
+         launch_marvel()
+#         check_if_vnc_error()
+         #printAction("Searching for
+         printAction("Searching for login screen...")
+         login_screen_coords = locateTemplate('screens/login_screen.png', threshold=0.95, retries=25, interval=1)
+         printResult(login_screen_coords)
+         if login_screen_coords:
+            adb_login( login_screen_coords, user )            
+      
       printAction("Searching for home screen...")
       login_success = False
       for i in range(35):
          time.sleep(1)
          if locateTemplate('screens/home_screen.png', threshold=0.95):
-            #time.sleep(1)
+            if NEW_USER:
+               os.mkdir('./users/%s'%user)
+               os.mkdir('./users/%s/files'%user)
+               os.mkdir('./users/%s/shared_prefs'%user)
+               
+               print(
+               Popen("adb %s shell \
+                     \" rm -r /sdcard/pull_tmp;\
+                        mkdir /sdcard/pull_tmp;\
+                        mkdir /sdcard/pull_tmp/files;\
+                        mkdir /sdcard/pull_tmp/shared_prefs\";\
+                        %s \
+                     adb %s pull /sdcard/pull_tmp ./users/%s\
+                     "%(ADB_ACTIVE_DEVICE,adb_copy_to_sdcard_cmd,ADB_ACTIVE_DEVICE,user),
+                     stdout=PIPE, shell=True).stdout.read())
+
             left_click((346,551)) # kills ads
             time.sleep(4)
             
-            left_click((346,551)) # kills ads
+#            left_click((346,551)) # kills ads
             login_success = True
             break
          
@@ -2339,13 +2407,14 @@ def start_marvel_jollyma():
 def start_marvel_jojanr():
    return start_marvel('JoJanR')
    
-def exitMarvel():
+def exitMarvel(lock_phone=True):
    check_if_vnc_error()
    
    Popen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    
 #   clear_marvel_cache() # A little harsh...?
-   lock_phone()
+   if lock_phone:
+      lock_phone()
    check_if_vnc_error()
    
 def lock_wait_unlock():
@@ -3174,7 +3243,7 @@ def gimpScreenshot():
 
 if __name__ == "__main__":
 
-   setActiveDevice("10.0.0.18:5555", youwave=False)
+#   setActiveDevice("10.0.0.18:5555", youwave=False)
 #   setActiveDevice("0123456789ABCDEF", youwave=False)
 #   take_screenshot_adb()
 #   playNewestMission()

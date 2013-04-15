@@ -380,6 +380,23 @@ def notify():
 
 def notifyWork():
    Popen("ssh me@$(curl -L work.joinge.net) \"mplayer /home/me/macro/audio/ringtones/CanisMajor.ogg\" >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
+   
+###########
+# YOUWAVE #
+###########
+
+def setAndroidId(user=''):
+   
+   out = Popen("adb %s shell \"cat /data/youwave_id;\
+                               cat /sdcard/Id\""%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).communicate()
+#   out.communicate()
+
+
+
+def exitMarvel():
+   check_if_vnc_error()
+   
+   Popen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
 
 def printResult(res):
    if res:

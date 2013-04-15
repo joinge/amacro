@@ -161,6 +161,39 @@ class Stats:
       except:
          printAction("WARNING: Unable to read silver status for statistics...", newline=True)
  
+class Info:
+   def __init__(self):
+      self.read()
+      
+   def read(self):
+
+      try:
+         files = os.listdir('data')
+      except:
+         os.mkdir('data')
+         return
+      
+      for file in files:
+         
+         s = open('data/%s'%file,'r')
+         
+         attr_name = re.sub('.txt','',file)
+
+         if os.path.getsize('stats.txt') > 0:
+            setattr(self,attr_name,ast.literal_eval(s.read()))
+            s.close()
+      
+#      if os.path.getsize('stats.txt') > 0:
+#         s = open('stats.txt','a')
+
+   def write(self):
+      
+      for key in self.__dict__.keys():
+      
+         s = open('data/%s.txt'%key,'w')
+         s.write(str(getattr(self,key)))
+         s.close()
+      
 
 # IMEI = 358150 04 524460 6
 # 35     - British Approvals Board of Telecommunications (all phones)
@@ -281,7 +314,7 @@ fakeEmails = {
  'ZenonMIsk16': 'ZenonMIsk1616@live.com'}
 
 fakeID = {
- 'AjaxUF': '656041561545352',
+ 'AjaxUF': '145420023418703828',
  'AxelUJp83': 'AxelppUJp@live.com',
  'CadmusFu1': 'CadmusFuu1@live.com',                                                                    
  'CasonZfd72': 'Casonfd72ZZ@hotmail.com',                                                               
@@ -385,10 +418,28 @@ def notifyWork():
 # YOUWAVE #
 ###########
 
+def saveAndroidId(user=''):
+   
+   out = Popen("adb %s shell \
+               \"cat /data/youwave_id;\
+                 cat /sdcard/Id\""%ADB_ACTIVE_DEVICE,
+               stdout=PIPE, shell=True).stdout.read()
+   print(out)
+#   out.communicate()
+
 def setAndroidId(user=''):
    
-   out = Popen("adb %s shell \"cat /data/youwave_id;\
-                               cat /sdcard/Id\""%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).communicate()
+   out = Popen("adb %s shell \
+               \"cat /data/youwave_id;\
+                 cat /sdcard/Id\""%ADB_ACTIVE_DEVICE,
+               stdout=PIPE, shell=True).stdout.read()
+   print(out)
+   id = out.split('\n')
+   if id[0] == id[1]:
+      id_clean = re.search(r'[0-9]{18}', id[0]).group(0)
+      
+   else:
+      print( "WARNING: IDs in /data and /sdcard do not match!!!" )
 #   out.communicate()
 
 
@@ -3259,6 +3310,11 @@ def gimpScreenshot():
    Popen("gimp ./screens/screenshot_%s.png"%ACTIVE_DEVICE, stdout=PIPE, shell=True)
 
 if __name__ == "__main__":
+
+   i = Info()
+
+   setActiveDevice("10.42.0.52:5558",False)
+   setAndroidId('hello')
 
 #   setActiveDevice("10.0.0.18:5555", youwave=False)
 #   setActiveDevice("0123456789ABCDEF", youwave=False)

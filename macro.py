@@ -374,13 +374,13 @@ def setAndroidId(user=None,newid='0'*15):
       i = Info()
    
       try:
-         if id_clean == i.faceAccounts[user]:
+         if id_clean == i.fakeAccounts[user]:
             print( 'WARNING: saveAndroidId() - Ids are already the same.')
          else:
             print(Popen("adb %s shell echo 'echo %s > /data/youwave_id' \| su"%(ADB_ACTIVE_DEVICE,newid), stdout=PIPE, shell=True).stdout.read())
             print(Popen("adb %s shell echo 'echo %s > /sdcard/Id' \| su"%(ADB_ACTIVE_DEVICE,newid), stdout=PIPE, shell=True).stdout.read())
             
-            i.fakeAccounts[user] = id_clean
+            i.fakeID[user] = newid
             i.write()
       except:
          print("ERROR: User %s does not seem to exist!"%user)
@@ -587,7 +587,7 @@ def enter_text( text ):
    adb_input( text )
   
 
-def adb_login(login_screen_coords, user):
+def adb_login(login_screen_coords, user, password=None):
    
    c = np.array(login_screen_coords)
    
@@ -596,7 +596,10 @@ def adb_login(login_screen_coords, user):
    left_click((  76, 108 )+c) # Mobage name field
    enter_text( user )
    left_click((  76, 174 )+c) # Mobage password field
-   enter_text( accounts[user] )
+   if password:
+      enter_text( password )
+   else:
+      enter_text( accounts[user] )
    left_click(( 313, 237 )+c) # Login button
    
 #   
@@ -2314,7 +2317,7 @@ def playNewestMission(repeat=50):
 #               stats.silverEnd("mission_%d-%d"%mission_number)
             return False
 
-def start_marvel(user,attempts=3):
+def start_marvel(user,attempts=3,password=None):
    
    id_files = [
       "databases/requests-journal",
@@ -2379,7 +2382,7 @@ def start_marvel(user,attempts=3):
          login_screen_coords = locateTemplate('screens/login_screen.png', threshold=0.95, retries=25, interval=1)
          printResult(login_screen_coords)
          if login_screen_coords:
-            adb_login( login_screen_coords, user )            
+            adb_login( login_screen_coords, user, password )            
       
       printAction("Searching for home screen...")
       login_success = False
@@ -3027,6 +3030,24 @@ def custom8(start_end=False):
             except:
                print( "ERROR: Some exception occured when processing %s"%i )
             sleepToCharge(60)
+            
+            
+def custom20():
+   
+   i = Info()
+   
+   accounts =
+   {'AjaxUF': 'UFAjax11',
+    'AxelJp83': 'UJAxelUJ83',
+    'Cadmus33': 'FFCadmusF',
+    'CasonZoo': 'fdZCason',
+    'DamonMJ': 'Damon5lm'}
+   
+   for user,password in accounts:
+      start_marvel(user,password)
+      playNewestMission()
+      exitMarvel()
+      time.sleep(10)
 
 def event1(start_end=False):
 
@@ -3282,7 +3303,8 @@ if __name__ == "__main__":
    i = Info()
 
    setActiveDevice("10.42.0.52:5558",False)
-   setAndroidId('8583688437793838')
+#   setAndroidId('AxelJp83','8583688437793838')
+   custom20()
 
 #   setActiveDevice("10.0.0.18:5555", youwave=False)
 #   setActiveDevice("0123456789ABCDEF", youwave=False)

@@ -237,7 +237,7 @@ emails = [
 'live.com' ]
 
 fakeAccounts = {
- 'AjaxUF': 'UFAjax11',
+ 'AjaxUF': 'UFAjax11',       # link MonaBB
  'AxelUJp83': 'UJAxelUJ83',
  'CadmusFu1': 'FFCadmusF',
  'CasonZfd72': 'fdZfdCason',

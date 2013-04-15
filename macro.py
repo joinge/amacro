@@ -188,10 +188,12 @@ class Info:
 
    def write(self):
       
+      from pprint import pprint
+            
       for key in self.__dict__.keys():
       
          s = open('data/%s.txt'%key,'w')
-         s.write(str(getattr(self,key)))
+         pprint(getattr(self,key),stream=s)
          s.close()
       
 
@@ -266,74 +268,8 @@ baseN = [
 emails = [
 'gmail.com',
 'yahoo.com',
-'hotmail.com',
-'live.com' ]
-
-fakeAccounts = {
- 'AjaxUF': 'UFAjax11',       # link MonaBB
- 'AxelUJp83': 'UJAxelUJ83',
- 'CadmusFu1': 'FFCadmusF',
- 'CasonZfd72': 'fdZfdCason',
- 'DamonMJlm5': 'Damon5lmlm',
- 'DexterOcw': 'DexterO',
- 'GunnerMFog2': 'MFGunnerMFMF',
- 'HarleyCeg52': 'egegCeg',
- 'JaxDwf67': 'wfJaxwfD',
- 'JettHsl': 'slHJett',
- 'KaceUZal': 'alKace',
- 'MaximusMKhv': 'MKMaximusMaximus',
- 'PhoenixFBws': 'wsPhoenix',
- 'PierceNZb15': '15Piercebb',
- 'RoccoSj4': 'jjRoccoS',
- 'RykerSec8': 'RykerecSS',
- 'TitusFa': 'TitusF',
- 'ZanderKd76': '76Zander76K',
- 'ZekeWPg18': 'g18gWP',
- 'ZenonMIsk16': 'ZenonMI1616'}
-
-fakeEmails = {
- 'AjaxUF': 'ajaxuf@live.com',
- 'AxelUJp83': 'AxelppUJp@live.com',
- 'CadmusFu1': 'CadmusFuu1@live.com',                                                                    
- 'CasonZfd72': 'Casonfd72ZZ@hotmail.com',                                                               
- 'DamonMJlm5': 'Damon555lm@live.com',                                                                   
- 'DexterOcw': 'DexterOcwcwcw@yahoo.com',                                                                
- 'GunnerMFog2': 'Gunner2MFMFMF@hotmail.com',                                                            
- 'HarleyCeg52': 'Harleyeg52egeg@live.com',                                                              
- 'JaxDwf67': 'Jax67wf67wf@yahoo.com',                                                                   
- 'JettHsl': 'Jettsl@yahoo.com',                                                                         
- 'KaceUZal': 'KaceUZUZ@hotmail.com',                                                                    
- 'MaximusMKhv': 'Maximushvhv@live.com',                                                                 
- 'PhoenixFBws': 'PhoenixFBws@live.com',                                                                 
- 'PierceNZb15': 'Pierce15bbb@hotmail.com',                                                              
- 'RoccoSj4': 'Roccoj4jj@yahoo.com',                                                                     
- 'RykerSec8': 'Ryker8S8S@yahoo.com',
- 'TitusFa': 'TitusFFaF@live.com',
- 'ZanderKd76': 'ZanderK76d76@live.com',
- 'ZekeWPg18': 'Zeke18gg18@live.com',
- 'ZenonMIsk16': 'ZenonMIsk1616@live.com'}
-
-fakeID = {
- 'AjaxUF': '145420023418703828',
- 'AxelUJp83': 'AxelppUJp@live.com',
- 'CadmusFu1': 'CadmusFuu1@live.com',                                                                    
- 'CasonZfd72': 'Casonfd72ZZ@hotmail.com',                                                               
- 'DamonMJlm5': 'Damon555lm@live.com',                                                                   
- 'DexterOcw': 'DexterOcwcwcw@yahoo.com',                                                                
- 'GunnerMFog2': 'Gunner2MFMFMF@hotmail.com',                                                            
- 'HarleyCeg52': 'Harleyeg52egeg@live.com',                                                              
- 'JaxDwf67': 'Jax67wf67wf@yahoo.com',                                                                   
- 'JettHsl': 'Jettsl@yahoo.com',                                                                         
- 'KaceUZal': 'KaceUZUZ@hotmail.com',                                                                    
- 'MaximusMKhv': 'Maximushvhv@live.com',                                                                 
- 'PhoenixFBws': 'PhoenixFBws@live.com',                                                                 
- 'PierceNZb15': 'Pierce15bbb@hotmail.com',                                                              
- 'RoccoSj4': 'Roccoj4jj@yahoo.com',                                                                     
- 'RykerSec8': 'Ryker8S8S@yahoo.com',
- 'TitusFa': 'TitusFFaF@live.com',
- 'ZanderKd76': 'ZanderK76d76@live.com',
- 'ZekeWPg18': 'Zeke18gg18@live.com',
- 'ZenonMIsk16': 'ZenonMIsk1616@live.com'}
+'hotmail.com'
+ ]
 
 def createAccounts(baseNames=baseN):
    
@@ -418,16 +354,10 @@ def notifyWork():
 # YOUWAVE #
 ###########
 
-def saveAndroidId(user=''):
-   
-   out = Popen("adb %s shell \
-               \"cat /data/youwave_id;\
-                 cat /sdcard/Id\""%ADB_ACTIVE_DEVICE,
-               stdout=PIPE, shell=True).stdout.read()
-   print(out)
-#   out.communicate()
+def newAndroidId():
+   return ''.join(np.random.uniform(10,size=int(np.random.uniform(15,18))).astype(int).astype('str'))
 
-def setAndroidId(user=''):
+def setAndroidId(user=None,newid='0'*15):
    
    out = Popen("adb %s shell \
                \"cat /data/youwave_id;\
@@ -435,9 +365,47 @@ def setAndroidId(user=''):
                stdout=PIPE, shell=True).stdout.read()
    print(out)
    id = out.split('\n')
-   if id[0] == id[1]:
-      id_clean = re.search(r'[0-9]{18}', id[0]).group(0)
+   if not id[0] == id[1]:
+      print( "WARNING: IDs in /data (%s) and /sdcard (%s) do not match!!!"%(id[0],id[1]))
       
+   id_clean = re.search(r'[0-9]*', id[0]).group(0) #15-18
+   
+   if not user == None:
+      i = Info()
+   
+      try:
+         if id_clean == i.faceAccounts[user]:
+            print( 'WARNING: saveAndroidId() - Ids are already the same.')
+         else:
+            print(Popen("adb %s shell echo 'echo %s > /data/youwave_id' \| su"%(ADB_ACTIVE_DEVICE,newid), stdout=PIPE, shell=True).stdout.read())
+            print(Popen("adb %s shell echo 'echo %s > /sdcard/Id' \| su"%(ADB_ACTIVE_DEVICE,newid), stdout=PIPE, shell=True).stdout.read())
+            
+            i.fakeAccounts[user] = id_clean
+            i.write()
+      except:
+         print("ERROR: User %s does not seem to exist!"%user)
+   
+   else:
+      print(id_clean)
+
+
+def getAndroidId(user=None):
+   
+   i = Info()
+   out = Popen("adb %s shell \
+               \"cat /data/youwave_id;\
+                 cat /sdcard/Id\""%ADB_ACTIVE_DEVICE,
+               stdout=PIPE, shell=True).stdout.read()
+   print(out)
+   id = out.split('\n')
+   if id[0] == id[1]:
+      id_clean = re.search(r'[0-9]*', id[0]).group(0) #15-18
+      
+      if not user == None:
+         i.fakeAccounts[user] = id_clean
+         i.write()
+      else:
+         print(id_clean)
    else:
       print( "WARNING: IDs in /data and /sdcard do not match!!!" )
 #   out.communicate()
@@ -3314,7 +3282,7 @@ if __name__ == "__main__":
    i = Info()
 
    setActiveDevice("10.42.0.52:5558",False)
-   setAndroidId('hello')
+   setAndroidId('8583688437793838')
 
 #   setActiveDevice("10.0.0.18:5555", youwave=False)
 #   setActiveDevice("0123456789ABCDEF", youwave=False)

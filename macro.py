@@ -571,20 +571,47 @@ def left_click(loc):
    
    else:      
       adb_event_batch( [
-         ( 1, 0x0004, 0x0004, 0x00090001 ),
-         ( 1, 0x0001, 0x0110, 0x00000001 ),
-         ( 1, 0x0003, 0x0000, int(loc[0]*2**15/480.0)),
-         ( 1, 0x0003, 0x0001, int(loc[1]*2**15/640.0)),
-         ( 1, 0x0000, 0x0000, 0x00000000 ),
-         ( 1, 0x0004, 0x0004, 0x00090001 ),
-         ( 1, 0x0001, 0x0110, 0x00000000 ),
-         ( 1, 0x0000, 0x0000, 0x00000000 ),
-         ( 1, 0x0003, 0x0000, 0x00004400 ),
-         ( 1, 0x0003, 0x0001, 0x00003300 ),
-         ( 1, 0x0000, 0x0000, 0x00000000 )
+         ( 3, 0x0004, 0x0004, 0x00090001 ),
+         ( 3, 0x0001, 0x0110, 0x00000001 ),
+         ( 3, 0x0003, 0x0000, int(loc[0]*2**15/480.0)),
+         ( 3, 0x0003, 0x0001, int(loc[1]*2**15/640.0)),
+         ( 3, 0x0000, 0x0000, 0x00000000 ),
+         ( 3, 0x0004, 0x0004, 0x00090001 ),
+         ( 3, 0x0001, 0x0110, 0x00000000 ),
+         ( 3, 0x0000, 0x0000, 0x00000000 )
          ] )
-   
-   
+      time.sleep(0.2)
+
+def backspace():
+
+   if YOUWAVE:
+      adb_event_batch( [
+         ( 2, 0x0004, 0x0004, 0x0000000e ),
+         ( 2, 0x0001, 0x000e, 0x00000001 ),
+         ( 2, 0x0000, 0x0000, 0x00000000 ),
+         ( 2, 0x0004, 0x0004, 0x0000000e ),
+         ( 2, 0x0001, 0x000e, 0x00000000 ),
+         ( 2, 0x0000, 0x0000, 0x00000000 )
+         ] )     
+
+   else:
+      print("ERROR: backspace() is not implemented for regular phones")     
+     
+def right_arrow():
+
+   if YOUWAVE:
+      adb_event_batch( [
+         ( 2, 0x0004, 0x0004, 0x000000cd ),
+         ( 2, 0x0001, 0x006a, 0x00000001 ),
+         ( 2, 0x0000, 0x0000, 0x00000000 ),
+         ( 2, 0x0004, 0x0004, 0x000000cd ),
+         ( 2, 0x0001, 0x006a, 0x00000000 ),
+         ( 2, 0x0000, 0x0000, 0x00000000 )
+         ] )     
+
+   else:
+      print("ERROR: right_arrow() is not implemented for regular phones")   
+       
    
 def enter_text( text ):
    adb_input( text )
@@ -598,11 +625,29 @@ def adb_login(login_screen_coords, user, password=None):
    left_click(( 106, 255 )+c) # Login button
    left_click((  76, 108 )+c) # Mobage name field
    enter_text( user )
+   
+   if YOUWAVE:
+      backspace()
+      
    left_click((  76, 174 )+c) # Mobage password field
+   if YOUWAVE: # Youwave screws this up. Need to insert text, then erase it once
+      enter_text( 'a' )
+      
+      for i in range(len(user)):
+         right_arrow()
+#         time.sleep(0.1)
+         
+      for i in range(len(user)+2):
+         backspace()
+#         time.sleep(0.1)
+   
    if password:
       enter_text( password )
    else:
       enter_text( accounts[user] )
+      
+   if YOUWAVE:
+      backspace()
    left_click(( 313, 237 )+c) # Login button
    
 #   
@@ -780,6 +825,12 @@ def swipeReference(template, destination=(0,0), threshold=0.96, print_coeff=Fals
 def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=1, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
                     click=False, scroll_size=[], swipe_size=[], swipe_ref=['',(0,0)]):
    try:
+      if YOUWAVE:
+         name,ext = os.path.splitext(template)
+         template_youwave = name+"_youwave"+ext
+         if os.path.exists(template_youwave):
+            template = template_youwave
+
       image_template = cv2.imread(template)
    except:
       print( template+" does not seem to exist." )
@@ -2261,16 +2312,41 @@ def playNewestMission(repeat=50):
          
          # Double check that the return from mission actually was registered.
          mission_started = locateTemplate('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
+         go_to_boss = locateTemplate("screens/event_mission_go_to_boss.png", offset=(130,16), click=True, print_coeff=False, reuse_last_screenshot=True)
+
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
             time.sleep(1)
          
+         elif go_to_boss:
+            printAction( "Raid boss detected. Playing the boss...", newline=True )
+            
+            face_the_enemy = locateTemplate("screens/face_the_enemy_button.png",
+                                             offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+            if not face_the_enemy:
+               printAction("Unable to find \"face the enemy\" button...", newline=True)
+               return False
+   
+            fight_enemy =  locateTemplate("screens/event_mission_boss_fight_button.png", threshold=0.9,
+                                             offset=(85,24), retries=5, click=True)
+            if not fight_enemy:
+               printAction("Unable to find \"FIGHT\" button...", newline=True)
+               return False
+            
+            confirm =  locateTemplate("screens/event_mission_boss_confirm_button.png", threshold=0.9,
+                                             offset=(85,24), retries=10, click=True)
+            if not confirm:
+               printAction("Unable to find \"FIGHT\" button...", newline=True)
+               return False
+            
+            repeat = repeat + 1
+            
          else:
 
-#            gotoMyPage()
-
-            left_click((181,774)) # mission button
+            mission_button = locateTemplate('screens/mission_button.png', offset=(49,13), print_coeff=False, reuse_last_screenshot=True)
+            
+            left_click(mission_button) # mission button
             time.sleep(3)
          
             printAction("Searching for newest mission button...")
@@ -2326,7 +2402,7 @@ def playNewestMission(repeat=50):
 #               stats.silverEnd("mission_%d-%d"%mission_number)
             return False
 
-def start_marvel(user,attempts=3,password=None):
+def start_marvel(user,attempts=3,password=None,enable_cache=False):
    
    id_files = [
       "databases/requests-journal",
@@ -2371,7 +2447,7 @@ def start_marvel(user,attempts=3,password=None):
          
 #      NEW_USER = True
       NEW_USER = False
-      if False: #os.path.isdir('./users/%s'%user):
+      if enable_cache and os.path.isdir('./users/%s'%user):
          exitMarvel(False)
          print(
          Popen("adb %s shell rm -r /sdcard/push_tmp;\
@@ -2398,8 +2474,10 @@ def start_marvel(user,attempts=3,password=None):
       login_success = False
       for i in range(35):
          time.sleep(1)
-         if locateTemplate('screens/home_screen.png', threshold=0.95):
-            if NEW_USER:
+         home_screen = locateTemplate('screens/home_screen.png', threshold=0.95)
+            
+         if home_screen:
+            if enable_cache and NEW_USER:
                os.mkdir('./users/%s'%user)
                os.mkdir('./users/%s/files'%user)
                os.mkdir('./users/%s/shared_prefs'%user)
@@ -2415,8 +2493,11 @@ def start_marvel(user,attempts=3,password=None):
                      "%(ADB_ACTIVE_DEVICE,adb_copy_to_sdcard_cmd,ADB_ACTIVE_DEVICE,user),
                      stdout=PIPE, shell=True).stdout.read())
 
-            left_click((346,551)) # kills ads
-            time.sleep(4)
+            time.sleep(1)
+            ad = locateTemplate('screens/home_screen_ad.png', offset=(90,20), threshold=0.95)
+            if ad:
+               left_click(ad) # kills ads
+               time.sleep(1)
             
 #            left_click((346,551)) # kills ads
             login_success = True
@@ -3046,17 +3127,25 @@ def custom20():
    
    i = Info()
    
-   accounts = {'AjaxUF': 'UFAjax11',
-    'AxelJp83': 'UJAxelUJ83',
-    'Cadmus33': 'FFCadmusF',
-    'CasonZoo': 'fdZCason',
-    'DamonMJ': 'Damon5lm'}
+   accounts = { 'AjaxUF': 'UFAjax11',
+                'AxelJp83': 'UJAxelUJ83',
+                'Cadmus33': 'FFCadmusF',
+                'CasonZoo': 'fdZCason',
+                'DamonMJ': 'Damon5lm',
+                'DexterOwl': 'Dexter0999',
+                'Gunner1972': 'MFGunnerMFMF',
+                'HarleyQueenz': 'egegCeg9675'}
    
    for user,password in accounts.iteritems():
-      start_marvel(user,password=password)
-      playNewestMission()
-      exitMarvel()
-      time.sleep(10)
+      try:
+         setAndroidId(user)
+         start_marvel(user,password=password)
+         playNewestMission()
+         exitMarvel()
+         time.sleep(10)
+      except:
+         print("Failed to process user %s"%user)
+
 
 def event1(start_end=False):
 
@@ -3312,6 +3401,7 @@ if __name__ == "__main__":
    i = Info()
 
    setActiveDevice("10.42.0.52:5558",True)
+   custom20()
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 
@@ -3356,7 +3446,11 @@ if __name__ == "__main__":
 #   find_mission()
 #   fuse_ironman()
    #pass
-   start_marvel("JoJanR")
+#   i = Info()
+#   s = "Gunner1972"
+##   setAndroidId(s)
+##   start_marvel(s,password=i.fakeAccounts[s])
+#   playNewestMission()
 
    
    #import sys

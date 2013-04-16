@@ -107,6 +107,11 @@ class Example(QtGui.QWidget):
       btn.resize(btn.sizeHint())
       btn.move(200,75)
       
+      btn = QtGui.QPushButton('Clear cache', self)
+      btn.clicked.connect(macro.clearMarvelCache)
+      btn.resize(btn.sizeHint())
+      btn.move(200,100)
+      
       devices = macro.adbDevices()
 #      listWidget = QtGui.QRadioButton()
 

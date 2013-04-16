@@ -364,19 +364,22 @@ def setAndroidId(user=None,newid='0'*15):
                  cat /sdcard/Id\""%ADB_ACTIVE_DEVICE,
                stdout=PIPE, shell=True).stdout.read()
    print(out)
-   id = out.split('\n')
-   if not id[0] == id[1]:
-      print( "WARNING: IDs in /data (%s) and /sdcard (%s) do not match!!!"%(id[0],id[1]))
+   old_ids = out.split('\n')
+   if not old_ids[0] == old_ids[1]:
+      print( "WARNING: IDs in /data (%s) and /sdcard (%s) do not match!!!"%(old_ids[0],old_ids[1]))
       
-   id_clean = re.search(r'[0-9]*', id[0]).group(0) #15-18
+   old_id = re.search(r'[0-9]*', old_ids[0]).group(0) #15-18
    
    if not user == None:
       i = Info()
    
       try:
-         if id_clean == i.fakeAccounts[user]:
+         if old_id == newid:
             print( 'WARNING: saveAndroidId() - Ids are already the same.')
          else:
+            if newid=='0'*15:
+               newid = i.fakeID[user]
+               
             print(Popen("adb %s shell echo 'echo %s > /data/youwave_id' \| su"%(ADB_ACTIVE_DEVICE,newid), stdout=PIPE, shell=True).stdout.read())
             print(Popen("adb %s shell echo 'echo %s > /sdcard/Id' \| su"%(ADB_ACTIVE_DEVICE,newid), stdout=PIPE, shell=True).stdout.read())
             
@@ -386,7 +389,7 @@ def setAndroidId(user=None,newid='0'*15):
          print("ERROR: User %s does not seem to exist!"%user)
    
    else:
-      print(id_clean)
+      print(old_id)
 
 
 def getAndroidId(user=None):
@@ -490,7 +493,7 @@ def connect_adb_wifi():
    #   raise Exception("Unable to connect adb to wifi")  
    
       
-def clear_marvel_cache():
+def clearMarvelCache():
    printAction("Clearing Marvel cache...", newline=True)
    macro_output = Popen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(5)
@@ -2366,7 +2369,8 @@ def start_marvel(user,attempts=3,password=None):
       if not os.path.isdir('./users'):
          os.mkdir('./users')
          
-      NEW_USER = False
+      NEW_USER = True
+#      NEW_USER = False
       if os.path.isdir('./users/%s'%user):
          exitMarvel(False)
          print(
@@ -2380,7 +2384,7 @@ def start_marvel(user,attempts=3,password=None):
       
       else:
          NEW_USER = True
-         clear_marvel_cache()
+         clearMarvelCache()
          launch_marvel()
 #         check_if_vnc_error()
          #printAction("Searching for
@@ -2457,7 +2461,7 @@ def exitMarvel(lock_phone=True):
    
    Popen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    
-#   clear_marvel_cache() # A little harsh...?
+#   clearMarvelCache() # A little harsh...?
    if lock_phone:
       lock_phone()
    check_if_vnc_error()
@@ -3307,12 +3311,12 @@ if __name__ == "__main__":
 
    i = Info()
 
-#   setActiveDevice("10.42.0.52:5558",True)
+   setActiveDevice("10.42.0.52:5558",True)
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 
 #   setActiveDevice("10.0.0.18:5555", youwave=False)
-   setActiveDevice("00190e8364f46e", youwave=False)
+#   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
 #   playNewestMission()
 #   startFakeAccounts()
@@ -3321,9 +3325,9 @@ if __name__ == "__main__":
 #   import gui.gui as gui
 #   gui.main()
 #   boostCard( 'uncommon_ironman', all_feeder_cards, alignment='tactics' )
-   fuseAndBoost('uncommon_ironman',
-                all_feeder_cards,
-                fuse_alignment='tactics')
+#   fuseAndBoost('uncommon_ironman',
+#                all_feeder_cards,
+#                fuse_alignment='tactics')
 #   fuseCard('uncommon_ironman', alignment='tactics')
 #   test()
 #   tradeCards(receiver='jollyma', cards_list=['rare+_ironman'], alignment='all')
@@ -3352,7 +3356,7 @@ if __name__ == "__main__":
 #   find_mission()
 #   fuse_ironman()
    #pass
-#   start_marvel("JoJanR")
+   start_marvel("JoJanR")
 
    
    #import sys

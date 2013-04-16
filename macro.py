@@ -3127,24 +3127,27 @@ def custom20():
    
    i = Info()
    
-   accounts = { 'AjaxUF': 'UFAjax11',
+   fakeAccounts = { 'AjaxUF': 'UFAjax11',
                 'AxelJp83': 'UJAxelUJ83',
                 'Cadmus33': 'FFCadmusF',
                 'CasonZoo': 'fdZCason',
+                'CrazyJett09': 'slHJett09',
                 'DamonMJ': 'Damon5lm',
                 'DexterOwl': 'Dexter0999',
                 'Gunner1972': 'MFGunnerMFMF',
+                'HammerJax': 'wfJaxwfD',
                 'HarleyQueenz': 'egegCeg9675'}
    
-   for user,password in accounts.iteritems():
-      try:
-         setAndroidId(user)
-         start_marvel(user,password=password)
-         playNewestMission()
-         exitMarvel()
-         time.sleep(10)
-      except:
-         print("Failed to process user %s"%user)
+   while True:
+      for user,password in fakeAccounts.iteritems():
+         try:
+            setAndroidId(user)
+            start_marvel(user,password=password)
+            playNewestMission()
+            exitMarvel()
+            time.sleep(60)
+         except:
+            print("Failed to process user %s"%user)
 
 
 def event1(start_end=False):

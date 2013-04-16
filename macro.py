@@ -2369,9 +2369,9 @@ def start_marvel(user,attempts=3,password=None):
       if not os.path.isdir('./users'):
          os.mkdir('./users')
          
-      NEW_USER = True
-#      NEW_USER = False
-      if os.path.isdir('./users/%s'%user):
+#      NEW_USER = True
+      NEW_USER = False
+      if False: #os.path.isdir('./users/%s'%user):
          exitMarvel(False)
          print(
          Popen("adb %s shell rm -r /sdcard/push_tmp;\

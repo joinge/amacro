@@ -691,20 +691,26 @@ def take_screenshot_adb():
    ################
        
 #   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
-   
-   Popen("adb %s shell /system/bin/screencap /sdcard/img.raw > error.log 2>&1;\
-          adb %s pull  /sdcard/img.raw img_%s.raw >error.log 2>&1"%(ADB_ACTIVE_DEVICE,ADB_ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
-   
-   f = open('img_%s.raw'%ACTIVE_DEVICE, 'rb')
-   f1 = open('img_%s1.raw'%ACTIVE_DEVICE, 'w')
-   f.read(12) # ignore 3 first pixels (otherwise the image gets offset)
-   rest = f.read() # read rest
-   f1.write(rest)
-    
    if not YOUWAVE:
+      Popen("adb %s shell /system/bin/screencap /sdcard/img.raw > error.log 2>&1;\
+             adb %s pull  /sdcard/img.raw img_%s.raw >error.log 2>&1"%(ADB_ACTIVE_DEVICE,ADB_ACTIVE_DEVICE,ACTIVE_DEVICE),
+            stdout=PIPE, shell=True).stdout.read()
+      
+      f = open('img_%s.raw'%ACTIVE_DEVICE, 'rb')
+      f1 = open('img_%s1.raw'%ACTIVE_DEVICE, 'w')
+      f.read(12) # ignore 3 first pixels (otherwise the image gets offset)
+      rest = f.read() # read rest
+      f1.write(rest)
+    
       Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img_%s1.raw screens/screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
+
    else:
-      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screens/screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
+#      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screens/screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
+   
+      cmd = "adb %s shell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
+             adb %s pull  /sdcard/screenshot.png screens/screenshot_%s.png >error.log 2>&1"%(ADB_ACTIVE_DEVICE,ADB_ACTIVE_DEVICE,ACTIVE_DEVICE)
+   
+      Popen(cmd, stdout=PIPE, shell=True).stdout.read()
    
    # adb pull /dev/graphics/fb0 img.raw
    # dd bs=800 count=1920 if=img.raw of=img.tmp
@@ -1942,14 +1948,14 @@ def fuseCard(card_type, alignment='all'):
    for i in range(10):
       time.sleep(int(uniform(1,2)))
       left_click(rarity_upgraded)
-      ironman_finished = locateTemplate("screens/fusion_finished.png", offset=(240,110), retries=3)
+      fusion_finished = locateTemplate("screens/fusion_finished.png", offset=(240,110), retries=3)
             
-      if ironman_finished:
-         printResult(ironman_finished) 
+      if fusion_finished:
+         printResult(fusion_finished) 
          printAction( "Fusion successful!", newline=True)
          return True
    
-   printResult(ironman_finished) 
+   printResult(fusion_finished) 
    return False
       
       
@@ -3036,15 +3042,14 @@ def custom20():
    
    i = Info()
    
-   accounts =
-   {'AjaxUF': 'UFAjax11',
+   accounts = {'AjaxUF': 'UFAjax11',
     'AxelJp83': 'UJAxelUJ83',
     'Cadmus33': 'FFCadmusF',
     'CasonZoo': 'fdZCason',
     'DamonMJ': 'Damon5lm'}
    
-   for user,password in accounts:
-      start_marvel(user,password)
+   for user,password in accounts.iteritems():
+      start_marvel(user,password=password)
       playNewestMission()
       exitMarvel()
       time.sleep(10)
@@ -3302,12 +3307,12 @@ if __name__ == "__main__":
 
    i = Info()
 
-   setActiveDevice("10.42.0.52:5558",False)
+#   setActiveDevice("10.42.0.52:5558",True)
 #   setAndroidId('AxelJp83','8583688437793838')
-   custom20()
+#   custom20()
 
 #   setActiveDevice("10.0.0.18:5555", youwave=False)
-#   setActiveDevice("0123456789ABCDEF", youwave=False)
+   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
 #   playNewestMission()
 #   startFakeAccounts()
@@ -3316,9 +3321,9 @@ if __name__ == "__main__":
 #   import gui.gui as gui
 #   gui.main()
 #   boostCard( 'uncommon_ironman', all_feeder_cards, alignment='tactics' )
-#   fuseAndBoost('uncommon_ironman',
-#                all_feeder_cards,
-#                fuse_alignment='tactics')
+   fuseAndBoost('uncommon_ironman',
+                all_feeder_cards,
+                fuse_alignment='tactics')
 #   fuseCard('uncommon_ironman', alignment='tactics')
 #   test()
 #   tradeCards(receiver='jollyma', cards_list=['rare+_ironman'], alignment='all')
@@ -3347,7 +3352,7 @@ if __name__ == "__main__":
 #   find_mission()
 #   fuse_ironman()
    #pass
-   start_marvel("JoJanR")
+#   start_marvel("JoJanR")
 
    
    #import sys

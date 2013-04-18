@@ -3224,6 +3224,36 @@ def custom20():
          except:
             print("Failed to process user %s"%user)
 
+def event20():
+   
+   i = Info()
+   
+   fakeAccounts = { 'AjaxUF': 'UFAjax11',
+                'AxelJp83': 'UJAxelUJ83',
+                'Cadmus33': 'FFCadmusF',
+                'CasonZoo': 'fdZCason',
+                'CrazyJett09': 'slHJett09',
+                'DamonMJ': 'Damon5lm',
+                'DexterOwl': 'Dexter0999',
+                'Gunner1972': 'MFGunnerMFMF',
+                'HammerJax': 'wfJaxwfD',
+                'HarleyQueenz': 'egegCeg9675'}
+   
+   while True:
+      for user,password in fakeAccounts.iteritems():
+         try:
+            setAndroidId(user)
+            start_marvel(user,password=password)
+            try:
+               eventPlay()
+            except:
+               pass
+            playNewestMission()
+            exitMarvel()
+            time.sleep(60)
+         except:
+            print("Failed to process user %s"%user)
+
 
 def event1(start_end=False):
 

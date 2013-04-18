@@ -1210,17 +1210,17 @@ def eventPlayMission(repeat=1):
          elif go_to_boss:
             printAction( "Raid boss detected. Playing the boss...", newline=True )
             
-            face_the_enemy = locateTemplate("screens/face_the_enemy_button.png",
-                                             offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
-            if not face_the_enemy:
-               printAction("Unable to find \"face the enemy\" button...", newline=True)
-               return False
-   
-            fight_enemy =  locateTemplate("screens/event_mission_boss_fight_button.png", threshold=0.9,
-                                             offset=(85,24), retries=5, click=True)
-            if not fight_enemy:
-               printAction("Unable to find \"FIGHT\" button...", newline=True)
-               return False
+#            face_the_enemy = locateTemplate("screens/face_the_enemy_button.png",
+#                                             offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+#            if not face_the_enemy:
+#               printAction("Unable to find \"face the enemy\" button...", newline=True)
+#               return False
+#   
+#            fight_enemy =  locateTemplate("screens/event_mission_boss_fight_button.png", threshold=0.9,
+#                                             offset=(85,24), retries=5, click=True)
+#            if not fight_enemy:
+#               printAction("Unable to find \"FIGHT\" button...", newline=True)
+#               return False
             
             confirm =  locateTemplate("screens/event_mission_boss_confirm_button.png", threshold=0.9,
                                              offset=(85,24), retries=10, click=True)
@@ -1329,7 +1329,7 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
       printAction("Running OCR to figure out badass name and level...")
    #   printAction("Preprocessing image")
 
-      badguy_image  = preOCR("screens/screenshot_%s.png"%ACTIVE_DEVICE,xbounds=(110,370),ybounds=(84,114))
+      badguy_image  = preOCR("screens/screenshot_%s.png"%ACTIVE_DEVICE,xbounds=(110,370),ybounds=(84,114)) #(99,126)
       badguy_string = runOCR( badguy_image, mode='line')
    
       badguy_name  = re.sub(r' Lv.+', '', badguy_string)
@@ -1367,7 +1367,8 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
 def eventKillEnemies(find_enraged=False):
    
    printAction("Locating the \"face enemy\" button...")
-   event_face_enemy = locateTemplate("screens/event_mission_button.png", offset=(240,-54), threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
+   event_face_enemy = locateTemplate("screens/event_enemies_in_area.png",
+                                     offset=(240,25), threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
    printResult(event_face_enemy)
    if not event_face_enemy:
       printAction("Unable to locate \"face enemy\" button...")
@@ -1399,10 +1400,10 @@ def eventKillEnemies(find_enraged=False):
             offset=(154,89), retries=5, ybounds=(0,400), swipe_size=[(240,600),(240,295)])
          if not event_enemies_in_area:
             return False
-         event_face_enemy = locateTemplate("screens/event_mission_button.png",
-            offset=(240,-54), threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
-         if not event_face_enemy:
-            return False
+#         event_face_enemy = locateTemplate("screens/event_mission_button.png",
+#            offset=(240,-54), threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
+#         if not event_face_enemy:
+#            return False
          take_screenshot_adb()
          
       if not enemy_found:
@@ -1419,7 +1420,7 @@ def eventKillEnemies(find_enraged=False):
 #      left_click(event_enemy_corner+np.array((66,164)))
 #      left_click(event_enemy_corner+np.array((66,164)))
       time.sleep(1)
-      swipe((20,600),(20,200))
+      swipe((20,400),(20,200))
       time.sleep(1)
 #      printAction("Searching for deck select button...")
 #      for j in range(5):
@@ -1526,8 +1527,8 @@ def eventKillEnemies(find_enraged=False):
       printAction( "Checking if \"ask for support\" or \"collect reward\" is available..." )
       success = False
       for i in range(6):
-         ask_for_support = locateTemplate("screens/event_ask_for_support_button.png", offset=(112,15), click=True, swipe_size=[])
-         reward          = locateTemplate("screens/event_get_your_reward_button.png", offset=(115,14), click=True, reuse_last_screenshot=True)
+         ask_for_support = locateTemplate("screens/event_ask_for_support_button.png", offset=(112,15), swipe_size=[])
+         reward          = locateTemplate("screens/event_get_your_reward_button.png", offset=(115,14), reuse_last_screenshot=True)
          
          if not ask_for_support and not reward:
             swipe((240,600),(240,295))
@@ -1544,7 +1545,7 @@ def eventKillEnemies(find_enraged=False):
             printResult(True)
             success = True
             printAction( "Found \"reward\" button. Clicking it...", newline=True )
-            left_click(ask_for_support)
+            left_click(reward)
             break
          
       if not success:
@@ -3477,14 +3478,14 @@ if __name__ == "__main__":
 
    i = Info()
 
-   setActiveDevice("10.42.0.52:5558",True)
+#   setActiveDevice("10.42.0.52:5558",True)
 #   custom20()
-   playNewestMission()
+#   playNewestMission()
    
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 
-#   setActiveDevice("10.0.0.18:5555", youwave=False)
+   setActiveDevice("10.0.0.23:5555", youwave=False)
 #   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
 #   playNewestMission()
@@ -3510,7 +3511,7 @@ if __name__ == "__main__":
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))
-#   eventPlay()
+   eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()

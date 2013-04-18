@@ -679,39 +679,78 @@ def back_key():
    
 def swipe(start,stop):
 
-   Popen("adb %s shell input swipe %d %d %d %d"%(ADB_ACTIVE_DEVICE,start[0],start[1],stop[0],stop[1]), stdout=PIPE, shell=True).stdout.read()
+   if not YOUWAVE:
+      Popen("adb %s shell input swipe %d %d %d %d"%(ADB_ACTIVE_DEVICE,start[0],start[1],stop[0],stop[1]), stdout=PIPE, shell=True).stdout.read()
+   else:
+      linear_swipe(start,stop,steps=5)
    
 def linear_swipe(start,stop,steps=1):
-   xloc = np.linspace(start[0],stop[0],steps+1)
-   yloc = np.linspace(start[1],stop[1],steps+1)
-
    
-   adb_event( 2, 0x0003, 0x0039, 0x00000eb0 )
-   adb_event( 2, 0x0003, 0x0035, xloc[0] )
-   adb_event( 2, 0x0003, 0x0036, yloc[0] )
-   adb_event( 2, 0x0003, 0x0030, 0x00000053 )
-   adb_event( 2, 0x0003, 0x003a, 0x00000005 )
-   adb_event( 2, 0x0000, 0x0000, 0x00000000 )
+   if not YOUWAVE:
+      xloc = np.linspace(start[0],stop[0],steps+1)
+      yloc = np.linspace(start[1],stop[1],steps+1)
    
-   for i in range(steps):
-      adb_event( 2, 0x0003, 0x0035, xloc[i+1] )
-      adb_event( 2, 0x0003, 0x0036, yloc[i+1] )
-      adb_event( 2, 0x0003, 0x0030, 0x00000042 )
+      
+      adb_event( 2, 0x0003, 0x0039, 0x00000eb0 )
+      adb_event( 2, 0x0003, 0x0035, xloc[0] )
+      adb_event( 2, 0x0003, 0x0036, yloc[0] )
+      adb_event( 2, 0x0003, 0x0030, 0x00000053 )
       adb_event( 2, 0x0003, 0x003a, 0x00000005 )
       adb_event( 2, 0x0000, 0x0000, 0x00000000 )
       
-   adb_event( 2, 0x0003, 0x0039, 0xffffffff )
-   adb_event( 2, 0x0000, 0x0000, 0x00000000 )
+      for i in range(steps):
+         adb_event( 2, 0x0003, 0x0035, xloc[i+1] )
+         adb_event( 2, 0x0003, 0x0036, yloc[i+1] )
+         adb_event( 2, 0x0003, 0x0030, 0x00000042 )
+         adb_event( 2, 0x0003, 0x003a, 0x00000005 )
+         adb_event( 2, 0x0000, 0x0000, 0x00000000 )
+         
+      adb_event( 2, 0x0003, 0x0039, 0xffffffff )
+      adb_event( 2, 0x0000, 0x0000, 0x00000000 )
    
+   else:
+      xloc = np.linspace(int(start[0]*2**15/480.0),int(stop[0]*2**15/480.0),steps+1)
+      yloc = np.linspace(int(start[1]*2**15/640.0),int(stop[1]*2**15/640.0),steps+1)
 
-   
-   
+      adb_event_batch( [
+         ( 3, 0x0004, 0x0004, 0x00090001 ),
+         ( 3, 0x0001, 0x0110, 0x00000001 ),
+         ( 3, 0x0000, 0x0000, 0x00000000 ),
+         ( 3, 0x0003, 0x0000, xloc[0] ),
+         ( 3, 0x0003, 0x0001, yloc[0] ),
+         ( 3, 0x0000, 0x0000, 0x00000000 )
+         ] )
+      
+      for i in range(steps):
+         adb_event_batch( [
+            ( 3, 0x0003, 0x0000, xloc[i+1] ),
+            ( 3, 0x0003, 0x0001, yloc[i+1] ),
+            ( 3, 0x0000, 0x0000, 0x00000000 )
+            ] )
+#         time.sleep(1.0/steps)
+         
+      adb_event_batch( [         
+         ( 3, 0x0004, 0x0004, 0x00090001 ),
+         ( 3, 0x0001, 0x0110, 0x00000000 ),
+         ( 3, 0x0000, 0x0000, 0x00000000 )
+         ] )
+
 
 def scroll(dx,dy):
    
-   Popen("adb %s shell input trackball roll %d %d"%(ADB_ACTIVE_DEVICE,dx,dy), stdout=PIPE, shell=True).stdout.read()
-   
-  
+   if not YOUWAVE:
+      Popen("adb %s shell input trackball roll %d %d"%(ADB_ACTIVE_DEVICE,dx,dy), stdout=PIPE, shell=True).stdout.read()
+   else:
+#      xint = 200.0
+      yint = 200.0
+            
+      numy = dy / yint
+      for i in range(int(numy)+1):
+         if dy > 0:
+            linear_swipe((5,400),(5,400-yint),steps=5)
+         else:
+            linear_swipe((5,200),(5,200+yint),steps=5)
+         
    
 def unlock_phone():
    
@@ -2317,17 +2356,23 @@ def playNewestMission(repeat=50):
          
          # Double check that the return from mission actually was registered.
          mission_started = locateTemplate('screens/mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
-         go_to_boss = locateTemplate("screens/event_mission_go_to_boss.png", offset=(130,16), click=True, print_coeff=False, reuse_last_screenshot=True)
+         mission_boss_encounter = locateTemplate("screens/mission_boss_encounter.png", offset=(130,16), print_coeff=False, reuse_last_screenshot=True)
 
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
             time.sleep(1)
          
-         elif go_to_boss:
+         elif mission_boss_encounter:
             printAction( "Raid boss detected. Playing the boss...", newline=True )
             
-            face_the_enemy = locateTemplate("screens/face_the_enemy_button.png",
+#            go_to_boss = locateTemplate("screens/event_mission_go_to_boss.png",
+#                                        offset=(130,16), retries=4, click=True, ybounds=(0,600), swipe_size=[(20,400),(20,295)])
+#            if not go_to_boss:
+#               printAction("Unable to find \"go to boss\" button...", newline=True)
+#               return False
+            
+            face_the_enemy = locateTemplate("screens/mission_face_the_super_villain_button.png",
                                              offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
             if not face_the_enemy:
                printAction("Unable to find \"face the enemy\" button...", newline=True)
@@ -2372,12 +2417,10 @@ def playNewestMission(repeat=50):
          for i in range(10):
             time.sleep(int(uniform(1,2)))
             
-            out_of_energy = locateTemplate('screens/out_of_energy.png', threshold=0.985, print_coeff=False)
-            #printResult(out_of_energy)
-            
-            mission_started = locateTemplate('screens/mission_bar.png', threshold=0.985)
-            #printResult(mission_started)
-               
+            mission_started = locateTemplate('screens/mission_bar.png', threshold=0.985, print_coeff=False)
+            out_of_energy = locateTemplate('screens/out_of_energy.png', threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
+            mission_boss = locateTemplate("screens/mission_boss_encounter.png", offset=(130,16), click=True, print_coeff=False, reuse_last_screenshot=True)
+                           
             if out_of_energy:
                print( '' )
                printAction("No energy left! Exiting.", newline=True)
@@ -2387,6 +2430,32 @@ def playNewestMission(repeat=50):
 #                  stats.silverEnd("mission_%d-%d"%mission_number)
                
                return True
+            
+            if mission_boss: #????
+               
+               face_the_enemy = locateTemplate("screens/mission_face_the_super_villain_button.png",
+                                                offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+               if not face_the_enemy:
+                  printAction("Unable to find first \"face the enemy\" button...", newline=True)
+                  return False
+               
+               face_the_enemy = locateTemplate("screens/mission_face_the_super_villain_button.png",
+                                                offset=(130,16), retries=15, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+               if not face_the_enemy:
+                  printAction("Unable to find second \"face the enemy\" button...", newline=True)
+                  return False
+      
+               fight_enemy =  locateTemplate("screens/event_mission_boss_fight_button.png", threshold=0.9,
+                                                offset=(85,24), retries=10, click=True)
+               if not fight_enemy:
+                  printAction("Unable to find \"FIGHT\" button...", newline=True)
+                  return False
+               
+               confirm =  locateTemplate("screens/event_mission_boss_confirm_button.png", threshold=0.9,
+                                                offset=(85,24), retries=10, click=True)
+               if not confirm:
+                  printAction("Unable to find \"FIGHT\" button...", newline=True)
+                  return False
                
             if mission_started:
                print( '' )
@@ -3409,7 +3478,9 @@ if __name__ == "__main__":
    i = Info()
 
    setActiveDevice("10.42.0.52:5558",True)
-   custom20()
+#   custom20()
+   playNewestMission()
+   
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 

@@ -37,7 +37,12 @@ abc = ['abcdefghijklmnopqrstuvwxyz']
 #3 rarities lower - 16
 #4 rarities lower - 2
 
-
+# Windows build:
+#
+# py2exe
+# Inno Setup
+# or
+# pylunch
 
 accounts = {'JoInge'  :'Mdt9oFSV',
             'JollyMa' :'Mdt9oFSV',

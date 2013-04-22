@@ -866,7 +866,7 @@ def swipeReference(template, destination=(0,0), threshold=0.96, print_coeff=Fals
    return ref
    
 
-def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=1, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
+def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
                     click=False, scroll_size=[], swipe_size=[], swipe_ref=['',(0,0)]):
    try:
       if YOUWAVE:
@@ -945,8 +945,8 @@ def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=1
             scroll(scroll_size[0],scroll_size[1])
             if interval < 1:
                time.sleep(3)
-            else:
-               time.sleep(interval)
+         
+         time.sleep(interval)
       
    return None
       
@@ -2386,7 +2386,7 @@ def playNewestMission(repeat=50):
                return False
             
             confirm =  locateTemplate("screens/event_mission_boss_confirm_button.png", threshold=0.9,
-                                             offset=(85,24), retries=10, click=True)
+                                             offset=(85,24), retries=20, interval=1, click=True)
             if not confirm:
                printAction("Unable to find \"FIGHT\" button...", newline=True)
                return False

@@ -2434,29 +2434,39 @@ def playNewestMission(repeat=50):
             
             if mission_boss: #????
                
+               printAction('', newline=True)
+               printAction("Mission boss detected! Playing him...", newline=True)
+               
+               printAction("Attempting to find and click first \"face the enemy\" button...")
                face_the_enemy = locateTemplate("screens/mission_face_the_super_villain_button.png",
                                                 offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+               printResult(face_the_enemy)
                if not face_the_enemy:
-                  printAction("Unable to find first \"face the enemy\" button...", newline=True)
                   return False
                
+               printAction("Attempting to find and click second \"face the enemy\" button...")
                face_the_enemy = locateTemplate("screens/mission_face_the_super_villain_button.png",
                                                 offset=(130,16), retries=15, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+               printResult(face_the_enemy)
                if not face_the_enemy:
-                  printAction("Unable to find second \"face the enemy\" button...", newline=True)
                   return False
       
+               printAction("Attempting to find and click \"FIGHT\" button...")
                fight_enemy =  locateTemplate("screens/event_mission_boss_fight_button.png", threshold=0.9,
                                                 offset=(85,24), retries=10, click=True)
+               printResult(fight_enemy)
                if not fight_enemy:
-                  printAction("Unable to find \"FIGHT\" button...", newline=True)
                   return False
                
+               printAction("Attempting to find and click \"CONFIRM\" button...")
                confirm =  locateTemplate("screens/event_mission_boss_confirm_button.png", threshold=0.9,
                                                 offset=(85,24), retries=10, click=True)
+               printResult(confirm)
                if not confirm:
-                  printAction("Unable to find \"FIGHT\" button...", newline=True)
                   return False
+               
+               repeat = repeat + 1
+               break
                
             if mission_started:
                print( '' )
@@ -2488,20 +2498,21 @@ def start_marvel(user,attempts=3,password=None,enable_cache=False):
       "shared_prefs/CookiePrefsFile.xml",
       "shared_prefs/Preference.xml" ]
       
-   adb_copy_to_sdcard_cmd = ''
-   adb_copy_to_data_cmd = ''
-   for i,f in enumerate(id_files):
-      if i%5 == 0:
-         adb_copy_to_sdcard_cmd += "adb %s shell \""%ADB_ACTIVE_DEVICE
-         adb_copy_to_data_cmd   += "adb %s shell \""%ADB_ACTIVE_DEVICE
-      adb_copy_to_sdcard_cmd += "echo 'cp /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/%s /sdcard/pull_tmp/%s' | su; "%(f,f)
-      adb_copy_to_data_cmd   += "echo 'cp /sdcard/push_tmp/%s /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/%s' | su; "%(f,f)
-      if i%5 == 4:
+   if enable_cache:
+      adb_copy_to_sdcard_cmd = ''
+      adb_copy_to_data_cmd = ''
+      for i,f in enumerate(id_files):
+         if i%5 == 0:
+            adb_copy_to_sdcard_cmd += "adb %s shell \""%ADB_ACTIVE_DEVICE
+            adb_copy_to_data_cmd   += "adb %s shell \""%ADB_ACTIVE_DEVICE
+         adb_copy_to_sdcard_cmd += "echo 'cp /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/%s /sdcard/pull_tmp/%s' | su; "%(f,f)
+         adb_copy_to_data_cmd   += "echo 'cp /sdcard/push_tmp/%s /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/%s' | su; "%(f,f)
+         if i%5 == 4:
+            adb_copy_to_sdcard_cmd += "\"; "
+            adb_copy_to_data_cmd += "\"; "
+      if (i-1)%5 != 4:
          adb_copy_to_sdcard_cmd += "\"; "
          adb_copy_to_data_cmd += "\"; "
-   if (i-1)%5 != 4:
-      adb_copy_to_sdcard_cmd += "\"; "
-      adb_copy_to_data_cmd += "\"; "
    
 #   adb_copy_to_sdcard_cmd = \
 #      "adb %s shell \
@@ -3410,8 +3421,8 @@ def event6():
 
    adjustBrightness()
    while True:
-      notifyWork()
-      printNotify('Complete event for JoInge.', 60*10)
+#      notifyWork()
+#      printNotify('Complete event for JoInge.', 60*10)
       try:
          start_marvel('JoInge')
          farmMission24FuseAndBoost()
@@ -3441,7 +3452,7 @@ def event6():
                      except:
                         pass
 #                     playNewestMission()
-                     farmMission24FuseAndBoost()
+                     farmMission32FuseAndBoost()
                      exitMarvel()
                except:
                   pass
@@ -3515,9 +3526,12 @@ if __name__ == "__main__":
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 
-   setActiveDevice("10.0.0.23:5555", youwave=False)
+   setActiveDevice("localhost:5558", youwave=True)
+#   setActiveDevice("0123456789ABCDEF", youwave=False)
+#   setActiveDevice("10.0.0.23:5555", youwave=False)
 #   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
+   custom20()
 #   playNewestMission()
 #   startFakeAccounts()
 #   createAccounts()
@@ -3532,7 +3546,6 @@ if __name__ == "__main__":
 #   test()
 #   tradeCards(receiver='jollyma', cards_list=['rare+_ironman'], alignment='all')
 #   tradeCards(receiver='jollyma', cards_list=['ssr+_thing_stoneskin', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife'], alignment='all')
-
 #   tradeToJollyMa()
 #   selectCard('rare+_ironman', alignment='all')
 #   event1()
@@ -3541,11 +3554,13 @@ if __name__ == "__main__":
 #   runAll32()
 #   custom4()
 #   play_mission((3,2))
-   eventPlay()
+
+#   eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()
 #   eventPlay()
+
 #   runAll()
 #   startAndRestartWhenQuit()
 #   getMyPageStatus()

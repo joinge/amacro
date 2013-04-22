@@ -3100,8 +3100,9 @@ def custom6():
                   if randomUserStart(['JoInge','JollyMa','JoJanR']):
                      farmMission24FuseAndBoost()
                      exitMarvel()
-               except:
-                  pass
+               except Exception, e:
+                  print( "ERROR: Some exception occured when processing %s"%i )
+                  print(e)
                sleepToCharge(60)
                
       for i in accounts.keys():
@@ -3110,8 +3111,9 @@ def custom6():
                   if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
                      farmMission32FuseAndBoost()
                      exitMarvel()
-               except:
-                  pass
+               except Exception, e:
+                  print( "ERROR: Some exception occured when processing %s"%i )
+                  print(e)
                sleepToCharge(60)
       
       
@@ -3127,8 +3129,9 @@ def custom6b():
                      notify()
                      blockUntilQuit()
                      exitMarvel()
-               except:
-                  pass
+               except Exception, e:
+                  print( "ERROR: Some exception occured when processing %s"%i )
+                  print(e)
                sleepToCharge(60)
                
       for i in accounts.keys():
@@ -3140,8 +3143,9 @@ def custom6b():
                      time.sleep(30)
 #                     blockUntilQuit()
                      exitMarvel()
-               except:
-                  pass
+               except Exception, e:
+                  print( "ERROR: Some exception occured when processing %s"%i )
+                  print(e)
                sleepToCharge(60)
       
 def custom7(start_end=False):
@@ -3156,8 +3160,9 @@ def custom7(start_end=False):
                      farmMission24FuseAndBoost()
                      
                      exitMarvel()
-               except:
-                  pass
+               except Exception, e:
+                  print( "ERROR: Some exception occured when processing %s"%i )
+                  print(e)
                sleepToCharge(60)
       
       start_end = False
@@ -3167,8 +3172,9 @@ def custom7(start_end=False):
                if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
                   farmMission24FuseAndSell()
                   exitMarvel()
-            except:
-               pass
+            except Exception, e:
+               print( "ERROR: Some exception occured when processing %s"%i )
+               print(e)
             sleepToCharge(60)
 
 def custom8(start_end=False):
@@ -3182,8 +3188,9 @@ def custom8(start_end=False):
                   if randomUserStart(['JoInge','JollyMa','JoJanR']):
                      farmMission24FuseAndBoost()
                      exitMarvel()
-               except:
+               except Exception, e:
                   print( "ERROR: Some exception occured when processing %s"%i )
+                  print(e)
                sleepToCharge(60)
            
       start_end = False 
@@ -3193,8 +3200,9 @@ def custom8(start_end=False):
                if randomUserStart(['l33tdump','Rolfy86']):
                   farmMission24FuseAndBoost()
                   exitMarvel()
-            except:
+            except Exception, e:
                print( "ERROR: Some exception occured when processing %s"%i )
+               print(e)
             sleepToCharge(60)
                
       
@@ -3204,8 +3212,10 @@ def custom8(start_end=False):
                if randomUserStart(['kinemb86','MonaBB86']):
                   farmMission24FuseAndSell()
                   exitMarvel()
-            except:
+            except Exception, e:
                print( "ERROR: Some exception occured when processing %s"%i )
+               print(e)
+               
             sleepToCharge(60)
             
             
@@ -3232,8 +3242,9 @@ def custom20():
             playNewestMission()
             exitMarvel()
             time.sleep(60)
-         except:
+         except Exception, e:
             print("Failed to process user %s"%user)
+            print(e)
 
 def event20():
    
@@ -3257,13 +3268,14 @@ def event20():
             start_marvel(user,password=password)
             try:
                eventPlay()
-            except:
-               pass
+            except Exception, e:
+               print(e)
             playNewestMission()
             exitMarvel()
             time.sleep(60)
-         except:
+         except Exception, e:
             print("Failed to process user %s"%user)
+            print(e)
 
 
 def event1(start_end=False):
@@ -3449,13 +3461,13 @@ def event6():
                   if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
                      try:
                         eventPlay()
-                     except:
-                        pass
+                     except Exception, e:
+                        print(e)
 #                     playNewestMission()
                      farmMission32FuseAndBoost()
                      exitMarvel()
-               except:
-                  pass
+               except Exception, e:
+                  print(e)
                sleepToCharge(30)
 
 
@@ -3469,12 +3481,12 @@ def event7():
                if randomUserStart(['JoInge','JollyMa','JoJanR']):
                   try:
                      eventPlay(find_enraged=True)
-                  except:
-                     pass
+                  except Exception, e:
+                     print(e)
                   farmMission24FuseAndBoost()
                   exitMarvel()
-            except:
-               pass
+            except Exception, e:
+               print(e)
             sleepToCharge(30)
                
       for i in accounts.keys():
@@ -3483,13 +3495,13 @@ def event7():
                   if randomUserStart(['l33tdump','Rolfy86','kinemb86','MonaBB86']):
                      try:
                         eventPlay(find_enraged=True)
-                     except:
-                        pass
+                     except Exception, e:
+                        print(e)
 #                     playNewestMission()
                      farmMission24FuseAndBoost()
                      exitMarvel()
-               except:
-                  pass
+               except Exception, e:
+                  print(e)
                sleepToCharge(30)
 
 

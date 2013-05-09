@@ -112,6 +112,11 @@ class Example(QtGui.QWidget):
       btn.resize(btn.sizeHint())
       btn.move(200,100)
       
+      btn = QtGui.QPushButton('Check Training', self)
+      btn.clicked.connect(macro.checkTraining)
+      btn.resize(btn.sizeHint())
+      btn.move(200,125)
+      
       devices = macro.adbDevices()
 #      listWidget = QtGui.QRadioButton()
 

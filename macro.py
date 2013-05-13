@@ -3326,7 +3326,7 @@ def custom8(start_end=False):
          if i == 'kinemb86' or i == 'MonaBB86':
             try:
                if randomUserStart(['kinemb86', 'MonaBB86']):
-                  farmMission24FuseAndSell()
+                  farmMission24FuseAndBoost()
                   exitMarvel()
             except Exception, e:
                print("ERROR: Some exception occured when processing %s" % i)

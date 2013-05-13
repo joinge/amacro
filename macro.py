@@ -868,17 +868,7 @@ def swipeReference(template, destination=(0, 0), threshold=0.96, print_coeff=Fal
 
 def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=0, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
                     click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
-   try:
-      if YOUWAVE:
-         name, ext = os.path.splitext(template)
-         template_youwave = name + "_youwave" + ext
-         if os.path.exists(template_youwave):
-            template = template_youwave
 
-      image_template = cv2.imread(template)
-   except:
-      print(template + " does not seem to exist.")
-      return False
    
    for i in range(retries):
       if not reuse_last_screenshot:
@@ -892,18 +882,40 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          print("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!" % ACTIVE_DEVICE)
          return False
       
-      try:
-         result = cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED)
-      except:
-         print("ERROR: Unable to match template \"%s\" with screenshot!!!" % template)
-         return False
+      result = np.array(0)
+      match_found = False
+      template = re.sub(r'[0-9]*\.', '.', template)
+      for j in range(5):
+                  
+         if YOUWAVE:
+            name, ext = os.path.splitext(template)
+            template_youwave = name + "_youwave" + ext
+            if os.path.exists(template_youwave):
+               template = template_youwave
+      
+         if os.path.exists(template):
+            image_template = cv2.imread(template)
+
+            result = cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED)
+            
+            if result.max() > threshold:
+               match_found = True
+               break
+         
+         template = re.sub(r'[0-9]*\.', '%d.'%j, template)
+         
+#       try:
+#          result = cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED)
+#       except:
+#          print("ERROR: Unable to match template \"%s\" with screenshot!!!" % template)
+#          return False
       
       if print_coeff:
          sys.stdout.write("%.2f " % result.max())
          sys.stdout.flush()
 #         print( " %.2f"%result.max(), end='' )
          
-      if result.max() > threshold:
+      if match_found:
          template_coords = np.unravel_index(result.argmax(), result.shape)
          template_coords = np.array([template_coords[1], template_coords[0]])
          object_coords = tuple(template_coords + np.array(offset))
@@ -2355,9 +2367,8 @@ def playNewestMission(repeat=50):
 
    for i in range(repeat + 1):
       printAction("Searching for newest mission button...")
-      mission_newest_button = locateTemplate("screens/mission_newest_button.png", threshold=0.95,
+      mission_newest_button  = locateTemplate("screens/mission_newest_button.png", threshold=0.95,
                                              offset=(193, 14))
-      printResult(mission_newest_button)
                   
       if not mission_newest_button:
          
@@ -2493,7 +2504,7 @@ def playNewestMission(repeat=50):
 #               stats.silverEnd("mission_%d-%d"%mission_number)
             return False
 
-def start_marvel(user, attempts=3, password=None, enable_cache=False):
+def startMarvel(user, attempts=3, password=None, enable_cache=False):
    
    id_files = [
       "databases/requests-journal",
@@ -2586,9 +2597,13 @@ def start_marvel(user, attempts=3, password=None, enable_cache=False):
                      stdout=PIPE, shell=True).stdout.read())
 
             time.sleep(1)
-            ad = locateTemplate('screens/home_screen_ad.png', offset=(90, 20), threshold=0.95)
-            if ad:
-               left_click(ad) # kills ads
+            ad  = locateTemplate('screens/home_screen_ad.png', offset=(90, 20), threshold=0.95)
+            ad2 = locateTemplate('screens/home_screen_ad2.png', offset=(90, 20), threshold=0.95, reuse_last_screenshot=True)
+            if ad or ad2:
+               if ad:
+                  left_click(ad) # kills ads
+               if ad2:
+                  left_click(ad2) # kills ads
                time.sleep(1)
             
 #            left_click((346,551)) # kills ads
@@ -2621,13 +2636,13 @@ def start_marvel(user, attempts=3, password=None, enable_cache=False):
    # adb catlog
    
 def start_marvel_joinge():
-   return start_marvel('JoInge')
+   return startMarvel('JoInge')
    
 def start_marvel_jollyma():
-   return start_marvel('JollyMa')
+   return startMarvel('JollyMa')
    
 def start_marvel_jojanr():
-   return start_marvel('JoJanR')
+   return startMarvel('JoJanR')
    
 def exitMarvel(lock_phone=True):
    check_if_vnc_error()
@@ -2814,12 +2829,12 @@ def randomUserStart(user_list=accounts.keys()):
       i = int(uniform(0, user_list.__len__() - 0.000001))
       if recently_launched[getIndex(user_list[i])] == 0:
          recently_launched[getIndex(user_list[i])] = 1
-         return start_marvel(user_list[i])
+         return startMarvel(user_list[i])
    
 def startFakeAccounts():
    
    for user in fakeAccounts.keys():
-      start_marvel(user)
+      startMarvel(user)
    
 def runAll24():
    while True:
@@ -3198,7 +3213,7 @@ def custom5():
    while True:
       for i in accounts.keys():
          try:
-            if start_marvel(i):
+            if startMarvel(i):
                farmMission24FuseAndBoost()
                exitMarvel()
          except:
@@ -3354,7 +3369,7 @@ def custom20():
       for user, password in fakeAccounts.iteritems():
          try:
             setAndroidId(user)
-            start_marvel(user, password=password)
+            startMarvel(user, password=password)
             playNewestMission()
             exitMarvel()
             time.sleep(60)
@@ -3381,7 +3396,7 @@ def event20():
       for user, password in fakeAccounts.iteritems():
          try:
             setAndroidId(user)
-            start_marvel(user, password=password)
+            startMarvel(user, password=password)
             try:
                eventPlay()
             except Exception, e:
@@ -3455,7 +3470,7 @@ def event2(start_end=False):
       sleepToCharge(60)
       
       try:
-         if start_marvel('l33tdump'):
+         if startMarvel('l33tdump'):
             printNotify('Complete trade and event.', 60 * 30)
             tradeCards(receiver='Rolfy86', cards_list=trade_list, alignment='all')
             exitMarvel()
@@ -3465,7 +3480,7 @@ def event2(start_end=False):
       sleepToCharge(60)
       
       try:
-         if start_marvel('Rolfy86'):
+         if startMarvel('Rolfy86'):
             printNotify('Complete trade and event.', 60 * 30)
             tradeCards(receiver='kinemb86', cards_list=trade_list, alignment='all')
             exitMarvel()
@@ -3475,7 +3490,7 @@ def event2(start_end=False):
       sleepToCharge(60)
       
       try:
-         if start_marvel('kinemb86'):
+         if startMarvel('kinemb86'):
             printNotify('Complete trade and event.', 60 * 30)
             tradeCards(receiver='MonaBB86', cards_list=trade_list, alignment='all')
             exitMarvel()
@@ -3485,7 +3500,7 @@ def event2(start_end=False):
       sleepToCharge(60)
       
       try:
-         if start_marvel('MonaBB86'):
+         if startMarvel('MonaBB86'):
             printNotify('Complete trade and event.', 60 * 30)
             tradeCards(receiver='jojanr', cards_list=trade_list, alignment='all')
             exitMarvel()
@@ -3552,7 +3567,7 @@ def event6():
 #      notifyWork()
 #      printNotify('Complete event for JoInge.', 60*10)
       try:
-         start_marvel('JoInge')
+         startMarvel('JoInge')
          farmMission24FuseAndBoost()
          exitMarvel()
       except:
@@ -3654,19 +3669,19 @@ if __name__ == "__main__":
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 
-#   setActiveDevice("localhost:5558", youwave=True)
-   setActiveDevice("0123456789ABCDEF", youwave=False)
+   setActiveDevice("10.42.0.52:5558", youwave=True)
+#    setActiveDevice("0123456789ABCDEF", youwave=False)
 #   setActiveDevice("10.0.0.35:5555", youwave=False)
 #   getMyPageStatus()
-   locateTemplate("screens/mission_2_4.png")
+#    locateTemplate("screens/mission_2_4.png")
 #   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
-#   custom20()
+   custom20()
 #   checkRaid()
-#   playNewestMission()
+#    playNewestMission()
 #   startFakeAccounts()
 #   createAccounts()
-#   start_marvel('JoInge')
+#   startMarvel('JoInge')
 #   import gui.gui as gui
 #   gui.main()
 #   boostCard( 'uncommon_ironman', all_feeder_cards, alignment='tactics' )
@@ -3705,7 +3720,7 @@ if __name__ == "__main__":
 #   i = Info()
 #   s = "Gunner1972"
 ##   setAndroidId(s)
-##   start_marvel(s,password=i.fakeAccounts[s])
+##   startMarvel(s,password=i.fakeAccounts[s])
 #   playNewestMission()
 
    

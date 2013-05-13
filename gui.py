@@ -93,7 +93,7 @@ class Example(QtGui.QWidget):
       for i,user in enumerate(macro.accounts.keys()):
          btn.append(QtGui.QPushButton(user, self))
          btn[-1].setToolTip('This is a <b>QPushButton</b> widget')
-         btn[-1].clicked.connect(partial(macro.start_marvel, user, 1))
+         btn[-1].clicked.connect(partial(macro.startMarvel, user, 1))
          btn[-1].resize(btn[-1].sizeHint())
          btn[-1].move(50, 50+25*i)
          

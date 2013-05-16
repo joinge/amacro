@@ -276,7 +276,25 @@ emails = [
 'hotmail.com'
  ]
 
-def createAccounts(baseNames=baseN):
+def getBaseName():
+   
+# curl -L http://www.spinxo.com/ | sed -r -n "s/^\s+([a-zA-Z]+)<\/a><\/li>.*$/\1/p" >> info/nick_seeds.txt
+# cat info/nick_seeds.txt | sort -R > ./info/nick_seeds2.txt
+
+   f = open('./info/nick_seeds.txt', 'r')
+   all_names = f.readlines()
+   name = all_names[0]
+   name = re.sub('\n','',name)
+   f.close()
+#   lines = re.split("\n+", file)
+   f = open('./info/nick_seeds.txt', 'w')
+   f.write( "".join(all_names[1:]) )
+   f.close()
+   
+   return name
+
+
+def createAccount(baseNames=baseN):
    
    endNames = []
    endEmails = []
@@ -308,6 +326,117 @@ def createAccounts(baseNames=baseN):
    
    f.write('}')
    e.write('}')
+   
+def createNewFakeAccount(referral=""):
+   
+   name_base  = getBaseName()
+   email_base = getBaseName().lower()
+   
+
+   
+   # Set new Android ID and start WoH
+   setAndroidId(name_base,newAndroidId())
+   unlock_phone()
+   clearMarvelCache()
+   launch_marvel()
+   
+   printAction("Searching for login screen...")
+   login_screen_coords = locateTemplate('screens/login_screen.png', threshold=0.95, retries=25, interval=1)
+   printResult(login_screen_coords)
+   
+   if login_screen_coords:
+      
+      randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(0, 3))).astype(int).astype('str'))
+      
+      email = email_base + randNums + '@' + emails[int(np.random.uniform(4))]
+        
+      for i in range(10):
+         print("hello")
+      
+      
+
+      
+#      adb_login(login_screen_coords, user, password)            
+      
+#      printAction("Searching for home screen...")
+#      login_success = False
+#      for i in range(35):
+#         time.sleep(1)
+#         home_screen = locateTemplate('screens/home_screen.png', threshold=0.95)
+#            
+#         if home_screen:
+#            if enable_cache and NEW_USER:
+#               os.mkdir('./users/%s' % user)
+#               os.mkdir('./users/%s/files' % user)
+#               os.mkdir('./users/%s/shared_prefs' % user)
+#               
+#               print(
+#               Popen("adb %s shell \
+#                     \" rm -r /sdcard/pull_tmp;\
+#                        mkdir /sdcard/pull_tmp;\
+#                        mkdir /sdcard/pull_tmp/files;\
+#                        mkdir /sdcard/pull_tmp/shared_prefs\";\
+#                        %s \
+#                     adb %s pull /sdcard/pull_tmp ./users/%s\
+#                     " % (ADB_ACTIVE_DEVICE, adb_copy_to_sdcard_cmd, ADB_ACTIVE_DEVICE, user),
+#                     stdout=PIPE, shell=True).stdout.read())
+#
+#            time.sleep(1)
+#            ad  = locateTemplate('screens/home_screen_ad.png', offset=(90, 20), threshold=0.95)
+#            ad2 = locateTemplate('screens/home_screen_ad2.png', offset=(90, 20), threshold=0.95, reuse_last_screenshot=True)
+#            if ad or ad2:
+#               if ad:
+#                  left_click(ad) # kills ads
+#               if ad2:
+#                  left_click(ad2) # kills ads
+#               time.sleep(1)
+#            
+##            left_click((346,551)) # kills ads
+#            login_success = True
+#            break
+#   
+#   
+#   
+#   
+#   
+#   
+#   startMarvel(user, password=password)
+#   playNewestMission()
+#   exitMarvel()
+#   time.sleep(60)
+
+#def createAccounts(baseNames=baseN):
+#   
+#   endNames = []
+#   endEmails = []
+#   endPasswords = []
+#   
+#   f = open('new_accounts.txt', 'w')
+#   e = open('new_emails.txt', 'w')
+#   
+#   f.write('{')
+#   e.write('{')
+#   
+#   for i in baseNames:
+#      
+#      name = i
+#      print(i)
+#      
+#      randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(0, 3))).astype(int).astype('str'))
+#      randABC = ''.join([ABC[0][j] for j in np.random.uniform(0, 26, size=int(np.random.uniform(3))).astype(int)])
+#      randAbc = ''.join([abc[0][j] for j in np.random.uniform(0, 26, size=int(np.random.uniform(3))).astype(int)])
+#      
+#      tmp = [i, randNums, randABC, randAbc]
+#      tmp2 = [randNums, randABC, randAbc]
+#      password = ''.join([tmp[j] for j in np.random.uniform(0, 4, size=4).astype(int)])
+#      email = i + ''.join([tmp2[j] for j in np.random.uniform(0, 3, size=4).astype(int)]) + '@' + emails[int(np.random.uniform(4))]
+#      name = i + randABC + randAbc + randNums
+#
+#      f.write("\'%s\':\'%s\',\n" % (name, password))
+#      e.write("\'%s\':\'%s\',\n" % (name, email))
+#   
+#   f.write('}')
+#   e.write('}')
 
 def adbDevices():
    
@@ -2775,7 +2904,7 @@ def farmMission32FuseAndBoost():
    play_mission((3, 2), 50)
       
    fuseAndBoost('uncommon_ironman',
-                ['common_thing', 'common_blackcat', 'common_spiderwoman', 'common_sandman'],
+                all_feeder_cards,
                 fuse_alignment='tactics')
    
    try:
@@ -3670,13 +3799,15 @@ if __name__ == "__main__":
 #   custom20()
 
    setActiveDevice("10.42.0.52:5558", youwave=True)
+   
+   createNewFakeAccount()
 #    setActiveDevice("0123456789ABCDEF", youwave=False)
 #   setActiveDevice("10.0.0.35:5555", youwave=False)
 #   getMyPageStatus()
 #    locateTemplate("screens/mission_2_4.png")
 #   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
-   custom20()
+#   custom20()
 #   checkRaid()
 #    playNewestMission()
 #   startFakeAccounts()

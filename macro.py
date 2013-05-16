@@ -1013,7 +1013,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
       
       result = np.array(0)
       match_found = False
-      template = re.sub(r'[0-9]*\.', '.', template)
+      template = re.sub(r'-[0-9]*\.', '.', template)
       for j in range(5):
                   
          if YOUWAVE:
@@ -1031,7 +1031,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
                match_found = True
                break
          
-         template = re.sub(r'[0-9]*\.', '%d.'%j, template)
+         template = re.sub(r'-[0-9]*\.', '-%d.'%j, template)
          
 #       try:
 #          result = cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED)
@@ -3805,7 +3805,7 @@ if __name__ == "__main__":
 #   setActiveDevice("10.0.0.35:5555", youwave=False)
 #   getMyPageStatus()
 #    locateTemplate("screens/mission_2_4.png")
-#   setActiveDevice("00190e8364f46e", youwave=False)
+   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
 #   custom20()
 #   checkRaid()
@@ -3832,6 +3832,8 @@ if __name__ == "__main__":
 #   custom4()
 #   play_mission((3,2))
 
+   play_mission((2,4))
+
 #   eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
@@ -3841,7 +3843,7 @@ if __name__ == "__main__":
 #   runAll()
 #   startAndRestartWhenQuit()
 #   getMyPageStatus()
-#   farmMission24FuseAndBoost()
+#    farmMission24FuseAndBoost()
 #   replay_all_macros()
 #   getIMEI() 
 #   replay_all_macros()

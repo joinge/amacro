@@ -1786,7 +1786,9 @@ def eventPlay(find_enraged=False):
       
    print("PLAYING EVENT")
    
-   for i in range(8):
+   N = 6
+   Nmax = 16
+   for i in range(N):
       
       gotoEventHome()
   
@@ -1798,6 +1800,9 @@ def eventPlay(find_enraged=False):
       success = True
       if event_enemies_in_area:
          success = eventKillEnemies(find_enraged=find_enraged)
+         # Continue as long as we get success
+         if success and i > N-3 and i < Nmax:
+            i = i + 2
       else:
          dummy = eventPlayMission()
       

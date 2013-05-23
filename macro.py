@@ -1063,6 +1063,7 @@ def runOCR(image, mode='', lang='eng'):
       language = 'eng'
    
    cv2.imwrite('tmp.png', image)
+   Popen("echo '' > text.txt" , shell=True, stdout=PIPE).stdout.read()
    Popen("tesseract tmp.png text %s -l %s >/dev/null 2>&1" % (psm, language), shell=True, stdout=PIPE).stdout.read()
    
    if os.path.getsize('text.txt') == 1:
@@ -1363,6 +1364,7 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
          print("Health: %d / %d" %(enemy_health[0],enemy_health[1]))
       except:
          print('WARNING: Unable to convert enemy health to int.')
+         enemy_health = (1000,1000)
       
       print(enemy_health)
       print("Health: %d / %d" %(enemy_health[0],enemy_health[1]))
@@ -1466,18 +1468,36 @@ def eventKillEnemies(find_enraged=False):
 #      while watchdog > 0:
 #      for j in range(10):
 #         if weird_bool:
-      printAction("Attacking with the highest RDS option...")
-         
-      attack_blitz = locateTemplate("screens/event_attack_blitz.png", threshold=0.90, offset=(74, 24), click=True)   
-      attack_normal = locateTemplate("screens/event_attack_normal.png", threshold=0.90, offset=(74, 24), click=True, reuse_last_screenshot=True)  
-      attack_light = locateTemplate("screens/event_attack_light.png", threshold=0.90, offset=(74, 24), click=True, reuse_last_screenshot=True)
-               
+      
+      
+      attack_blitz = locateTemplate("screens/event_attack_blitz.png", threshold=0.90, offset=(74, 24))   
+      attack_normal = locateTemplate("screens/event_attack_normal.png", threshold=0.90, offset=(74, 24), reuse_last_screenshot=True)  
+      attack_light = locateTemplate("screens/event_attack_light.png", threshold=0.90, offset=(74, 24), reuse_last_screenshot=True)
+      
       if not attack_blitz and not attack_normal and not attack_light:
          
          printResult(False)
          return False
-            
+      
       printResult(True)
+      
+      base_attack = 200000
+      if info['badguy_health'][0] < base_attack and attack_light:
+         printAction("Attacking with the 1 RDS option...")
+         left_click(attack_light)
+         left_click(attack_light)
+      elif info['badguy_health'][0] < 4*base_attack and attack_normal:
+         printAction("Attacking with the 3 RDS option...")
+         left_click(attack_normal)
+         left_click(attack_normal)
+      elif attack_blitz:
+         printAction("Attacking with the 6 RDS option...")
+         left_click(attack_blitz)
+         left_click(attack_blitz)
+      else:
+         printAction("No attack power left. Quitting...")
+         return False
+                           
       printAction("Confirming that enemy is taken down...")
       confirmed = False
       taken_out = False
@@ -1557,18 +1577,19 @@ def eventKillEnemies(find_enraged=False):
             success = True
             printAction("Found \"ask for support\" button. Clicking it...", newline=True)
             left_click(ask_for_support)
-            break
+            return True
             
          elif reward:
             printResult(True)
             success = True
             printAction("Found \"reward\" button. Clicking it...", newline=True)
             left_click(reward)
-            break
+            return True
          
       if not success:
          printResult(False)
       time.sleep(3)
+      return False
 #         left_click(face_the_enemy)
 #         time.sleep(3)
 #         
@@ -1627,7 +1648,7 @@ def eventPlay(find_enraged=False):
       
    print("PLAYING EVENT")
    
-   for i in range(3):
+   for i in range(6):
       
       gotoEventHome()
   
@@ -1639,8 +1660,6 @@ def eventPlay(find_enraged=False):
       success = True
       if event_enemies_in_area:
          success = eventKillEnemies(find_enraged=find_enraged)
-         if not success:
-            success = eventKillEnemies(find_enraged=False)
       else:
          dummy = eventPlayMission()
       
@@ -3602,7 +3621,7 @@ def event6():
                sleepToCharge(30)
 
 
-def event7():
+def event7(find_enraged=False):
 
    adjustBrightness()
    while True:
@@ -3611,7 +3630,7 @@ def event7():
             try:
                if randomUserStart(['JoInge', 'JollyMa', 'JoJanR']):
                   try:
-                     eventPlay(find_enraged=True)
+                     eventPlay(find_enraged=find_enraged)
                   except Exception, e:
                      print(e)
                   farmMission24FuseAndBoost()
@@ -3625,7 +3644,7 @@ def event7():
                try:
                   if randomUserStart(['l33tdump', 'Rolfy86', 'kinemb86', 'MonaBB86']):
                      try:
-                        eventPlay(find_enraged=True)
+                        eventPlay(find_enraged=find_enraged)
                      except Exception, e:
                         print(e)
 #                     playNewestMission()
@@ -3701,13 +3720,13 @@ if __name__ == "__main__":
 #   custom4()
 #   play_mission((3,2))
 
-   play_mission((2,4))
+#    play_mission((2,4))
 
 #   eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()
-#   eventPlay()
+   eventPlay()
 
 #   runAll()
 #   startAndRestartWhenQuit()

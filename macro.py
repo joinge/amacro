@@ -1004,7 +1004,7 @@ def swipeReference(template, destination=(0, 0), threshold=0.96, print_coeff=Fal
    
 
 def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=0, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
-                    click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
+                   recurse=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
 
    
    for i in range(retries):
@@ -1067,19 +1067,16 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
       
       else:
          # See if the cause can be an Android error:
-         image_error = cv2.imread("screens/android_error.png")
-         err_result = cv2.matchTemplate(image_screen, image_error, cv2.TM_CCOEFF_NORMED)
-         if print_coeff:
-            sys.stdout.write("%.2f " % err_result.max())
-            sys.stdout.flush()
-#         print( " %.2f"%err_result.max(), end='' )
-         if err_result.max() > 0.9:
+         if recurse:
+            return None
+         
+         image_error = locateTemplate("screens/android_error.png", recurse=True, threshold=0.9, offset=(65,31), reuse_last_screenshot=True)
+         
+         if image_error:
             print(' ')
             printAction("Android error detected and will (hopefully) be dealt with.", newline=True)
-            template_coords = np.unravel_index(err_result.argmax(), err_result.shape)
-            template_coords = np.array([template_coords[1], template_coords[0]])
-            left_click(template_coords + np.array([319, 31]))
-            retries = retries + 1                    
+            left_click(image_error)
+            retries = retries + 1
 
       if retries > 1:
          if swipe_ref[0] != '':
@@ -3300,6 +3297,59 @@ def eventStarkPresident():
             notify()
             time.sleep(2)
          
+class CycleTimeout(Exception):
+   pass
+
+import threading, multiprocessing
+
+class Run( multiprocessing.Process ):
+   def __init__(self, function, *args, **kwargs):
+      multiprocessing.Process.__init__(self)
+      self.function = function
+      self.args = args
+      self.kwargs = kwargs
+           
+   def run ( self ):
+      self.function(*self.args,**self.kwargs)
+
+
+class RunUntilTimeout( threading.Thread ):
+   def __init__(self, function, timeout, *args, **kwargs):
+      threading.Thread.__init__(self)
+      self.function = function
+      self.timeout = timeout
+      self.args = args
+      self.kwargs = kwargs      
+      
+   def run ( self ):
+      
+      process = Run(self.function, *self.args, **self.kwargs)
+#      process.daemon = True
+      process.start()
+      
+      process.join(float(self.timeout))
+           
+      if process.exitcode == None:
+         print("")
+         print("*************")
+         print("** TIMEOUT **")
+         print("*************")
+         print("")
+         process.terminate()
+         
+   def exit(self):
+      sys.exit()
+      
+
+def timeout(function, timeout, *args, **kwargs):
+   
+   while True:
+      print("")
+      print("***Starting cycle***")
+      print("")
+      thread = RunUntilTimeout(function,timeout,*args,**kwargs)
+      thread.start()
+      thread.join()
             
 def custom1():
    
@@ -3854,7 +3904,7 @@ def event7(find_enraged=False):
                      eventPlay(find_enraged=find_enraged)
                   except Exception, e:
                      print(e)
-                  farmMission24FuseAndBoost()
+                  farmMission32FuseAndBoost()
                   exitMarvel()
             except Exception, e:
                print(e)
@@ -3869,65 +3919,13 @@ def event7(find_enraged=False):
                      except Exception, e:
                         print(e)
 #                     playNewestMission()
-                     farmMission24FuseAndBoost()
+                     farmMission32FuseAndBoost()
                      exitMarvel()
                except Exception, e:
                   print(e)
                sleepToCharge(30)
 
-class CycleTimeout(Exception):
-   pass
 
-import threading, multiprocessing
-
-class Run( multiprocessing.Process ):
-   def __init__(self, function, *args, **kwargs):
-      multiprocessing.Process.__init__(self)
-      self.function = function
-      self.args = args
-      self.kwargs = kwargs
-           
-   def run ( self ):
-      self.function(*self.args,**self.kwargs)
-
-
-class RunUntilTimeout( threading.Thread ):
-   def __init__(self, function, timeout, *args, **kwargs):
-      threading.Thread.__init__(self)
-      self.function = function
-      self.timeout = timeout
-      self.args = args
-      self.kwargs = kwargs      
-      
-   def run ( self ):
-      
-      process = Run(self.function, *self.args, **self.kwargs)
-#      process.daemon = True
-      process.start()
-      
-      process.join(float(self.timeout))
-           
-      if process.exitcode == None:
-         print("")
-         print("*************")
-         print("** TIMEOUT **")
-         print("*************")
-         print("")
-         process.terminate()
-         
-   def exit(self):
-      sys.exit()
-      
-
-def timeout(function, timeout, *args, **kwargs):
-   
-   while True:
-      print("")
-      print("***Starting cycle***")
-      print("")
-      thread = RunUntilTimeout(function,timeout,*args,**kwargs)
-      thread.start()
-      thread.join()
       
 
 def event8():
@@ -3984,10 +3982,6 @@ def event8():
                   print(e)
                   
                sleepToCharge(60)
-   
-   def func2():
-      time.sleep(2)
-      print("finished")
 
    timeout(func,90*60)
       
@@ -4033,11 +4027,11 @@ if __name__ == "__main__":
 #   setActiveDevice("0123456789ABCDEF", youwave=False)
    
 #   eventStarkPresident()
-   setActiveDevice("10.0.0.41:5555", youwave=False)
-   event8()
+#    setActiveDevice("10.0.0.41:5555", youwave=False)
+#    event8()
 #   getMyPageStatus()
 #    locateTemplate("screens/mission_2_4.png")
-#   setActiveDevice("00190e8364f46e", youwave=False)
+   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
 #   custom20()
 #   checkRaid()

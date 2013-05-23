@@ -1788,7 +1788,10 @@ def eventPlay(find_enraged=False):
    
    N = 6
    Nmax = 16
-   for i in range(N):
+   keepalive = 0
+   i = 0
+   while (i < N or keepalive > 0) and i < Nmax:
+#    for i in range(N):
       
       gotoEventHome()
   
@@ -1801,8 +1804,9 @@ def eventPlay(find_enraged=False):
       if event_enemies_in_area:
          success = eventKillEnemies(find_enraged=find_enraged)
          # Continue as long as we get success
-         if success and i > N-3 and i < Nmax:
-            i = i + 2
+         if success and i > N-3:
+            keepalive = 3
+
       else:
          dummy = eventPlayMission()
       
@@ -1810,6 +1814,9 @@ def eventPlay(find_enraged=False):
          return False   
       
       time.sleep(2)
+      i = i + 1
+      keepalive = keepalive - 1
+
    
    return True
       

@@ -1039,7 +1039,10 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
                match_found = True
                break
          
-         template = re.sub(r'-[0-9]*\.', '-%d.'%j, template)
+         if j==0:
+            template = re.sub(r'\.', '-%d.'%j, template)
+         else:
+            template = re.sub(r'-[0-9]*\.', '-%d.'%j, template)
          
 #       try:
 #          result = cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED)
@@ -1076,6 +1079,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
             print(' ')
             printAction("Android error detected and will (hopefully) be dealt with.", newline=True)
             left_click(image_error)
+            time.sleep(10) # In case we hit a "wait" button
             retries = retries + 1
 
       if retries > 1:
@@ -1406,7 +1410,7 @@ def eventPlayMission(repeat=1):
          printAction("Avaiting mission screen...")
          mission_success = False
          
-         for i in range(2):
+         for i in range(15):
             time.sleep(3)
             
 #            mission_boss  = locateTemplate('screens/event_mission_boss_screen.png', print_coeff=False)
@@ -1617,19 +1621,22 @@ def eventKillEnemies(find_enraged=False):
       
       base_attack = 200000
       if info['badguy_health'][0] < base_attack and attack_light:
-         printAction("Attacking with the 1 RDS option...")
+         printAction("Attacking with the 1 RDS option...", newline=True)
          left_click(attack_light)
+         time.sleep(2)
          left_click(attack_light)
       elif info['badguy_health'][0] < 4*base_attack and attack_normal:
-         printAction("Attacking with the 3 RDS option...")
+         printAction("Attacking with the 3 RDS option...", newline=True)
          left_click(attack_normal)
+         time.sleep(2)
          left_click(attack_normal)
       elif attack_blitz:
-         printAction("Attacking with the 6 RDS option...")
+         printAction("Attacking with the 6 RDS option...", newline=True)
          left_click(attack_blitz)
+         time.sleep(2)
          left_click(attack_blitz)
       else:
-         printAction("No attack power left. Quitting...")
+         printAction("No attack power left. Quitting...", newline=True)
          return False
                            
       printAction("Confirming that enemy is taken down...")
@@ -1782,7 +1789,7 @@ def eventPlay(find_enraged=False):
       
    print("PLAYING EVENT")
    
-   for i in range(6):
+   for i in range(8):
       
       gotoEventHome()
   
@@ -4065,8 +4072,8 @@ if __name__ == "__main__":
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()
-   eventPlay()
-
+#    eventPlay()
+   locateTemplate("screens/android_error.png", threshold=0.9, offset=(65,31))
 #   runAll()
 #   startAndRestartWhenQuit()
 #   getMyPageStatus()

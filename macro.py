@@ -1611,32 +1611,29 @@ def eventKillEnemies(find_enraged=False):
       attack_blitz = locateTemplate("screens/event_attack_blitz.png", threshold=0.90, offset=(74, 24))   
       attack_normal = locateTemplate("screens/event_attack_normal.png", threshold=0.90, offset=(74, 24), reuse_last_screenshot=True)  
       attack_light = locateTemplate("screens/event_attack_light.png", threshold=0.90, offset=(74, 24), reuse_last_screenshot=True)
-      
-      if not attack_blitz and not attack_normal and not attack_light:
-         
-         printResult(False)
-         return False
-      
-      printResult(True)
-      
+            
       base_attack = 200000
       if info['badguy_health'][0] < base_attack and attack_light:
+         printResult(True)
          printAction("Attacking with the 1 RDS option...", newline=True)
          left_click(attack_light)
          time.sleep(2)
          left_click(attack_light)
       elif info['badguy_health'][0] < 4*base_attack and attack_normal:
+         printResult(True)
          printAction("Attacking with the 3 RDS option...", newline=True)
          left_click(attack_normal)
          time.sleep(2)
          left_click(attack_normal)
       elif attack_blitz:
+         printResult(True)
          printAction("Attacking with the 6 RDS option...", newline=True)
          left_click(attack_blitz)
          time.sleep(2)
          left_click(attack_blitz)
       else:
          printAction("No attack power left. Quitting...", newline=True)
+         printResult(False)
          return False
                            
       printAction("Confirming that enemy is taken down...")
@@ -1644,12 +1641,12 @@ def eventKillEnemies(find_enraged=False):
       taken_out = False
       for i in range(10):
          left_click((200, 200))
-         final_blow = locateTemplate("screens/event_final_blow_button.png", threshold=0.85, offset=(74, 24), click=True)
-         confirm = locateTemplate("screens/event_mission_boss_confirm_button.png", offset=(74, 24), click=True, reuse_last_screenshot=True)
-         decor = locateTemplate("screens/mission_top_decor.png", reuse_last_screenshot=True)
-         time.sleep(1)
+         final_blow     = locateTemplate("screens/event_final_blow_button.png", threshold=0.85, offset=(74, 24), click=True)
+         confirm        = locateTemplate("screens/event_mission_boss_confirm_button.png", offset=(74, 24), click=True, reuse_last_screenshot=True)
+         decor          = locateTemplate("screens/mission_top_decor.png", reuse_last_screenshot=True)
+         battle_results = locateTemplate("screens/event_battle_results.png", offset=(74, 24), reuse_last_screenshot=True)
+         time.sleep(1)     
          
-         battle_results = locateTemplate("screens/event_battle_results.png", offset=(74, 24))
          if battle_results or decor:
             confirmed = True
             printResult(True)
@@ -4068,12 +4065,12 @@ if __name__ == "__main__":
 
 #    play_mission((2,4))
 
-#   eventPlay()
+   eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()
 #    eventPlay()
-   locateTemplate("screens/android_error.png", threshold=0.9, offset=(65,31))
+#    locateTemplate("screens/android_error.png", threshold=0.9, offset=(65,31))
 #   runAll()
 #   startAndRestartWhenQuit()
 #   getMyPageStatus()

@@ -16,6 +16,8 @@ YOUWAVE = False
 ABC = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 abc = ['abcdefghijklmnopqrstuvwxyz']
 
+STDOUT_ALTERNATIVE = None
+
 # Bootlist:
 #
 # Valhalla25, airman54, nashie88, waygrumpy, xzitrempire(35), xQueenJenniecx, choiiflames, jonathanxxx, 
@@ -555,6 +557,11 @@ def exitMarvel():
    Popen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
 
 def printResult(res):
+   if not STDOUT_ALTERNATIVE:
+      sys.stdout = sys.stdout
+   else:
+      sys.stdout = STDOUT_ALTERNATIVE
+      
    if res:
       sys.stdout.write(":)")
    else:
@@ -565,6 +572,7 @@ def printResult(res):
 
 def printAction(str, res=None, newline=False):
    string = "   %s" % str
+      
    if newline:
       sys.stdout.write(string.ljust(PAD, ' '))
       sys.stdout.flush()
@@ -2073,7 +2081,7 @@ def boostCard(card_name, cards_list, alignment='all'):
    
    if not boost_now:
       printAction("Unable to find \"Boost\" button", newline=True)
-      return False
+      return True
    
    left_click(boost_now)
    
@@ -2084,7 +2092,7 @@ def boostCard(card_name, cards_list, alignment='all'):
    
    if not boost_finished:
       printAction("Unable to find \"Boost\" button", newline=True)
-      return False
+      return True
    
    time.sleep(10)
    left_click((200, 200))
@@ -2804,9 +2812,11 @@ def fuseAllCards(card_type, alignment='all'):
    
 def fuseAndBoost(card_type, cards_list, fuse_alignment='all', boost_alignment='all'):
    
+   success = True
    for i in range(10):
       if fuseCard(card_type=card_type, alignment=fuse_alignment):
-         boostCard(card_name=card_type, cards_list=cards_list, alignment=boost_alignment)
+         if success:
+            success = boostCard(card_name=card_type, cards_list=cards_list, alignment=boost_alignment)
       else:
          return
    
@@ -3189,6 +3199,88 @@ def checkRaid(health_limit):
       
    notify()
 
+
+def eventStarkPresident():
+   
+   print("TONY PRESIDENT EVENT")
+   
+   for i in range(14):
+      
+      gotoEventHome()
+      
+      printAction("Checking all options...", newline=True)
+      explore          = locateTemplate("screens/stark_president/explore.png",
+                                        offset=(78, 27), threshold=0.92, retries=2, click=True)
+      explore_finished = locateTemplate("screens/stark_president/explore_finished.png",
+                                        offset=(78, 27), threshold=0.92, retries=2, reuse_last_screenshot=True, click=True)
+      landed_search    = locateTemplate("screens/stark_president/landed_search.png",
+                                        offset=(78, 27), threshold=0.92, retries=2, reuse_last_screenshot=True, click=True)
+      landed_opponent  = locateTemplate("screens/stark_president/landed_opponent.png",
+                                        offset=(78, 27), threshold=0.92, retries=2, reuse_last_screenshot=True, click=True)
+      printResult(explore or explore_finished or landed_search or landed_opponent)
+      
+      if explore:
+         
+         printAction("Hitting \"explore\" button...", newline=True)
+         time.sleep(5)
+         back_key()
+         
+      elif explore_finished:
+         
+         printAction("Exploration finished...", newline=True)
+         break
+         
+      elif landed_search:
+         
+         printAction("Landed on search spot...", newline=True)
+         printAction("Hitting radar watch...")
+         radar_watch = locateTemplate("screens/stark_president/radar_watch.png",
+                                      offset=(78, 27), threshold=0.92, retries=5, ybounds=(0, 600), swipe_size=[(20, 600), (20, 100)], click=True)
+         printResult(radar_watch)
+         
+         if radar_watch:
+            
+            
+            time.sleep(5)
+            back_key()
+            
+      elif landed_opponent:
+            
+         printAction("Battle rival...")
+         battle_rival = locateTemplate("screens/stark_president/battle_rival.png",
+                                       offset=(96, 12), retries=3, swipe_size=[(20, 500), (20, 200)], click=True)
+         printResult(battle_rival)
+         
+         if battle_rival:
+               
+            printAction("Searching for deck select button...")
+            select_deck = locateTemplate("screens/select_deck_button.png", offset=(-144,17), click=True)
+            printResult(select_deck)
+               
+            printAction("Selecting suggested deck...")
+            suggested_deck = locateTemplate("screens/stark_president/suggested_deck.png", offset=(150,25), click=True)
+            printResult(suggested_deck)
+            if suggested_deck:
+         
+               printAction("Hitting select button...")
+               select_button = locateTemplate("screens/select_button.png", offset=(60,16), click=True)
+               printResult(select_button)
+               if select_button:
+                  
+                  printAction("Starting battle...")
+                  start_battle = locateTemplate("screens/stark_president/start_battle.png",
+                                                offset=(96, 17), retries=3, swipe_size=[(20, 500), (20, 200)], click=True)
+                  printResult(start_battle)
+                  
+                  time.sleep(5)
+                  back_key()
+                  
+      else:
+         
+         for i in range(15):
+            notify()
+            time.sleep(2)
+         
             
 def custom1():
    
@@ -3477,7 +3569,7 @@ def custom8(start_end=False):
                print(e)
                
             sleepToCharge(60)
-            
+
             
 def custom20():
    
@@ -3764,6 +3856,124 @@ def event7():
                   print(e)
                sleepToCharge(30)
 
+class CycleTimeout(Exception):
+   pass
+
+import threading, multiprocessing
+
+class Run( multiprocessing.Process ):
+   def __init__(self, function, *args, **kwargs):
+      multiprocessing.Process.__init__(self)
+      self.function = function
+      self.args = args
+      self.kwargs = kwargs
+           
+   def run ( self ):
+      self.function(*self.args,**self.kwargs)
+
+
+class RunUntilTimeout( threading.Thread ):
+   def __init__(self, function, timeout, *args, **kwargs):
+      threading.Thread.__init__(self)
+      self.function = function
+      self.timeout = timeout
+      self.args = args
+      self.kwargs = kwargs      
+      
+   def run ( self ):
+      
+      process = Run(self.function, *self.args, **self.kwargs)
+#      process.daemon = True
+      process.start()
+      
+      process.join(float(self.timeout))
+           
+      if process.exitcode == None:
+         print("")
+         print("*************")
+         print("** TIMEOUT **")
+         print("*************")
+         print("")
+         process.terminate()
+         
+   def exit(self):
+      sys.exit()
+      
+
+def timeout(function, timeout, *args, **kwargs):
+   
+   while True:
+      print("")
+      print("***Starting cycle***")
+      print("")
+      thread = RunUntilTimeout(function,timeout,*args,**kwargs)
+      thread.start()
+      thread.join()
+      
+
+def event8():
+
+   def func():
+
+      adjustBrightness()
+      while True:
+         try:
+            if startMarvel('JoInge'):
+               try:
+                  eventStarkPresident()
+                  farmMission32FuseAndBoost()
+                  exitMarvel()
+               except Exception, e:
+                  print(e)
+         except Exception, e:
+            print(e)
+         sleepToCharge(30)
+         for i in accounts.keys():
+            if i == 'JoInge' or i == 'JollyMa' or i == 'JoJanR':
+               try:
+                  if randomUserStart(['JoInge', 'JollyMa', 'JoJanR']):
+                     eventStarkPresident()
+                     farmMission32FuseAndBoost()
+                     exitMarvel()
+               except Exception, e:
+                  print("ERROR: Some exception occured when processing %s" % i)
+                  print(e)
+               sleepToCharge(60)
+              
+         for i in accounts.keys():
+            if i == 'l33tdump' or i == 'Rolfy86':
+               try:
+                  if randomUserStart(['l33tdump', 'Rolfy86']):
+                     eventStarkPresident()
+                     farmMission32FuseAndBoost()
+                     exitMarvel()
+               except Exception, e:
+                  print("ERROR: Some exception occured when processing %s" % i)
+                  print(e)
+               sleepToCharge(60)
+                  
+         
+         for i in accounts.keys():
+            if i == 'kinemb86' or i == 'MonaBB86':
+               try:
+                  if randomUserStart(['kinemb86', 'MonaBB86']):
+                     eventStarkPresident()
+                     farmMission32FuseAndBoost()
+                     exitMarvel()
+               except Exception, e:
+                  print("ERROR: Some exception occured when processing %s" % i)
+                  print(e)
+                  
+               sleepToCharge(60)
+   
+   def func2():
+      time.sleep(2)
+      print("finished")
+
+   timeout(func,90*60)
+      
+      
+
 
 def tradeToJollyMa():
 
@@ -3798,14 +4008,17 @@ if __name__ == "__main__":
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 
-   setActiveDevice("10.42.0.52:5558", youwave=True)
+#   setActiveDevice("10.42.0.52:5558", youwave=True)
    
-   createNewFakeAccount()
-#    setActiveDevice("0123456789ABCDEF", youwave=False)
-#   setActiveDevice("10.0.0.35:5555", youwave=False)
+#   createNewFakeAccount()
+#   setActiveDevice("0123456789ABCDEF", youwave=False)
+   
+#   eventStarkPresident()
+   setActiveDevice("10.0.0.41:5555", youwave=False)
+   event8()
 #   getMyPageStatus()
 #    locateTemplate("screens/mission_2_4.png")
-   setActiveDevice("00190e8364f46e", youwave=False)
+#   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
 #   custom20()
 #   checkRaid()
@@ -3832,7 +4045,7 @@ if __name__ == "__main__":
 #   custom4()
 #   play_mission((3,2))
 
-   play_mission((2,4))
+#   play_mission((2,4))
 
 #   eventPlay()
 #   eventKillEnemies()

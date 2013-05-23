@@ -51,29 +51,65 @@ from functools import partial
 #    main.show()
 #    sys.exit(app.exec_())
 
+class MyStream(QtCore.QObject):
+   message = QtCore.pyqtSignal(str)
+   def __init__(self, parent=None):
+      super(MyStream, self).__init__(parent)
+   
+   def write(self, message):
+      self.message.emit(str(message))
+      
+   def flush(self):
+      pass
+#      sys.stdout.flush()
+
+
+class MyConsole(QtGui.QWidget):
+
+   def __init__(self, parent):
+      
+      super(MyConsole,self).__init__(parent)
+      
+      self.textEdit = QtGui.QTextEdit(self)  
+      
+      self.textEdit.resize(500,300)   
+      
+   @QtCore.pyqtSlot(str)
+   def on_myStream_message(self, message):
+      self.textEdit.moveCursor(QtGui.QTextCursor.End)
+      self.textEdit.insertPlainText(message)
+      self.textEdit.show()
+
 
 class DeviceView(QtGui.QWidget):
 
    def __init__(self, parent, items):
-   
+         
       super(DeviceView,self).__init__(parent)
    
       self.model = QtGui.QStandardItemModel()
-      self.model.setColumnCount(1)
+      self.model.setColumnCount(2)
+      self.deviceActiveList = {}
+      self.deviceYouwaveList = {}
       for i,device in enumerate(items):
 #         status = QtGui.QStandardItem("")
-         device = QtGui.QStandardItem(device)
-#         box = QtGui.QStandardItem("")
+         device_item = QtGui.QStandardItem(device)
+         self.deviceActiveList[str(i)] = False
+         self.deviceYouwaveList[str(i)] = False
+         box = QtGui.QStandardItem("")
 #         box.setTextAlignment(QtCore.Qt.AlignRight)
 #         box = QtGui.QCheckBox("Youwave?", self) #QtGui.QStandardItem("xxx")
-         device.setCheckable(True)
+         device_item.setCheckable(True)
+         box.setCheckable(True)
          if i==0:
-            device.setCheckState(QtCore.Qt.CheckState(2))
+            device_item.setCheckState(QtCore.Qt.CheckState(2))
+            self.deviceActiveList[str(i)] = True
+            macro.setActiveDevice(device, None)
 #         device.item
-         self.model.appendRow([device])
+         self.model.appendRow([device_item,box])
 #         model.appendColumn(box)
 
-      self.model.setHorizontalHeaderLabels(["       Device ID"])
+      self.model.setHorizontalHeaderLabels(["       Device ID","YW"])
       self.model.itemChanged.connect(self.deviceClicked)
 
       self.tree = QtGui.QTreeView(self)
@@ -82,7 +118,7 @@ class DeviceView(QtGui.QWidget):
 
 #      view.setColumnWidth(0,20)
       self.tree.setColumnWidth(0,170)
-      self.tree.setColumnWidth(1,70)
+      self.tree.setColumnWidth(1,30)
       self.tree.resize(210,150)
 #      tree.move(50,250)
 
@@ -102,11 +138,35 @@ class DeviceView(QtGui.QWidget):
       
    def deviceClicked(self):
       
+      device_selected = False
       for i in range(self.model.rowCount()):
+         if self.model.item(i,1).checkState() == 2:
+            self.deviceYouwaveList[str(i)] = True
+         else:
+            self.deviceYouwaveList[str(i)] = False
+                  
          if self.model.item(i,0).checkState() == 2:
-            macro.setActiveDevice, self.model.item(i,0).text(), None)
-      
-      print("hello")
+            device_selected = True
+            device_text = str(self.model.item(i,0).text())
+            if self.deviceActiveList[str(i)] == False:
+               macro.setActiveDevice(device_text, self.deviceYouwaveList[str(i)])
+               self.deviceActiveList[str(i)] = True
+               
+               for j in range(self.model.rowCount()):
+                  device_text = str(self.model.item(j,0).text())
+                  if not i==j:
+                     self.model.item(j,0).setCheckState(QtCore.Qt.CheckState(0))
+                     self.deviceActiveList[str(j)] = False
+
+      if not device_selected:
+         for i in range(self.model.rowCount()):
+            state = 0
+            if self.deviceActiveList[str(i)]:
+               state = 2
+
+            self.model.item(i,0).setCheckState(QtCore.Qt.CheckState(state))
+                  
+      print(macro.ACTIVE_DEVICE)
    
 #      .connect(partial(macro.startMarvel, user, 1))
    
@@ -152,30 +212,30 @@ class Example(QtGui.QWidget):
          btn[-1].setToolTip('This is a <b>QPushButton</b> widget')
          btn[-1].clicked.connect(partial(macro.startMarvel, user, 1))
          btn[-1].resize(btn[-1].sizeHint())
-         btn[-1].move(50, 50+25*i)
+         btn[-1].move(300, 50+25*i)
          
       btn = QtGui.QPushButton('Take screenshot', self)
       btn.clicked.connect(macro.take_screenshot_adb)
       btn.resize(btn.sizeHint())
-      btn.move(200,50)
+      btn.move(400,50)
       
       btn = QtGui.QPushButton('GIMP', self)
       btn.clicked.connect(macro.gimpScreenshot)
       btn.resize(btn.sizeHint())
-      btn.move(200,75)
+      btn.move(400,75)
       
       btn = QtGui.QPushButton('Clear cache', self)
       btn.clicked.connect(macro.clearMarvelCache)
       btn.resize(btn.sizeHint())
-      btn.move(200,100)
+      btn.move(400,100)
       
       btn = QtGui.QPushButton('Check Training', self)
       btn.clicked.connect(macro.checkTraining)
       btn.resize(btn.sizeHint())
-      btn.move(200,125)
+      btn.move(400,125)
       
-#      devices = macro.adbDevices()
-      devices = ["255.255.255.255:5555","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1"]
+      devices = macro.adbDevices()
+#      devices = ["255.255.255.255:5555","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1"]
 
 #      listWidget = QtGui.QRadioButton()
 
@@ -183,17 +243,17 @@ class Example(QtGui.QWidget):
 #      x = bool(int(settings.value("pyuic4x", "0").toString()))
 #  ds    self.pyuic4xCheckBox.setChecked(x)
 
-      for i,device in enumerate(devices):
-         btn = QtGui.QRadioButton(device, self)
-#         btn.setToolTip('This is a <b>QPushButton</b> widget')
-         btn.clicked.connect(partial(macro.setActiveDevice, device, None))
-         btn.resize(btn.sizeHint())
-         btn.move(400, 350+25*i)
+#      for i,device in enumerate(devices):
+#         btn = QtGui.QRadioButton(device, self)
+##         btn.setToolTip('This is a <b>QPushButton</b> widget')
+#         btn.clicked.connect(partial(macro.setActiveDevice, device, None))
+#         btn.resize(btn.sizeHint())
+#         btn.move(400, 350+25*i)
          
-      checkbox = QtGui.QCheckBox("Youwave?", self)
-      checkbox.toggled.connect(partial(macro.setActiveDevice, None, checkbox ))
-      checkbox.resize(checkbox.sizeHint())
-      checkbox.move(250, 350)
+#      checkbox = QtGui.QCheckBox("Youwave?", self)
+#      checkbox.toggled.connect(partial(macro.setActiveDevice, None, checkbox ))
+#      checkbox.resize(checkbox.sizeHint())
+#      checkbox.move(250, 350)
       
 #      tableWidget = QtGui.QTableWidget(self)
 #      tableWidget.setRowCount(len(devices))
@@ -234,23 +294,33 @@ class Example(QtGui.QWidget):
 #      listWidget.show()
 
       device_list = DeviceView(self,devices)
-      device_list.move(50,300)
-
-
-
-#      self.terminal.resize(self.terminal.sizeHint())
-#      self.terminal.move(100, 100)
-#      QtGui.QWidget(self.terminal)
-#      self.process.start('xterm',['-into', str(self.terminal.winId())])
+      device_list.move(50,50)
       
+      self.console = MyConsole(self)
+      self.console.move(50,250)
+      
+      self.custom8_btn = QtGui.QPushButton('Custom 8', self)
+      self.custom8_btn.clicked.connect(macro.custom8)
+      self.custom8_btn.resize(self.custom8_btn.sizeHint())
+      self.custom8_btn.move(400,210)
+      
+
       self.setGeometry(300, 300, 600, 600)
       self.setWindowTitle('Tooltips')    
       self.show()
-        
+            
 def main():
     
    app = QtGui.QApplication(sys.argv)
+   app.setApplicationName('WoH Macro Control GUI')
+   
    ex = Example()
+   
+   myStream = MyStream()
+   myStream.message.connect(ex.console.on_myStream_message)
+   
+   macro.STDOUT_ALTERNATIVE = myStream
+   sys.stdout = myStream
    sys.exit(app.exec_())
 
 

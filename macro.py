@@ -523,9 +523,11 @@ def setAndroidId(user=None, newid='0' * 15):
             i.write()
       except:
          print("ERROR: User %s does not seem to exist!" % user)
-   
+
    else:
       print(old_id)
+      print(Popen("adb %s shell echo 'echo %s > /data/youwave_id' \| su" % (ADB_ACTIVE_DEVICE, newid), stdout=PIPE, shell=True).stdout.read())
+      print(Popen("adb %s shell echo 'echo %s > /sdcard/Id' \| su" % (ADB_ACTIVE_DEVICE, newid), stdout=PIPE, shell=True).stdout.read())
 
 
 def getAndroidId(user=None):
@@ -4040,14 +4042,14 @@ if __name__ == "__main__":
 #   setActiveDevice("10.42.0.52:5558", youwave=True)
    
 #   createNewFakeAccount()
-#   setActiveDevice("0123456789ABCDEF", youwave=False)
-   
+   setActiveDevice("0123456789ABCDEF", youwave=False)
+   event7()
 #   eventStarkPresident()
 #    setActiveDevice("10.0.0.41:5555", youwave=False)
 #    event8()
 #   getMyPageStatus()
 #    locateTemplate("screens/mission_2_4.png")
-   setActiveDevice("00190e8364f46e", youwave=False)
+#   setActiveDevice("00190e8364f46e", youwave=False)
 #   take_screenshot_adb()
 #   custom20()
 #   checkRaid()

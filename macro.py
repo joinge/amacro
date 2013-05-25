@@ -2795,6 +2795,12 @@ def startMarvel(user, attempts=3, password=None, enable_cache=False):
       
          
    all_ok = False
+   print('')
+   print('')
+   print("  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+   print("    %s" %user)
+   print("  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+   
    for i in range(attempts):
       print('')
       print("Login attempt %d on account %s..." % (i, user))

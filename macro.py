@@ -1412,7 +1412,7 @@ def eventPlayMission(repeat=1):
          printAction("Avaiting mission screen...")
          mission_success = False
          
-         for i in range(15):
+         for i in range(40):
             time.sleep(3)
             
 #            mission_boss  = locateTemplate('screens/event_mission_boss_screen.png', print_coeff=False)
@@ -1439,8 +1439,7 @@ def eventPlayMission(repeat=1):
 
          if not mission_success:
             printAction("Timeout when waiting for mission screen", newline=True)
-            return False
-            
+            return True
 
 
 def eventFindEnemy(find_enraged=False, watchdog=10):
@@ -1641,7 +1640,7 @@ def eventKillEnemies(find_enraged=False):
       printAction("Confirming that enemy is taken down...")
       confirmed = False
       taken_out = False
-      for i in range(10):
+      for i in range(15):
          left_click((200, 200))
          final_blow     = locateTemplate("screens/event_final_blow_button.png", threshold=0.85, offset=(74, 24), click=True)
          confirm        = locateTemplate("screens/event_mission_boss_confirm_button.png", offset=(74, 24), click=True, reuse_last_screenshot=True)
@@ -1811,6 +1810,8 @@ def eventPlay(find_enraged=False):
 
       else:
          dummy = eventPlayMission()
+         for i in range(2):
+            dummy = eventPlayMission()
       
       if not success:
          return False   
@@ -2603,7 +2604,7 @@ def playNewestMission(repeat=50):
          left_click(mission_newest_button)
          printAction("Avaiting mission screen...")
          mission_success = False
-         for i in range(10):
+         for i in range(30):
             time.sleep(int(uniform(1, 2)))
             
             mission_started = locateTemplate('screens/mission_bar.png', threshold=0.985, print_coeff=False)

@@ -3013,10 +3013,10 @@ def randomUserStart(user_list=accounts.keys()):
          recently_launched[getIndex(user_list[i])] = 1
          return startMarvel(user_list[i])
    
-def startFakeAccounts():
-   
-   for user in fakeAccounts.keys():
-      startMarvel(user)
+# def startFakeAccounts():
+#    
+#    for user in fakeAccounts.keys():
+#       startMarvel(user)
    
 def runAll24():
    while True:

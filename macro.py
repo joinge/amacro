@@ -1409,10 +1409,10 @@ def eventPlayMission(repeat=1):
          
          left_click(proceed)
       
-         printAction("Avaiting mission screen...")
+         printAction("Avaiting event mission screen...")
          mission_success = False
          
-         for i in range(40):
+         for i in range(60):
             time.sleep(3)
             
 #            mission_boss  = locateTemplate('screens/event_mission_boss_screen.png', print_coeff=False)
@@ -1609,10 +1609,11 @@ def eventKillEnemies(find_enraged=False):
 #         if weird_bool:
       
       
-      attack_blitz = locateTemplate("screens/event_attack_blitz.png", threshold=0.90, offset=(74, 24))   
-      attack_normal = locateTemplate("screens/event_attack_normal.png", threshold=0.90, offset=(74, 24), reuse_last_screenshot=True)  
-      attack_light = locateTemplate("screens/event_attack_light.png", threshold=0.90, offset=(74, 24), reuse_last_screenshot=True)
+      attack_blitz = locateTemplate("screens/event_attack_blitz.png", threshold=0.99, offset=(74, 24))   
+      attack_normal = locateTemplate("screens/event_attack_normal.png", threshold=0.99, offset=(74, 24), reuse_last_screenshot=True)  
+      attack_light = locateTemplate("screens/event_attack_light.png", threshold=0.99, offset=(74, 24), reuse_last_screenshot=True)
             
+      rds6 = False
       base_attack = 200000
       if info['badguy_health'][0] < base_attack and attack_light:
          printResult(True)
@@ -1632,6 +1633,7 @@ def eventKillEnemies(find_enraged=False):
          left_click(attack_blitz)
          time.sleep(2)
          left_click(attack_blitz)
+         rds6 = True
       else:
          printAction("No attack power left. Quitting...", newline=True)
          printResult(False)
@@ -1716,14 +1718,14 @@ def eventKillEnemies(find_enraged=False):
             success = True
             printAction("Found \"ask for support\" button. Clicking it...", newline=True)
             left_click(ask_for_support)
-            return True
+            return True and not rds6
             
          elif reward:
             printResult(True)
             success = True
             printAction("Found \"reward\" button. Clicking it...", newline=True)
             left_click(reward)
-            return True
+            return True and not rds6
          
       if not success:
          printResult(False)
@@ -1810,7 +1812,7 @@ def eventPlay(find_enraged=False):
 
       else:
          dummy = eventPlayMission()
-         for i in range(2):
+         for i in range(1):
             dummy = eventPlayMission()
       
       if not success:
@@ -2602,7 +2604,7 @@ def playNewestMission(repeat=50):
                     
       else:
          left_click(mission_newest_button)
-         printAction("Avaiting mission screen...")
+         printAction("Avaiting newest mission screen...")
          mission_success = False
          for i in range(30):
             time.sleep(int(uniform(1, 2)))
@@ -4049,14 +4051,15 @@ if __name__ == "__main__":
 #   setActiveDevice("10.42.0.52:5558", youwave=True)
    
 #   createNewFakeAccount()
-   setActiveDevice("0123456789ABCDEF", youwave=False)
-   event7()
+#    setActiveDevice("0123456789ABCDEF", youwave=False)
+#    event7()
 #   eventStarkPresident()
 #    setActiveDevice("10.0.0.41:5555", youwave=False)
 #    event8()
 #   getMyPageStatus()
 #    locateTemplate("screens/mission_2_4.png")
-#   setActiveDevice("00190e8364f46e", youwave=False)
+   setActiveDevice("00190e8364f46e", youwave=False)
+   event7()
 #   take_screenshot_adb()
 #   custom20()
 #   checkRaid()
@@ -4086,7 +4089,7 @@ if __name__ == "__main__":
 
 #    play_mission((2,4))
 
-   eventPlay()
+#    eventPlay()
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()

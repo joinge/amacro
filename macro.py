@@ -4059,7 +4059,7 @@ if __name__ == "__main__":
 #   getMyPageStatus()
 #    locateTemplate("screens/mission_2_4.png")
 #   setActiveDevice("00190e8364f46e", youwave=False)
-   event7()
+   event7(True)
 #   take_screenshot_adb()
 #   custom20()
 #   checkRaid()

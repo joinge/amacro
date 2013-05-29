@@ -1009,8 +1009,8 @@ def take_screenshot_adb():
        
 #   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    if not YOUWAVE:
-      Popen("adb %s shell /system/bin/screencap /sdcard/img.raw > error.log 2>&1;\
-             adb %s pull  /sdcard/img.raw img_%s.raw >error.log 2>&1" % (ADB_ACTIVE_DEVICE, ADB_ACTIVE_DEVICE, ACTIVE_DEVICE),
+      Popen("adb %s shell /system/bin/screencap /sdcard/img.raw;\
+             adb %s pull  /sdcard/img.raw img_%s.raw" % (ADB_ACTIVE_DEVICE, ADB_ACTIVE_DEVICE, ACTIVE_DEVICE),
             stdout=PIPE, shell=True).stdout.read()
       
       f = open('img_%s.raw' % ACTIVE_DEVICE, 'rb')
@@ -1024,8 +1024,8 @@ def take_screenshot_adb():
    else:
 #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screens/screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    
-      cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png >> error.log 2>>&1' % ADB_ACTIVE_DEVICE
-      cmd2 = 'adb %s pull  /sdcard/screenshot.png "screens/screenshot_%s.png" >> error.log 2>>&1' % (ADB_ACTIVE_DEVICE, ACTIVE_DEVICE)
+      cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png' % ADB_ACTIVE_DEVICE
+      cmd2 = 'adb %s pull  /sdcard/screenshot.png "screens/screenshot_%s.png"' % (ADB_ACTIVE_DEVICE, ACTIVE_DEVICE)
    
       Popen(cmd1, stdout=PIPE, shell=True).stdout.read()
       Popen(cmd2, stdout=PIPE, shell=True).stdout.read()
@@ -4142,9 +4142,11 @@ if __name__ == "__main__":
 #   custom20()
 
 #   setActiveDevice("10.42.0.52:5558", youwave=True)
-   setActiveDevice("localhost:5558",True)
+#   setActiveDevice("localhost:5558",True)
+   setActiveDevice("76.250.209.149:5558",True)
+   
    DPI160 = True
-   startMarvel('Account1')
+   startMarvel('CasonZoo')
 #   createNewFakeAccount()
 #    setActiveDevice("0123456789ABCDEF", youwave=False)
 #    event7()

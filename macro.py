@@ -4141,10 +4141,11 @@ if __name__ == "__main__":
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 
-#   setActiveDevice("10.42.0.52:5558", youwave=True)
-   setActiveDevice("localhost:5558",True)
+   setActiveDevice("10.42.0.52:5558", youwave=True)
+#    setActiveDevice("localhost:5558",True)
    DPI160 = True
-   startMarvel('Account1')
+   createNewFakeAccount(referral="test")
+#    startMarvel('Account1')
 #   createNewFakeAccount()
 #    setActiveDevice("0123456789ABCDEF", youwave=False)
 #    event7()

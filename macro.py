@@ -13,10 +13,12 @@ import cv2
 ACTIVE_DEVICE = ''
 ADB_ACTIVE_DEVICE = ''
 YOUWAVE = False
+DPI160 = False
+# STDOUT_ALTERNATIVE = None
 ABC = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 abc = ['abcdefghijklmnopqrstuvwxyz']
 
-STDOUT_ALTERNATIVE = None
+
 
 # Bootlist:
 #
@@ -177,9 +179,8 @@ class Info:
          
          attr_name = re.sub('.txt', '', file)
 
-         if os.path.getsize('stats.txt') > 0:
-            setattr(self, attr_name, ast.literal_eval(s.read()))
-            s.close()
+         setattr(self, attr_name, ast.literal_eval(s.read()))
+         s.close()
       
 #      if os.path.getsize('stats.txt') > 0:
 #         s = open('stats.txt','a')
@@ -240,6 +241,71 @@ def sumIMEIDigits(number, nsum=0, even=True):
 #   
 #   if res:
 #      printResult(res)
+
+def updateSource():
+   
+   # On rsync parameters:
+   # https://www.itefix.no/i2/content/bug-cwrsync-throwing-chown-failed
+   
+   print("Updating source to latest version...")
+   
+   old_dir = os.getcwd()
+   
+   # Check if we're in the dist folder
+   if re.search('woh_macro',old_dir):
+      os.chdir('../sync/bin')
+   
+   # Otherwise assume we're in the source folder
+   else:
+      os.chdir('./dist/sync/bin')
+      
+   IS_DEVELOPER = os.path.exists('../../content')
+#    IS_DEVELOPER = False
+      
+   sync_dir = os.getcwd()
+   sync_drive_and_path = os.path.splitdrive(sync_dir)
+   sync_drive = sync_drive_and_path[0].lower().replace(':','')
+   sync_path_cygwin_style = "/cygdrive/%s"%sync_drive \
+                          + sync_drive_and_path[1].replace("\\","/")
+   
+   server = open('../server.txt','r').read()
+         
+   # If a local contents folder exists, sync from this one
+   if IS_DEVELOPER:
+      print("Content directory detected. Assuming developer PC")
+      sources = ['%s/../../content/**'%sync_path_cygwin_style,
+                 '%s/../../gui/**'%sync_path_cygwin_style]
+      #Update contents folder:
+      source_files = ['../../../macro.py','../../../gui.py']
+      for src in source_files:
+         rsync_cmd = 'rsync -e "./ssh -oStrictHostKeyChecking=no" -rtvu %s/%s %s/../../content/'\
+                     %(sync_path_cygwin_style,src,sync_path_cygwin_style)
+         print(Popen(rsync_cmd, stdout=PIPE, shell=True).stdout.read())
+      
+   else:
+      print("Not content directory detected. Assuming client PC")
+      server = open('../server.txt','r').read()
+      sources = ['macro@' + server + ':macro/**']
+   
+   for source in sources:
+      rsync_cmd = 'rsync -e "./ssh -oStrictHostKeyChecking=no" -rtvu %s %s/../../woh_macro/'\
+                  %(source,sync_path_cygwin_style)
+      print(Popen(rsync_cmd, stdout=PIPE, shell=True).stdout.read())
+
+   # If a local contents folder exists, push changes to server
+   if IS_DEVELOPER:
+      destination = 'macro@' + server + ':macro/'
+      sources = ['../../gui/**', '../../content/**']
+      for source in sources: 
+         rsync_cmd = 'rsync -e "./ssh -oStrictHostKeyChecking=no" -rtvu %s/%s %s'\
+                     %(sync_path_cygwin_style,source,destination)
+         print(Popen(rsync_cmd, stdout=PIPE, shell=True).stdout.read())
+
+
+   os.chdir(old_dir)
+   
+   
+   
 
 baseN = [
 "Jax",
@@ -432,12 +498,32 @@ def createNewFakeAccount(referral=""):
 #   f.write('}')
 #   e.write('}')
 
-def adbDevices():
+def adbConnect(device,youwave):
    
-   device_string = Popen("adb devices | grep -w device | sed s/device//", stdout=PIPE, shell=True).stdout.read()
+   print("Connecting to: %s..."%device)
+   
+   Popen("adb connect %s"%device, stdout=PIPE, shell=True)
 
-   device_string = re.sub("\t", '', device_string)
-   lines = re.split("\n+", device_string)
+   time.sleep(5)
+
+   setActiveDevice(device,youwave)
+
+def adbDevices():
+
+   devices_string = Popen("adb devices", stdout=PIPE, shell=True)
+   
+   time.sleep(3)
+#    re.search(r'[0-9]*', old_ids[0]).group(0)
+#    cards_in_roster_numbers = re.findall(r'\d+', cards_in_roster_string)
+#    cards_in_roster = tuple(map(int, cards_in_roster_numbers))
+   
+   #devices_string = Popen("adb devices | grep -w device | sed s/device//", stdout=PIPE, shell=True).stdout.read()
+   devices_string = Popen("adb devices", stdout=PIPE, shell=True).stdout.read()
+   
+   devices = re.findall(".*device\r",devices_string)
+
+   devices = re.sub("\tdevice\r", '', devices[0])
+   lines = re.split("\n+", devices)
    
    device_list = []
    for l in lines:
@@ -453,9 +539,10 @@ def setActiveDevice(device, youwave):
    global YOUWAVE
    
    if device != None:
-      ACTIVE_DEVICE = device
+      windows_friendly_device = re.sub(r':','.',device)
+      ACTIVE_DEVICE = windows_friendly_device
       ADB_ACTIVE_DEVICE = "-s " + device
-   
+      
    try:
       if youwave != None:
          YOUWAVE = youwave.isChecked()
@@ -550,10 +637,6 @@ def exitMarvel():
    Popen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
 
 def printResult(res):
-   if not STDOUT_ALTERNATIVE:
-      sys.stdout = sys.stdout
-   else:
-      sys.stdout = STDOUT_ALTERNATIVE
       
    if res:
       sys.stdout.write(":)")
@@ -630,14 +713,14 @@ def connect_adb_wifi():
       
 def clearMarvelCache():
    printAction("Clearing Marvel cache...", newline=True)
-   macro_output = Popen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android 2>>error.log" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    time.sleep(5)
 
    #if macro_output == None:
    #   raise Exception("Unable to clear Marvel cache")
 
 def launch_marvel():
-   macro_output = Popen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity 2>>error.log" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    #if macro_output == None:
    #   raise Exception("Unable to start Marvel")
 
@@ -647,7 +730,7 @@ def launch_marvel():
       
 
 def adb_input(text):
-   macro_output = Popen("adb %s shell input text %s" % (ADB_ACTIVE_DEVICE, text), stdout=PIPE, shell=True).stdout.read()
+   macro_output = Popen("adb %s shell input text %s 2>>error.log" % (ADB_ACTIVE_DEVICE, text), stdout=PIPE, shell=True).stdout.read()
 
 def adb_event_batch(events):
    
@@ -658,7 +741,7 @@ def adb_event_batch(events):
          
       sendevent_string += "sendevent /dev/input/event%d %d %d %d" % event
         
-   Popen("adb %s shell \"%s\"" % (ADB_ACTIVE_DEVICE, sendevent_string), stdout=PIPE, shell=True).stdout.read()
+   Popen("adb %s shell \"%s\" 2>>error.log" % (ADB_ACTIVE_DEVICE, sendevent_string), stdout=PIPE, shell=True).stdout.read()
       
 #   print( "adb shell %s"%sendevent_string )
       
@@ -756,15 +839,24 @@ def adb_login(login_screen_coords, user, password=None):
    
    c = np.array(login_screen_coords)
    
-   left_click((205, 254) + c) # Login Mobage
-   left_click((106, 255) + c) # Login button
-   left_click((76, 108) + c) # Mobage name field
-   enter_text(user)
+   if not DPI160:
+      left_click((205, 254) + c) # Login Mobage
+      left_click((106, 255) + c) # Login button
+      left_click((76, 108) + c) # Mobage name field
+   else:
+      left_click((140, 160) + c) # Login Mobage
+      left_click((74, 160) + c) # Login button
+      left_click((144, 71) + c) # Mobage name field
+   
+   enter_text(user)      
    
    if YOUWAVE:
       backspace()
       
-   left_click((76, 174) + c) # Mobage password field
+   if not DPI160:
+      left_click((76, 174) + c) # Mobage password field
+   else:
+      left_click((142, 114) + c) # Mobage password field
    if YOUWAVE: # Youwave screws this up. Need to insert text, then erase it once
       enter_text('a')
       
@@ -783,8 +875,11 @@ def adb_login(login_screen_coords, user, password=None):
       
    if YOUWAVE:
       backspace()
-   left_click((313, 237) + c) # Login button
-   
+      
+   if not DPI160:
+      left_click((313, 237) + c) # Login button
+   else:
+      left_click((207, 157) + c) # Login button
 #   
 def home_key():
    
@@ -929,10 +1024,12 @@ def take_screenshot_adb():
    else:
 #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screens/screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    
-      cmd = "adb %s shell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
-             adb %s pull  /sdcard/screenshot.png screens/screenshot_%s.png >error.log 2>&1" % (ADB_ACTIVE_DEVICE, ADB_ACTIVE_DEVICE, ACTIVE_DEVICE)
+      cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png >> error.log 2>>&1' % ADB_ACTIVE_DEVICE
+      cmd2 = 'adb %s pull  /sdcard/screenshot.png "screens/screenshot_%s.png" >> error.log 2>>&1' % (ADB_ACTIVE_DEVICE, ACTIVE_DEVICE)
    
-      Popen(cmd, stdout=PIPE, shell=True).stdout.read()
+      Popen(cmd1, stdout=PIPE, shell=True).stdout.read()
+      Popen(cmd2, stdout=PIPE, shell=True).stdout.read()
+      
    
    # adb pull /dev/graphics/fb0 img.raw
    # dd bs=800 count=1920 if=img.raw of=img.tmp
@@ -999,6 +1096,8 @@ def swipeReference(template, destination=(0, 0), threshold=0.96, print_coeff=Fal
 def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=0, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
                    recurse=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
 
+   DEBUG=False
+   import pylab as pl
    
    for i in range(retries):
       if not reuse_last_screenshot:
@@ -1026,6 +1125,10 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          if os.path.exists(template):
             image_template = cv2.imread(template)
 
+            if DEBUG:
+               pl.imshow(image_template)
+               pl.show()
+               
             result = cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED)
             
             if result.max() > threshold:
@@ -2671,6 +2774,9 @@ def playNewestMission(repeat=50):
 
 def startMarvel(user, attempts=3, password=None, enable_cache=False):
    
+   if YOUWAVE:
+      print( "Macro is being run in YOUWAVE MODE" )
+   
    id_files = [
       "databases/requests-journal",
       "databases/webview.db-journal",
@@ -2966,7 +3072,7 @@ def farmMission32FuseAndBoost():
 
 #recently_launched = ['joinge', 'jojanr':0, 'jollyma':0]
 #users = ['JoInge', 'JoJanR', 'JollyMa']
-recently_launched = [0] * info.accounts.__len__()
+recently_launched = []
 #
 def getIndex(user):
    for i, usr in enumerate(info.accounts):
@@ -2974,9 +3080,15 @@ def getIndex(user):
          return i
    return -1
 
-def randomUserStart(user_list=info.accounts.keys()):
-     
+def randomUserStart(user_list=None):
+   
    global recently_launched
+   
+   if user_list == None:
+      user_list = info.accounts.keys()
+   
+   if recently_launched == []:
+      recently_launched = [0] * info.accounts.__len__()
    
    need_reset = True
    for user in user_list:
@@ -4030,9 +4142,11 @@ if __name__ == "__main__":
 #   custom20()
 
 #   setActiveDevice("10.42.0.52:5558", youwave=True)
-   
+   setActiveDevice("localhost:5558",True)
+   DPI160 = True
+   startMarvel('Account1')
 #   createNewFakeAccount()
-   setActiveDevice("0123456789ABCDEF", youwave=False)
+#    setActiveDevice("0123456789ABCDEF", youwave=False)
 #    event7()
 #   eventStarkPresident()
 #    setActiveDevice("10.0.0.41:5555", youwave=False)
@@ -4040,7 +4154,7 @@ if __name__ == "__main__":
 #   getMyPageStatus()
 #    locateTemplate("screens/mission_2_4.png")
 #   setActiveDevice("00190e8364f46e", youwave=False)
-   event7()
+#    event7()
 #   take_screenshot_adb()
 #   custom20()
 #   checkRaid()

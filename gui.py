@@ -27,6 +27,7 @@ last edited: October 2011
 """
 
 import macro
+macro.DPI160 = True
 import sys
 from PyQt4 import QtGui, QtCore
 from functools import partial
@@ -202,12 +203,14 @@ class Example(QtGui.QWidget):
        
    def initUI(self):
        
+      macro.DPI160 = True
       QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
       
       self.setToolTip('Macro Control GUI')
 
+      print(macro.info.accounts)
       btn = []
-      for i,user in enumerate(macro.accounts.keys()):
+      for i,user in enumerate(macro.info.accounts.keys()):
          btn.append(QtGui.QPushButton(user, self))
          btn[-1].setToolTip('This is a <b>QPushButton</b> widget')
          btn[-1].clicked.connect(partial(macro.startMarvel, user, 1))
@@ -234,6 +237,7 @@ class Example(QtGui.QWidget):
       btn.resize(btn.sizeHint())
       btn.move(400,125)
       
+      macro.adbConnect("localhost:5558",youwave=True)
       devices = macro.adbDevices()
 #      devices = ["255.255.255.255:5555","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1"]
 
@@ -311,6 +315,8 @@ class Example(QtGui.QWidget):
             
 def main():
     
+#    macro.updateSource()
+    
    app = QtGui.QApplication(sys.argv)
    app.setApplicationName('WoH Macro Control GUI')
    
@@ -319,8 +325,8 @@ def main():
    myStream = MyStream()
    myStream.message.connect(ex.console.on_myStream_message)
    
-   macro.STDOUT_ALTERNATIVE = myStream
-   sys.stdout = myStream
+#    macro.STDOUT_ALTERNATIVE = myStream
+#    sys.stdout = myStream
    sys.exit(app.exec_())
 
 

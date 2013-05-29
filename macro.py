@@ -392,6 +392,13 @@ def createNewFakeAccount(referral=""):
    name_base  = getBaseName()
    email_base = getBaseName().lower()
    
+   old_dir = os.getcwd()
+   
+   # Check if we're in the dist folder
+   if not re.search('woh_macro',old_dir):
+      os.chdir('./dist/woh_macro')
+      
+#    IS_DEVELOPER = os.path.exists('../../content')
 
    
    # Set new Android ID and start WoH
@@ -399,6 +406,9 @@ def createNewFakeAccount(referral=""):
    unlock_phone()
    clearMarvelCache()
    launch_marvel()
+   
+   
+   
    
    printAction("Searching for login screen...")
    login_screen_coords = locateTemplate('screens/login_screen.png', threshold=0.95, retries=25, interval=1)
@@ -4147,6 +4157,11 @@ if __name__ == "__main__":
    
    DPI160 = True
    startMarvel('CasonZoo')
+#   setActiveDevice("10.42.0.52:5558", youwave=True)
+#    setActiveDevice("localhost:5558",True)
+#   DPI160 = True
+#   createNewFakeAccount(referral="test")
+#    startMarvel('Account1')
 #   createNewFakeAccount()
 #    setActiveDevice("0123456789ABCDEF", youwave=False)
 #    event7()

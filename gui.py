@@ -27,7 +27,6 @@ last edited: October 2011
 """
 
 import macro
-macro.DPI160 = True
 import sys
 from PyQt4 import QtGui, QtCore
 from functools import partial
@@ -203,7 +202,6 @@ class Example(QtGui.QWidget):
        
    def initUI(self):
        
-      macro.DPI160 = True
       QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
       
       self.setToolTip('Macro Control GUI')
@@ -239,6 +237,9 @@ class Example(QtGui.QWidget):
       
       macro.adbConnect("localhost:5558",youwave=True)
       devices = macro.adbDevices()
+      
+      # TODO!!!
+      
 #      devices = ["255.255.255.255:5555","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1"]
 
 #      listWidget = QtGui.QRadioButton()

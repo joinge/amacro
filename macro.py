@@ -164,12 +164,92 @@ class Stats:
       except:
          printAction("WARNING: Unable to read silver status for statistics...", newline=True)
  
-class AdbInfo(): pass
+class Adb():
+   def __init__(self):
+      self.read()
+
+   def getInfo(self,key):
+      
+      for i in range(2):
+         try:
+            if getattr(self.adb,key):
+               return getattr(self.adb,key)
+               break
+         except:
+            self.updateInfo()
+      
+      return None
+         
+   def updateInfo(self):
+      
+      global YOUWAVE
+      # First we need to know if we are running an emulator.
+      uname = Popen('adb %s shell uname -m' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+      
+      if re.search('i686',uname):
+         YOUWAVE = True
+      else:
+         YOUWAVE = False
+#       try:
+#          self.adb.eventTablet = int(re.search('/dev/input/event([0-9]).*\n.*VirtualBox USB Tablet',event_devices).group(1))
+#       except:
+#          print("ERROR: Unable to parse input/output event touchscreen device")      
+      
+         
+      if YOUWAVE:
+         
+         event_devices = Popen('(adb %s shell getevent) & sleep 1; kill $!' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+         try:
+            self.eventTablet = int(re.search('/dev/input/event([0-9]).*\n.*VirtualBox USB Tablet',event_devices).group(1))
+         except:
+            print("ERROR: Unable to parse input/output event touchscreen device")
+         try:
+            self.eventMouse = int(re.search('/dev/input/event([0-9]).*\n.*ImExPS/2 Generic Explorer Mouse',event_devices).group(1))
+         except:
+            print("ERROR: Unable to parse input/output event mouse device")
+         try:
+            self.eventKeyboard = int(re.search('/dev/input/event([0-9]).*\n.*AT Translated Set 2 keyboard',event_devices).group(1))
+         except:
+            print("ERROR: Unable to parse input/output event keyboard device")
+            
+            
+      try:
+         build_prop = Popen("adb %s shell echo 'cat /system/build.prop' \| su" %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+         self.screenDensity = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
+         
+         if self.screenDensity != 160 and self.adb.screenDensity != 240:
+            
+            print("")
+            print("<<<WARNING>>> ")
+            print("A screen density of %d detected. This is NOT SUPPORTED!!!"%self.screenDensity)
+            print("")
+                        
+      except:
+         print("ERROR: Unable to parse input/output event devices")
+            
+      self.printInfo()
+            
+   def printInfo(self):
+      
+      print("")
+      print("Adb info updated. New parameters:")
+      if YOUWAVE:
+         print("Youwave detected?       YES")
+         print("  Device - touchscreen: /dev/input/event%d"%self.eventTablet)
+         print("  Device - keyboard:    /dev/input/event%d"%self.eventKeyboard)
+         print("  Device - mouse:       /dev/input/event%d"%self.eventMouse)
+      else:
+         print("Youwave detected?       NO")         
+      print("Screen density:         %d"%self.screenDensity)
+      print("")
+  
+#   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, shell=True).stdout.read()
+
  
+# The info object reads itself from the data folder!!! 
 class Info:
    def __init__(self):
       self.read()
-      self.adb = AdbInfo()
 #      self.adbInfo()
       
    def read(self):
@@ -202,65 +282,10 @@ class Info:
          pprint(getattr(self, key), stream=s)
          s.close()
          
-   def getAdbInfo(self,key):
-      
-      for i in range(2):
-         try:
-            if getattr(self.adb,key):
-               return getattr(self.adb,key)
-               break
-         except:
-            self.updateAdbInfo()
-      
-      return None
-         
-   def updateAdbInfo(self):
-         
-      if YOUWAVE:
-         
-         event_devices = Popen('(adb %s shell getevent) & sleep 1; kill $!' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
-         try:
-            self.adb.eventTablet = int(re.search('/dev/input/event([0-9]).*\n.*VirtualBox USB Tablet',event_devices).group(1))
-         except:
-            print("ERROR: Unable to parse input/output event touchscreen device")
-         try:
-            self.adb.eventMouse = int(re.search('/dev/input/event([0-9]).*\n.*ImExPS/2 Generic Explorer Mouse',event_devices).group(1))
-         except:
-            print("ERROR: Unable to parse input/output event mouse device")
-         try:
-            self.adb.eventKeyboard = int(re.search('/dev/input/event([0-9]).*\n.*AT Translated Set 2 keyboard',event_devices).group(1))
-         except:
-            print("ERROR: Unable to parse input/output event keyboard device")
-         try:
-            build_prop = Popen("adb %s shell echo 'cat /system/build.prop' \| su" %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
-            self.adb.screenDensity = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
-            
-            if self.adb.screenDensity != 160 and self.adb.screenDensity != 240:
-               
-               print("")
-               print("<<<WARNING>>> ")
-               print("A screen density of %d detected. This is NOT SUPPORTED!!!"%self.adb.screenDensity)
-               print("")
-                           
-         except:
-            print("ERROR: Unable to parse input/output event devices")
-            
-      self.printAdbInfo()
-            
-   def printAdbInfo(self):
-      
-      print("")
-      print("Adb info updated. New parameters:")
-      print("Device - touchscreen: /dev/input/event%d"%self.adb.eventTablet)
-      print("Device - keyboard:    /dev/input/event%d"%self.adb.eventKeyboard)
-      print("Device - mouse:       /dev/input/event%d"%self.adb.eventMouse)
-      print("Screen density:       %d"%self.adb.screenDensity)
-      print("")
-  
-#   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, shell=True).stdout.read()
 
       
 info = Info()
+adb = Adb()
       
 # IMEI = 358150 04 524460 6
 # 35     - British Approvals Board of Telecommunications (all phones)
@@ -460,8 +485,8 @@ def createNewFakeAccount(referral=""):
    old_dir = os.getcwd()
    
    # Check if we're in the dist folder
-   if not re.search('woh_macro',old_dir):
-      os.chdir('./dist/woh_macro')
+#    if not re.search('woh_macro',old_dir):
+#       os.chdir('./dist/woh_macro')
       
 #    IS_DEVELOPER = os.path.exists('../../content')
 
@@ -481,16 +506,60 @@ def createNewFakeAccount(referral=""):
    
    if login_screen_coords:
       
-      randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(0, 3))).astype(int).astype('str'))
+      randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(1, 4))).astype(int).astype('str'))
       
-      email = email_base + randNums + '@' + emails[int(np.random.uniform(4))]
+      email = email_base + randNums + '@' + emails[int(np.random.uniform(0,len(emails)-1e-9))]
         
-      for i in range(10):
-         print("hello")
+      c = np.array(login_screen_coords)
+   
+      if adb.getInfo('screenDensity') == 240:
+         print("ERROR: Not implemented")
+      else:
+         left_click((140, 160) + c) # Login Mobage
+         left_click((206, 160) + c) # Login button
+         left_click((144, 71) + c) # Mobage name field
       
-      
-
-      
+        
+#       for i in range(10):
+#          
+# 
+#    
+#    enter_text(user)      
+#    
+#    if YOUWAVE:
+#       backspace()
+#       
+#    if info.getAdbInfo('screenDensity') == 240:
+#       left_click((76, 174) + c) # Mobage password field
+#    else:
+#       left_click((142, 114) + c) # Mobage password field
+#    if YOUWAVE: # Youwave screws this up. Need to insert text, then erase it once
+#       enter_text('a')
+#       
+#       for i in range(len(user)):
+#          right_arrow()
+# #         time.sleep(0.1)
+#          
+#       for i in range(len(user) + 2):
+#          backspace()
+# #         time.sleep(0.1)
+#    
+#    if password:
+#       enter_text(password)
+#    else:
+#       enter_text(info.accounts[user])
+#       
+#    if YOUWAVE:
+#       backspace()
+#       
+#    if info.getAdbInfo('screenDensity') == 240:
+#       left_click((313, 237) + c) # Login button
+#    else:
+#       left_click((207, 157) + c) # Login button
+#       
+#       
+# 
+#       
 #      adb_login(login_screen_coords, user, password)            
       
 #      printAction("Searching for home screen...")
@@ -573,21 +642,24 @@ def createNewFakeAccount(referral=""):
 #   f.write('}')
 #   e.write('}')
 
-def adbConnect(device,youwave):
+def adbConnect(device):
    
    print("Connecting to: %s..."%device)
    
-   Popen("adb connect %s"%device, stdout=PIPE, shell=True)
+   output = Popen("adb connect %s"%device, stdout=PIPE, shell=True).stdout.read()
 
-   time.sleep(5)
-
-   setActiveDevice(device,youwave)
+   if re.search("unable|error",output):
+      print("ERROR: Unable to connect to: %s"%device)
+      return False
+   else:
+      setActiveDevice(device)
+      return True
 
 def adbDevices():
 
-   devices_string = Popen("adb devices", stdout=PIPE, shell=True)
+#    devices_string = Popen("adb devices", stdout=PIPE, shell=True)
    
-   time.sleep(3)
+#    time.sleep(3)
 #    re.search(r'[0-9]*', old_ids[0]).group(0)
 #    cards_in_roster_numbers = re.findall(r'\d+', cards_in_roster_string)
 #    cards_in_roster = tuple(map(int, cards_in_roster_numbers))
@@ -609,7 +681,7 @@ def adbDevices():
    return device_list
 
 
-def setActiveDevice(device, youwave):
+def setActiveDevice(device):
    global ACTIVE_DEVICE
    global ADB_ACTIVE_DEVICE
    global YOUWAVE
@@ -619,11 +691,7 @@ def setActiveDevice(device, youwave):
       ACTIVE_DEVICE = windows_friendly_device
       ADB_ACTIVE_DEVICE = "-s " + device
       
-   try:
-      if youwave != None:
-         YOUWAVE = youwave.isChecked()
-   except:
-      YOUWAVE = youwave
+   info.updateAdbInfo()
    
 
 def notify():
@@ -866,8 +934,8 @@ def left_click(loc):
    
    else:
       
-      if info.getAdbInfo('eventTablet'):
-         event_no = info.adb.eventTablet
+      if adb.getInfo('eventTablet'):
+         event_no = adb.eventTablet
       else:
          event_no = 3
                  
@@ -888,8 +956,8 @@ def backspace():
    
 
    if YOUWAVE:
-      if info.getAdbInfo('eventKeyboard'):
-         event_no = info.adb.eventKeyboard
+      if adb.getInfo('eventKeyboard'):
+         event_no = adb.eventKeyboard
       else:
          event_no = 2
       
@@ -908,8 +976,8 @@ def backspace():
 def right_arrow():
 
    if YOUWAVE:
-      if info.getAdbInfo('eventKeyboard'):
-         event_no = info.adb.eventKeyboard
+      if adb.getInfo('eventKeyboard'):
+         event_no = adb.eventKeyboard
       else:
          event_no = 2
       
@@ -934,7 +1002,7 @@ def adb_login(login_screen_coords, user, password=None):
    
    c = np.array(login_screen_coords)
    
-   if info.getAdbInfo('screenDensity') == 240:
+   if adb.getInfo('screenDensity') == 240:
       left_click((205, 254) + c) # Login Mobage
       left_click((106, 255) + c) # Login button
       left_click((76, 108) + c) # Mobage name field
@@ -948,7 +1016,7 @@ def adb_login(login_screen_coords, user, password=None):
    if YOUWAVE:
       backspace()
       
-   if info.getAdbInfo('screenDensity') == 240:
+   if adb.getInfo('screenDensity') == 240:
       left_click((76, 174) + c) # Mobage password field
    else:
       left_click((142, 114) + c) # Mobage password field
@@ -971,7 +1039,7 @@ def adb_login(login_screen_coords, user, password=None):
    if YOUWAVE:
       backspace()
       
-   if info.getAdbInfo('screenDensity') == 240:
+   if adb.getInfo('screenDensity') == 240:
       left_click((313, 237) + c) # Login button
    else:
       left_click((207, 157) + c) # Login button
@@ -1104,8 +1172,8 @@ def take_screenshot_adb():
        
 #   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    if not YOUWAVE:
-      Popen("adb %s shell /system/bin/screencap /sdcard/img.raw;\
-             adb %s pull  /sdcard/img.raw %s/img_%s.raw"
+      Popen("adb %s shell /system/bin/screencap /sdcard/img.raw >/dev/null 2>&1;\
+             adb %s pull  /sdcard/img.raw %s/img_%s.raw >/dev/null 2>&1"
              % (ADB_ACTIVE_DEVICE, ADB_ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE),
             stdout=PIPE, shell=True).stdout.read()
       
@@ -1202,7 +1270,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
       
       time.sleep(.1)
       try:
-         if info.getAdbInfo('screenDensity') == 240:
+         if adb.getInfo('screenDensity') == 240:
             img_path = SCREEN_PATH
          else:
             img_path = SCREEN_PATH + '/dpi160'
@@ -4244,14 +4312,14 @@ if __name__ == "__main__":
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 
-#   setActiveDevice("10.42.0.52:5558", youwave=True)
+   setActiveDevice("10.42.0.52:5558")
 #   setActiveDevice("localhost:5558",True)
-   setActiveDevice("76.250.209.149:5558",True)
+#    setActiveDevice("76.250.209.149:5558",True)
    
-   startMarvel('kinemb86')
+#    startMarvel('kinemb86')
 #   setActiveDevice("10.42.0.52:5558", youwave=True)
 #    setActiveDevice("localhost:5558",True)
-#   createNewFakeAccount(referral="test")
+   createNewFakeAccount(referral="test")
 #    startMarvel('Account1')
 #   createNewFakeAccount()
 #    setActiveDevice("0123456789ABCDEF", youwave=False)
@@ -4296,7 +4364,7 @@ if __name__ == "__main__":
 #   eventKillEnemies()
 #   eventFindEnemy()
 #   eventPlayMission()
-   eventPlay()
+#    eventPlay()
 #    locateTemplate("android_error.png", threshold=0.9, offset=(65,31))
 #   runAll()
 #   startAndRestartWhenQuit()

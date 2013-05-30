@@ -104,7 +104,7 @@ class DeviceView(QtGui.QWidget):
          if i==0:
             device_item.setCheckState(QtCore.Qt.CheckState(2))
             self.deviceActiveList[str(i)] = True
-            macro.setActiveDevice(device, None)
+            macro.setActiveDevice(device)
 #         device.item
          self.model.appendRow([device_item,box])
 #         model.appendColumn(box)
@@ -149,7 +149,8 @@ class DeviceView(QtGui.QWidget):
             device_selected = True
             device_text = str(self.model.item(i,0).text())
             if self.deviceActiveList[str(i)] == False:
-               macro.setActiveDevice(device_text, self.deviceYouwaveList[str(i)])
+#                macro.setActiveDevice(device_text, self.deviceYouwaveList[str(i)])
+               macro.setActiveDevice(device_text)
                self.deviceActiveList[str(i)] = True
                
                for j in range(self.model.rowCount()):
@@ -165,8 +166,8 @@ class DeviceView(QtGui.QWidget):
                state = 2
 
             self.model.item(i,0).setCheckState(QtCore.Qt.CheckState(state))
-                  
-      print(macro.ACTIVE_DEVICE)
+
+#       print(macro.ACTIVE_DEVICE)
    
 #      .connect(partial(macro.startMarvel, user, 1))
    
@@ -235,7 +236,7 @@ class Example(QtGui.QWidget):
       btn.resize(btn.sizeHint())
       btn.move(400,125)
       
-      macro.adbConnect("localhost:5558",youwave=True)
+      macro.adbConnect("localhost:5558")
       devices = macro.adbDevices()
       
       # TODO!!!

@@ -14,8 +14,8 @@ ACTIVE_DEVICE = ''
 ADB_ACTIVE_DEVICE = ''
 YOUWAVE = False
 # STDOUT_ALTERNATIVE = None
-ABC = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ']
-abc = ['abcdefghijklmnopqrstuvwxyz']
+ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+abc = 'abcdefghijklmnopqrstuvwxyz'
 
 SCREEN_PATH = './screens'
 TEMP_PATH   = './tmp'
@@ -166,14 +166,14 @@ class Stats:
  
 class Adb():
    def __init__(self):
-      self.read()
+      pass
 
    def getInfo(self,key):
       
       for i in range(2):
          try:
-            if getattr(self.adb,key):
-               return getattr(self.adb,key)
+            if getattr(self,key):
+               return getattr(self,key)
                break
          except:
             self.updateInfo()
@@ -255,14 +255,14 @@ class Info:
    def read(self):
 
       try:
-         files = os.listdir('data')
+         files = os.listdir('info')
       except:
-         os.mkdir('data')
+         os.mkdir('info')
          return
       
       for file in files:
          
-         s = open('data/%s' % file, 'r')
+         s = open('info/%s' % file, 'r')
          
          attr_name = re.sub('.txt', '', file)
 
@@ -278,7 +278,7 @@ class Info:
             
       for key in self.__dict__.keys():
       
-         s = open('data/%s.txt' % key, 'w')
+         s = open('info/%s.txt' % key, 'w')
          pprint(getattr(self, key), stream=s)
          s.close()
          
@@ -431,13 +431,13 @@ def getBaseName():
 # curl -L http://www.spinxo.com/ | sed -r -n "s/^\s+([a-zA-Z]+)<\/a><\/li>.*$/\1/p" >> info/nick_seeds.txt
 # cat info/nick_seeds.txt | sort -R > ./info/nick_seeds2.txt
 
-   f = open('./info/nick_seeds.txt', 'r')
+   f = open('./data/nick_seeds.txt', 'r')
    all_names = f.readlines()
    name = all_names[0]
    name = re.sub('\n','',name)
    f.close()
 #   lines = re.split("\n+", file)
-   f = open('./info/nick_seeds.txt', 'w')
+   f = open('./data/nick_seeds.txt', 'w')
    f.write( "".join(all_names[1:]) )
    f.close()
    
@@ -478,48 +478,220 @@ def createAccount(baseNames=baseN):
    e.write('}')
    
 def createNewFakeAccount(referral=""):
-   
+      
    name_base  = getBaseName()
    email_base = getBaseName().lower()
    
    old_dir = os.getcwd()
-   
-   # Check if we're in the dist folder
-#    if not re.search('woh_macro',old_dir):
-#       os.chdir('./dist/woh_macro')
       
-#    IS_DEVELOPER = os.path.exists('../../content')
-
-   
    # Set new Android ID and start WoH
    setAndroidId(name_base,newAndroidId())
    unlock_phone()
    clearMarvelCache()
    launch_marvel()
    
-   
-   
-   
    printAction("Searching for login screen...")
-   login_screen_coords = locateTemplate('login_screen.png', threshold=0.95, retries=25, interval=1)
-   printResult(login_screen_coords)
+   login_screen = locateTemplate('login_screen.png', threshold=0.95, retries=25, interval=1)
+   printResult(login_screen)
    
-   if login_screen_coords:
+   if login_screen:
       
-      randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(1, 4))).astype(int).astype('str'))
-      
+      randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(2, 4))).astype(int).astype('str'))
       email = email_base + randNums + '@' + emails[int(np.random.uniform(0,len(emails)-1e-9))]
-        
-      c = np.array(login_screen_coords)
-   
-      if adb.getInfo('screenDensity') == 240:
-         print("ERROR: Not implemented")
-      else:
-         left_click((140, 160) + c) # Login Mobage
-         left_click((206, 160) + c) # Login button
-         left_click((144, 71) + c) # Mobage name field
       
-        
+#       randABC = ''.join([ABC[0][j] for j in np.random.uniform(0, 26, size=int(np.random.uniform(3))).astype(int)])
+#       randAbc = ''.join([abc[0][j] for j in np.random.uniform(0, 26, size=int(np.random.uniform(3))).astype(int)])
+      
+      tmp = ['0123456789', ABC, abc]
+      tmp2 = ''.join(i for i in tmp)
+      password = ''.join([tmp2[j] for j in np.random.uniform(0, len(tmp2)-1e-9, size=int(np.random.uniform(8,14))).astype(int)])
+      
+      c = np.array(login_screen)
+   
+      if adb.getInfo('screenDensity') != 160:
+         print("ERROR: Not implemented")
+         return 2
+         
+      left_click((140, 160) + c) # Login Mobage
+      left_click((206, 160) + c) # Login button
+      
+      
+      printAction("Searching for sign up screen...")
+      signup_screen = locateTemplate('login_signup.png', threshold=0.95, retries=5, interval=2)
+      printResult(signup_screen)
+      
+      if not signup_screen:
+         return 1
+
+      success = False
+      c = np.array(signup_screen)
+      for i in range(10):
+         
+         if i!=0:              
+            printAction("Wiping both fields...")
+            # Wipe both fields:
+            left_click((244, 73) + c) # Email field
+            if i!=0:
+               for i in range(50): backspace()
+            left_click((244, 118) + c) # Password field
+            if i!=0:
+               for i in range(50): backspace()   
+               
+         printAction("Trying with email: %s..."%email, newline=True)
+         left_click((244, 73) + c) # Email field
+         enter_text(email)
+         backspace()
+         
+         printAction("Entering password: %s"%password, newline=True)
+         left_click((244, 118) + c) # Password field
+         
+         # Like usual Youwave has problems here...
+         enter_text('a')
+         for i in range(len(email)):
+            right_arrow()
+         for i in range(len(email) + 2):
+            backspace()
+         enter_text(password)
+         backspace()
+         left_click((205, 159) + c) # Signup button
+         
+         printAction("Searching for \"Last Step\" screen...")
+         signup_last_screen = locateTemplate('login_signup_last.png', threshold=0.95, retries=20, interval=1)
+         printResult(signup_last_screen)
+         
+         if signup_last_screen:
+            success = True
+            break
+         
+      left_click((20,140) + c) # Uncheck "Get Mobage news and updates" button
+            
+      # Now we must handle the fact that the nick may be invalid
+      success = False
+      printAction("Waiting for tutorial start...")
+      for i in range(10):
+         
+         left_click((232,105)+c) # Nick field         
+
+         if i==0:
+            enter_text('a')
+            for i in range(len(email_base+randNums)+2):
+               right_arrow()            
+
+            for i in range(len(email_base+randNums)+2+len(password)):
+               backspace()
+            enter_text(name_base)
+            backspace()
+         else:
+            enter_text(tmp2[int(np.random.uniform(0, len(tmp2)-1e-9))])
+            backspace()            
+         
+         left_click((142,172) + c) # Save and Play button
+         
+#          invalid_nick  = locateTemplate('login_signup_invalid_nick.png', threshold=0.95)
+         time.sleep(5)
+         login_box     = locateTemplate('login_signup_part.png', threshold=0.95)
+         
+#          if invalid_nick:
+#             left_click((232,105)+c) # Nick field
+#             enter_text(tmp2[np.random.uniform(0, len(tmp2)-1e-9)])
+            
+         if not login_box:
+            success = True
+            break
+         
+      if not success:
+         printResult(False)
+         print("ERROR: Unable to enter valid nick")
+         return 1
+
+      printResult(True)
+
+      printAction("Running through the tutorial like mad... (!!!)", newline=True)
+      OK = [0]*10
+      for i in range(200):
+         time.sleep(1)
+         take_screenshot_adb()
+         if   not OK[0] and locateTemplate('mobage_ad.png',               offset=(85,14),  click=True, reuse_last_screenshot=True): OK[0] = 1
+         elif not OK[1] and locateTemplate('tutorial_understood.png',     offset=(132,7),  click=True, reuse_last_screenshot=True): OK[1] = 1
+         elif not OK[2] and locateTemplate('tutorial_skip.png',           offset=(49,11),  click=True, reuse_last_screenshot=True): OK[2] = 1
+         elif not OK[3] and locateTemplate('tutorial_another_card.png',   offset=(132,8),  click=True, reuse_last_screenshot=True): OK[3] = 1
+         elif not OK[4] and locateTemplate('tutorial_all_right.png',      offset=(127,10), click=True, reuse_last_screenshot=True): OK[4] = 1
+         elif not OK[5] and locateTemplate('tutorial_wreck_villains.png', offset=(123,10), click=True, reuse_last_screenshot=True): OK[5] = 1
+         elif not OK[6] and locateTemplate('tutorial_battle.png',         offset=(23,11),  click=True, reuse_last_screenshot=True): OK[6] = 1
+         elif not OK[7] and locateTemplate('tutorial_got_this_one.png',   offset=(123,9),  click=True, reuse_last_screenshot=True): OK[7] = 1
+         elif not OK[8] and locateTemplate('tutorial_i_will.png',         offset=(128,10), click=True, reuse_last_screenshot=True): OK[8] = 1
+         elif not OK[9] and locateTemplate('tutorial_referral.png',       offset=(124,13), click=True, reuse_last_screenshot=True):
+            OK[9] = 1
+            break
+         left_click((240,150))
+      
+      printAction("Time for referral service BABY!!!", newline=True)
+      
+      ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=1)
+      
+      if not ok:
+         print("ERROR: Could not find referral \"OK\" button")
+         return 2 # If the service gets this far without working, it's probably best to call it off.
+      printAction("Entering the referral code...", newline=True)
+      text_field = ok + np.array((0,-33))
+      left_click(text_field)
+      
+      enter_text('a')
+      for i in range(len(name_base)+10):
+         right_arrow()            
+      for i in range(len(name_base)+5):
+         backspace()
+      enter_text(referral)
+      backspace()
+      
+      left_click(ok)
+      
+      ok2 = locateTemplate('tutorial_almost_finished_ok.png', offset=(92,15), click=True, retries=5, interval=1)
+      
+      if not ok2:
+         print("ERROR: Could not find referral \"OK\" button")
+         return 2 # If the service gets this far without working, it's probably best to call it off.
+      
+      for i in range(5):
+         time.sleep(2)
+         left_click((240,150))
+      
+      printAction("FINISHED!!!")
+      
+      return 0
+      
+      
+def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral=""):
+   
+   for i in range(iterations):
+      
+      print("")
+      print("REFERRAL SERVICE: Iteration %d"%i)
+      
+      retcode = createNewFakeAccount(referral=referral)
+      printAction("",newline=True)
+      printAction("SUMMARY",newline=True)
+      if retcode == 2:
+         printAction("Referral script asked to abort. Investigate!",newline=True)
+         break
+
+      elif retcode == 1:
+         printAction("Referral script failed but asked to keep going!",newline=True)
+         
+      elif retcode == 0:  
+         printAction("All good! Ready for more action!",newline=True)
+         
+      else:
+         printAction("WARNING: This return code is unknown",newline=True)
+      
+      printAction("",newline=True)
+      wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
+      
+      printAction("Waiting for roughly %d minutes and %d seconds..."%(wait_time/60,wait_time%60),newline=True)
+      
+      time.sleep(wait_time)
+      
+      
 #       for i in range(10):
 #          
 # 
@@ -691,7 +863,7 @@ def setActiveDevice(device):
       ACTIVE_DEVICE = windows_friendly_device
       ADB_ACTIVE_DEVICE = "-s " + device
       
-   info.updateAdbInfo()
+   adb.updateInfo()
    
 
 def notify():
@@ -1189,8 +1361,8 @@ def take_screenshot_adb():
    else:
 #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    
-      cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png' % ADB_ACTIVE_DEVICE
-      cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s/screenshot_%s.png"' % (ADB_ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE)
+      cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png >/dev/null 2>&1' % ADB_ACTIVE_DEVICE
+      cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s/screenshot_%s.png"  >/dev/null 2>&1' % (ADB_ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE)
    
       Popen(cmd1, stdout=PIPE, shell=True).stdout.read()
       Popen(cmd2, stdout=PIPE, shell=True).stdout.read()
@@ -4299,7 +4471,7 @@ def tradeToJollyMa():
 
 def gimpScreenshot():
    
-   Popen("gimp ./screenshot_%s.png" % ACTIVE_DEVICE, stdout=PIPE, shell=True)
+   Popen("gimp %s/screenshot_%s.png" %(TEMP_PATH, ACTIVE_DEVICE), stdout=PIPE, shell=True)
 
 if __name__ == "__main__":
 

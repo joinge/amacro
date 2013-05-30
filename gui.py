@@ -134,7 +134,6 @@ class DeviceView(QtGui.QWidget):
       
       a = self.model.item(0,0)
       
-      print("hello")
       
    def deviceClicked(self):
       
@@ -171,6 +170,56 @@ class DeviceView(QtGui.QWidget):
    
 #      .connect(partial(macro.startMarvel, user, 1))
    
+class ReferralService(QtGui.QWidget):
+
+   def __init__(self, parent):
+         
+      super(ReferralService,self).__init__(parent)
+   
+      self.ibox = QtGui.QSpinBox(self)
+#       self.sbox.clicked.connect(self.update)
+      self.ibox.setMaximum(999)
+      self.ibox.setMinimum(1)
+      self.ibox.resize(self.ibox.sizeHint())
+      self.ibox.move(150,0)
+      self.ibox.setValue(1)
+   
+      self.ref_field = QtGui.QLineEdit(self)
+#       self.sbox.clicked.connect(self.update)
+      size_hint = self.ref_field.sizeHint()
+      self.ref_field.resize(QtCore.QSize(140,size_hint.height()))
+      self.ref_field.move(0,0)
+      
+      self.start_btn = QtGui.QPushButton('Start referral service', self)
+      self.start_btn.clicked.connect(self.launchReferral)
+      self.start_btn.resize(self.start_btn.sizeHint())
+      self.start_btn.move(0,30)
+      
+      self.lbox = QtGui.QSpinBox(self)
+      self.lbox.setMaximum(999)
+      self.lbox.resize(self.lbox.sizeHint())
+      self.lbox.move(0,60)
+      self.lbox.setValue(3)
+      
+      self.ubox = QtGui.QSpinBox(self)
+      self.ubox.setMaximum(999)
+      self.ubox.resize(self.ubox.sizeHint())
+      self.ubox.move(50,60)
+      self.ubox.setValue(15)
+
+     
+   def launchReferral(self):
+      
+      iterations = self.ibox.value()
+      
+      lower = self.lbox.value()
+      upper = self.ubox.value()
+      
+      ref_key = str(self.ref_field.text())
+      
+      macro.createMultipleNewFakeAccounts(iterations, interval=(lower,upper), referral=ref_key)
+      
+
 
 class EmittingStream(QtCore.QObject):
 
@@ -239,7 +288,16 @@ class Example(QtGui.QWidget):
       macro.adbConnect("localhost:5558")
       devices = macro.adbDevices()
       
-      # TODO!!!
+      #Referrals
+
+      ref_service = ReferralService(self)
+      ref_service.move(50,250)
+      
+#       sbox = QtGui.QSpinBox(self)
+#       sbox.clicked.connect(macro.checkTraining)
+#       sbox.resize(sbox.sizeHint())
+#       sbox.move(400,150)
+
       
 #      devices = ["255.255.255.255:5555","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1"]
 
@@ -303,7 +361,7 @@ class Example(QtGui.QWidget):
       device_list.move(50,50)
       
       self.console = MyConsole(self)
-      self.console.move(50,250)
+      self.console.move(50,450)
       
       self.custom8_btn = QtGui.QPushButton('Custom 8', self)
       self.custom8_btn.clicked.connect(macro.custom8)
@@ -311,8 +369,8 @@ class Example(QtGui.QWidget):
       self.custom8_btn.move(400,210)
       
 
-      self.setGeometry(300, 300, 600, 600)
-      self.setWindowTitle('Tooltips')    
+      self.setGeometry(300, 300, 600, 800)
+      self.setWindowTitle('WoH Macro Control')    
       self.show()
             
 def main():

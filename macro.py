@@ -23,6 +23,14 @@ TEMP_PATH   = './tmp'
 try:    os.mkdir(TEMP_PATH)
 except: pass
 
+if os.name == "posix":
+   ESCAPE = "\\"
+elif os.name == "nt":
+   ESCAPE = "^"
+else:
+   print("WARNING: Unsupported OS")
+   ESCAPE = "\\"
+
 # Bootlist:
 #
 # Valhalla25, airman54, nashie88, waygrumpy, xzitrempire(35), xQueenJenniecx, choiiflames, jonathanxxx, 

@@ -185,13 +185,13 @@ class ReferralService(QtGui.QFrame):
       self.ibox.setMaximum(999)
       self.ibox.setMinimum(1)
       self.ibox.resize(self.ibox.sizeHint())
-      self.ibox.move(margin[0]+150,margin[1])
+      self.ibox.move(margin[0]+170,margin[1])
       self.ibox.setValue(1)
    
       self.ref_field = QtGui.QLineEdit(self)
 #       self.sbox.clicked.connect(self.update)
       size_hint = self.ref_field.sizeHint()
-      self.ref_field.resize(QtCore.QSize(140,size_hint.height()))
+      self.ref_field.resize(QtCore.QSize(160,size_hint.height()))
       self.ref_field.move(margin[0],margin[1])
       
       self.start_btn = QtGui.QPushButton('Start referral service', self)
@@ -211,6 +211,17 @@ class ReferralService(QtGui.QFrame):
       self.ubox.move(margin[0]+60,margin[1]+60)
       self.ubox.setValue(15)
       self.ubox.setStyleSheet("")
+      
+      self.nick = QtGui.QComboBox(self)
+      self.nick.move(margin[0]+160,margin[1]+30)
+      self.nick.blockSignals(True)
+      self.nick.addItem(QtCore.QString("Blayd"))
+      self.nick.addItem(QtCore.QString("Joey"))
+      self.nick.addItem(QtCore.QString("Chris"))
+      self.nick.setCurrentIndex(-1)
+      self.nick.blockSignals(False)
+      self.nick.setCurrentIndex(0)
+      self.connect(self.nick, QtCore.SIGNAL("currentIndexChanged(const QString&)"), self.setCurrentUser)
       
 #      self.label = QtGui.QLabel(self)
 #      self.label.setText("Hello")
@@ -234,7 +245,12 @@ class ReferralService(QtGui.QFrame):
       
       macro.createMultipleNewFakeAccounts(iterations, interval=(lower,upper), referral=ref_key)
       
-
+   def setCurrentUser(self):
+      
+      user = str(self.nick.currentText())
+      
+      macro.user.setCurrent(user)
+      
 
 class EmittingStream(QtCore.QObject):
 

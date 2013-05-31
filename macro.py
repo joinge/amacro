@@ -174,7 +174,7 @@ class Stats:
       except:
          printAction("WARNING: Unable to read silver status for statistics...", newline=True)
  
-class Adb():
+class Device():
    def __init__(self):
       pass
 
@@ -200,11 +200,6 @@ class Adb():
          YOUWAVE = True
       else:
          YOUWAVE = False
-#       try:
-#          self.adb.eventTablet = int(re.search('/dev/input/event([0-9]).*\n.*VirtualBox USB Tablet',event_devices).group(1))
-#       except:
-#          print("ERROR: Unable to parse input/output event touchscreen device")      
-      
          
       if YOUWAVE:
          
@@ -236,7 +231,7 @@ class Adb():
          build_prop = Popen('adb %s shell echo "cat /system/build.prop" %s| su'%(ADB_ACTIVE_DEVICE,ESC), stdout=PIPE, shell=True).stdout.read()
          self.screenDensity = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
          
-         if self.screenDensity != 160 and self.adb.screenDensity != 240:
+         if self.screenDensity != 160 and self.screenDensity != 240:
             
             print("")
             print("<<<WARNING>>> ")
@@ -251,7 +246,7 @@ class Adb():
    def printInfo(self):
       
       print("")
-      print("Adb info updated. New parameters:")
+      print("Device info updated. New parameters:")
       if YOUWAVE:
          print("Youwave detected?       YES")
          print("  Device - touchscreen: /dev/input/event%d"%self.eventTablet)
@@ -265,10 +260,35 @@ class Adb():
 #   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, shell=True).stdout.read()
 
  
-# The info object reads itself from the data folder!!! 
-class Info:
+class InfoMeta():
+   pass
+ 
+# The info object reads itself from the info folder!!! 
+class Info(InfoMeta):
+   try:
+      files = os.listdir('info')
+   except:
+      os.mkdir('info')
+   
+   first_run = True
+   for file in files:
+      
+      s = open('info/%s' % file, 'r')
+      
+      attr_name = re.sub('.txt', '', file)
+
+      if first_run:
+         print("Reading Info attributes")
+         first_run= False
+         
+      # Make these settings class variables
+      setattr(InfoMeta, attr_name, ast.literal_eval(s.read()))
+      s.close()
+      
+   
    def __init__(self):
-      self.read()
+      pass
+#       self.read()
 #      self.adbInfo()
       
    def read(self):
@@ -279,14 +299,20 @@ class Info:
          os.mkdir('info')
          return
       
+      first_run = True
       for file in files:
          
          s = open('info/%s' % file, 'r')
          
          attr_name = re.sub('.txt', '', file)
 
-         setattr(self, attr_name, ast.literal_eval(s.read()))
+         # Only read once
+         if not hasattr(Info,attr_name) and first_run:
+            print("Reading Info attributes")
+         # Make these settings class variables
+         setattr(Info, attr_name, ast.literal_eval(s.read()))
          s.close()
+         first_run= False
       
 #      if os.path.getsize('stats.txt') > 0:
 #         s = open('stats.txt','a')
@@ -298,13 +324,30 @@ class Info:
       for key in self.__dict__.keys():
       
          s = open('info/%s.txt' % key, 'w')
-         pprint(getattr(self, key), stream=s)
+         pprint(getattr(Info, key), stream=s)
          s.close()
          
 
+# The user object deals with user info 
+class User():
+   def __init__(self):
+      self.current = 'Blayd'
       
-info = Info()
-adb = Adb()
+   def setCurrent(self, user):
+      
+      printAction("Current user:")
+      print(user)
+      
+      self.current = user
+      
+   def getCurrent(self):
+      
+      return self.current
+      
+
+info = Info() # Ideally, don't use this one directly (long term)
+device = Device()
+user = User()
       
 # IMEI = 358150 04 524460 6
 # 35     - British Approvals Board of Telecommunications (all phones)
@@ -447,18 +490,21 @@ emails = [
 
 def getBaseName():
    
-# curl -L http://www.spinxo.com/ | sed -r -n "s/^\s+([a-zA-Z]+)<\/a><\/li>.*$/\1/p" >> info/nick_seeds.txt
+# for i in {1..20}; do curl -L http://www.spinxo.com/ | sed -r -n "s/^\s+([a-zA-Z]+)<\/a><\/li>.*$/\1/p" >> data/nick_seeds_joey.txt; done
 # cat info/nick_seeds.txt | sort -R > ./info/nick_seeds2.txt
 
-   f = open('./data/nick_seeds.txt', 'r')
+   printAction("Fetching nick seeds...")
+   current_nick = user.getCurrent()
+   f = open('./data/nick_seeds_%s.txt'%current_nick.lower(), 'r')
    all_names = f.readlines()
    name = all_names[0]
    name = re.sub('\n','',name)
    f.close()
 #   lines = re.split("\n+", file)
-   f = open('./data/nick_seeds.txt', 'w')
+   f = open('./data/nick_seeds_%s.txt'%current_nick.lower(), 'w')
    f.write( "".join(all_names[1:]) )
    f.close()
+   printResult(True)
    
    return name
 
@@ -527,7 +573,7 @@ def createNewFakeAccount(referral=""):
       
       c = np.array(login_screen)
    
-      if adb.getInfo('screenDensity') != 160:
+      if device.getInfo('screenDensity') != 160:
          print("ERROR: Not implemented")
          return 2
          
@@ -872,17 +918,17 @@ def adbDevices():
    return device_list
 
 
-def setActiveDevice(device):
+def setActiveDevice(device_id):
    global ACTIVE_DEVICE
    global ADB_ACTIVE_DEVICE
    global YOUWAVE
    
-   if device != None:
-      windows_friendly_device = re.sub(r':','.',device)
+   if device_id != None:
+      windows_friendly_device = re.sub(r':','.',device_id)
       ACTIVE_DEVICE = windows_friendly_device
-      ADB_ACTIVE_DEVICE = "-s " + device
+      ADB_ACTIVE_DEVICE = "-s " + device_id
       
-   adb.updateInfo()
+   device.updateInfo()
    
 
 def notify():
@@ -905,15 +951,18 @@ def notifyWork():
 ###########
 
 def newAndroidId():
+   printAction("Creating new Android ID...")
    return ''.join(np.random.uniform(10, size=int(np.random.uniform(15, 18))).astype(int).astype('str'))
-
+   printResult(True)
+   
 def setAndroidId(user=None, newid='0' * 15):
    
+   printAction("Setting Android ID...")
    out = Popen("adb %s shell \
                \"cat /data/youwave_id;\
                  cat /sdcard/Id\"" % ADB_ACTIVE_DEVICE,
                stdout=PIPE, shell=True).stdout.read()
-   print(out)
+#    print(out)
    old_ids = out.split('\n')
    if not old_ids[0] == old_ids[1]:
       print("WARNING: IDs in /data (%s) and /sdcard (%s) do not match!!!" % (old_ids[0], old_ids[1]))
@@ -930,8 +979,9 @@ def setAndroidId(user=None, newid='0' * 15):
             if newid == '0' * 15:
                newid = i.fakeID[user]
                
-            print(Popen('adb %s shell echo "echo %s > /data/youwave_id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read())
-            print(Popen('adb %s shell echo "echo %s > /sdcard/Id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read())
+            print("Old ID: %d, New ID: %d"%(old_id,newid))
+            Popen('adb %s shell echo "echo %s > /data/youwave_id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
+            Popen('adb %s shell echo "echo %s > /sdcard/Id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
             
             i.fakeID[user] = newid
             i.write()
@@ -939,9 +989,9 @@ def setAndroidId(user=None, newid='0' * 15):
          print("ERROR: User %s does not seem to exist!" % user)
 
    else:
-      print(old_id)
-      print(Popen("adb %s shell echo 'echo %s > /data/youwave_id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read())
-      print(Popen("adb %s shell echo 'echo %s > /sdcard/Id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read())
+      print("Old ID: %d, New ID: %d"%(old_id,newid))
+      Popen("adb %s shell echo 'echo %s > /data/youwave_id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
+      Popen("adb %s shell echo 'echo %s > /sdcard/Id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
 
 
 def getAndroidId(user=None):
@@ -1125,8 +1175,8 @@ def left_click(loc):
    
    else:
       
-      if adb.getInfo('eventTablet'):
-         event_no = adb.eventTablet
+      if device.getInfo('eventTablet'):
+         event_no = device.eventTablet
       else:
          event_no = 3
                  
@@ -1147,8 +1197,8 @@ def backspace():
    
 
    if YOUWAVE:
-      if adb.getInfo('eventKeyboard'):
-         event_no = adb.eventKeyboard
+      if device.getInfo('eventKeyboard'):
+         event_no = device.eventKeyboard
       else:
          event_no = 2
       
@@ -1167,8 +1217,8 @@ def backspace():
 def right_arrow():
 
    if YOUWAVE:
-      if adb.getInfo('eventKeyboard'):
-         event_no = adb.eventKeyboard
+      if device.getInfo('eventKeyboard'):
+         event_no = device.eventKeyboard
       else:
          event_no = 2
       
@@ -1193,7 +1243,7 @@ def adb_login(login_screen_coords, user, password=None):
    
    c = np.array(login_screen_coords)
    
-   if adb.getInfo('screenDensity') == 240:
+   if device.getInfo('screenDensity') == 240:
       left_click((205, 254) + c) # Login Mobage
       left_click((106, 255) + c) # Login button
       left_click((76, 108) + c) # Mobage name field
@@ -1207,7 +1257,7 @@ def adb_login(login_screen_coords, user, password=None):
    if YOUWAVE:
       backspace()
       
-   if adb.getInfo('screenDensity') == 240:
+   if device.getInfo('screenDensity') == 240:
       left_click((76, 174) + c) # Mobage password field
    else:
       left_click((142, 114) + c) # Mobage password field
@@ -1230,7 +1280,7 @@ def adb_login(login_screen_coords, user, password=None):
    if YOUWAVE:
       backspace()
       
-   if adb.getInfo('screenDensity') == 240:
+   if device.getInfo('screenDensity') == 240:
       left_click((313, 237) + c) # Login button
    else:
       left_click((207, 157) + c) # Login button
@@ -1461,7 +1511,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
       
       time.sleep(.1)
       try:
-         if adb.getInfo('screenDensity') == 240:
+         if device.getInfo('screenDensity') == 240:
             img_path = SCREEN_PATH
          else:
             img_path = SCREEN_PATH + '/dpi160'

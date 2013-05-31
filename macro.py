@@ -23,6 +23,16 @@ TEMP_PATH   = './tmp'
 try:    os.mkdir(TEMP_PATH)
 except: pass
 
+if os.name == "posix":
+   ESC = "\\"
+elif os.name == "nt":
+   ESC = "^"
+else:
+   print("WARNING: Unsupported OS")
+   ESC = "\\"
+
+devnull = open(os.devnull,'w')
+
 # Bootlist:
 #
 # Valhalla25, airman54, nashie88, waygrumpy, xzitrempire(35), xQueenJenniecx, choiiflames, jonathanxxx, 
@@ -198,7 +208,16 @@ class Adb():
          
       if YOUWAVE:
          
-         event_devices = Popen('(adb %s shell getevent) & sleep 1; kill $!' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+#          thread = RunUntilTimeout(Popen,1,'adb %s shell getevent > tmp.txt' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True)
+#          thread.start()
+#          thread.join()
+#          time.sleep(2)
+#          
+#          event_devices = open('tmp.txt','r').read()
+         Popen('adb %s push getevent /sdcard/getevent' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+         event_devices = Popen('adb %s shell sh /sdcard/getevent' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()    
+#          time.sleep(3)
+#          event_devices = open('getevent.txt','r').read()#Popen('adb %s shell getevent > tmp.txt' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True)
          try:
             self.eventTablet = int(re.search('/dev/input/event([0-9]).*\n.*VirtualBox USB Tablet',event_devices).group(1))
          except:
@@ -214,7 +233,7 @@ class Adb():
             
             
       try:
-         build_prop = Popen("adb %s shell echo 'cat /system/build.prop' \| su" %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+         build_prop = Popen('adb %s shell echo "cat /system/build.prop" %s| su'%(ADB_ACTIVE_DEVICE,ESC), stdout=PIPE, shell=True).stdout.read()
          self.screenDensity = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
          
          if self.screenDensity != 160 and self.adb.screenDensity != 240:
@@ -911,8 +930,8 @@ def setAndroidId(user=None, newid='0' * 15):
             if newid == '0' * 15:
                newid = i.fakeID[user]
                
-            print(Popen("adb %s shell echo 'echo %s > /data/youwave_id' \| su" % (ADB_ACTIVE_DEVICE, newid), stdout=PIPE, shell=True).stdout.read())
-            print(Popen("adb %s shell echo 'echo %s > /sdcard/Id' \| su" % (ADB_ACTIVE_DEVICE, newid), stdout=PIPE, shell=True).stdout.read())
+            print(Popen('adb %s shell echo "echo %s > /data/youwave_id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read())
+            print(Popen('adb %s shell echo "echo %s > /sdcard/Id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read())
             
             i.fakeID[user] = newid
             i.write()
@@ -921,8 +940,8 @@ def setAndroidId(user=None, newid='0' * 15):
 
    else:
       print(old_id)
-      print(Popen("adb %s shell echo 'echo %s > /data/youwave_id' \| su" % (ADB_ACTIVE_DEVICE, newid), stdout=PIPE, shell=True).stdout.read())
-      print(Popen("adb %s shell echo 'echo %s > /sdcard/Id' \| su" % (ADB_ACTIVE_DEVICE, newid), stdout=PIPE, shell=True).stdout.read())
+      print(Popen("adb %s shell echo 'echo %s > /data/youwave_id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read())
+      print(Popen("adb %s shell echo 'echo %s > /sdcard/Id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read())
 
 
 def getAndroidId(user=None):
@@ -1030,7 +1049,7 @@ def connect_adb_wifi():
 def clearMarvelCache():
    printAction("Clearing Marvel cache...", newline=True)
    macro_output = Popen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android 2>>error.log" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
-   time.sleep(5)
+   time.sleep(3)
 
    #if macro_output == None:
    #   raise Exception("Unable to clear Marvel cache")
@@ -1361,11 +1380,11 @@ def take_screenshot_adb():
    else:
 #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    
-      cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png >/dev/null 2>&1' % ADB_ACTIVE_DEVICE
-      cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s/screenshot_%s.png"  >/dev/null 2>&1' % (ADB_ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE)
-   
-      Popen(cmd1, stdout=PIPE, shell=True).stdout.read()
-      Popen(cmd2, stdout=PIPE, shell=True).stdout.read()
+      cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png' % ADB_ACTIVE_DEVICE
+      cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s/screenshot_%s.png"' % (ADB_ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE)
+    
+      Popen(cmd1, stdout=devnull, shell=True).wait()
+      Popen(cmd2, stdout=devnull, stderr=devnull, shell=True).wait()
       
    
    # adb pull /dev/graphics/fb0 img.raw

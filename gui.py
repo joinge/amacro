@@ -285,7 +285,7 @@ class Example(QtGui.QWidget):
       btn.resize(btn.sizeHint())
       btn.move(400,125)
       
-      macro.adbConnect("localhost:5558")
+#       macro.adbConnect("localhost:5558")
       devices = macro.adbDevices()
       
       #Referrals

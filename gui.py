@@ -170,43 +170,58 @@ class DeviceView(QtGui.QWidget):
    
 #      .connect(partial(macro.startMarvel, user, 1))
    
-class ReferralService(QtGui.QWidget):
+class ReferralService(QtGui.QFrame):
 
    def __init__(self, parent):
          
       super(ReferralService,self).__init__(parent)
+      self.setStyleSheet("#ReferralService{ margin:0px; border:1px solid rgb(128, 128, 128); padding: 10px; border-radius: 5px }")
+      margin = (10,10)
+      
+      self.setObjectName("ReferralService")
    
       self.ibox = QtGui.QSpinBox(self)
 #       self.sbox.clicked.connect(self.update)
       self.ibox.setMaximum(999)
       self.ibox.setMinimum(1)
       self.ibox.resize(self.ibox.sizeHint())
-      self.ibox.move(150,0)
+      self.ibox.move(margin[0]+150,margin[1])
       self.ibox.setValue(1)
    
       self.ref_field = QtGui.QLineEdit(self)
 #       self.sbox.clicked.connect(self.update)
       size_hint = self.ref_field.sizeHint()
       self.ref_field.resize(QtCore.QSize(140,size_hint.height()))
-      self.ref_field.move(0,0)
+      self.ref_field.move(margin[0],margin[1])
       
       self.start_btn = QtGui.QPushButton('Start referral service', self)
       self.start_btn.clicked.connect(self.launchReferral)
       self.start_btn.resize(self.start_btn.sizeHint())
-      self.start_btn.move(0,30)
+      self.start_btn.move(margin[0]+0,margin[1]+30)
       
       self.lbox = QtGui.QSpinBox(self)
       self.lbox.setMaximum(999)
       self.lbox.resize(self.lbox.sizeHint())
-      self.lbox.move(0,60)
+      self.lbox.move(margin[0]+10,margin[1]+60)
       self.lbox.setValue(3)
       
       self.ubox = QtGui.QSpinBox(self)
       self.ubox.setMaximum(999)
       self.ubox.resize(self.ubox.sizeHint())
-      self.ubox.move(50,60)
+      self.ubox.move(margin[0]+60,margin[1]+60)
       self.ubox.setValue(15)
-
+      self.ubox.setStyleSheet("")
+      
+#      self.label = QtGui.QLabel(self)
+#      self.label.setText("Hello")
+#      self.label.move(-10,0)
+      
+      self.setStyleSheet("#ReferralService{ margin:0px; border:1px solid rgb(192, 192, 192); padding: 10px; border-radius: 5px }")
+#      self.setStyleSheet("background-color: rgb(255,0,0); margin:5px; border:1px solid rgb(0, 255, 0); ")
+#      self.setFrameShape(QtGui.QFrame.StyledPanel)
+#      self.setFrameStyle(1)
+      
+      print("Test")
      
    def launchReferral(self):
       

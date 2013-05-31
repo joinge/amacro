@@ -209,7 +209,7 @@ class Device():
 #          time.sleep(2)
 #          
 #          event_devices = open('tmp.txt','r').read()
-         Popen('adb %s push getevent /sdcard/getevent' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+         Popen('adb %s push getevent /sdcard/' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
          event_devices = Popen('adb %s shell sh /sdcard/getevent' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()    
 #          time.sleep(3)
 #          event_devices = open('getevent.txt','r').read()#Popen('adb %s shell getevent > tmp.txt' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True)

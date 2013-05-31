@@ -601,13 +601,13 @@ def createNewFakeAccount(referral=""):
             left_click((244, 118) + c) # Password field
             if i!=0:
                for i in range(50): backspace()   
-               
-         printAction("Trying with email: %s..."%email, newline=True)
+         printAction("Trying with email:")
+         print(email)
          left_click((244, 73) + c) # Email field
          enter_text(email)
          backspace()
-         
-         printAction("Entering password: %s"%password, newline=True)
+         printAction("Entering password:")
+         print(password)
          left_click((244, 118) + c) # Password field
          
          # Like usual Youwave has problems here...
@@ -689,14 +689,15 @@ def createNewFakeAccount(referral=""):
             OK[9] = 1
             break
          left_click((240,150))
-      
+      printResult(True)
       printAction("Time for referral service BABY!!!", newline=True)
       
       ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=1)
-      
       if not ok:
+         printResult(False)
          print("ERROR: Could not find referral \"OK\" button")
          return 2 # If the service gets this far without working, it's probably best to call it off.
+      printResult(True)
       printAction("Entering the referral code...", newline=True)
       text_field = ok + np.array((0,-33))
       left_click(text_field)
@@ -710,7 +711,6 @@ def createNewFakeAccount(referral=""):
       backspace()
       
       left_click(ok)
-      
       ok2 = locateTemplate('tutorial_almost_finished_ok.png', offset=(92,15), click=True, retries=5, interval=1)
       
       if not ok2:
@@ -721,8 +721,25 @@ def createNewFakeAccount(referral=""):
          time.sleep(2)
          left_click((240,150))
       
-      printAction("FINISHED!!!")
+      printAction("Registering device...")
+      register_device = locateTemplate('tutorial_register_device.png', offset=(124,11), click=True, retries=5)
       
+      if not register_device:
+         printResult(False)
+         print("ERROR: Unable to find register device button!")
+         return 2 # If the service gets this far without working, it's probably best to call it off.
+      
+      agree = locateTemplate('tutorial_agree.png', offset=(124,11), click=True, retries=5)
+      
+      if not agree:
+         printResult(False)
+         print("ERROR: Unable to find register device button!")
+         return 2 # If the service gets this far without working, it's probably best to call it off.
+      
+      locateTemplate('tutorial_mypage.png', offset=(45,8), click=True, retries=3)
+      
+      printResult(True)
+      printAction("FINISHED!!!", newline=True)
       return 0
       
       
@@ -951,9 +968,8 @@ def notifyWork():
 ###########
 
 def newAndroidId():
-   printAction("Creating new Android ID...")
+   printAction("Creating new Android ID...", newline=True)
    return ''.join(np.random.uniform(10, size=int(np.random.uniform(15, 18))).astype(int).astype('str'))
-   printResult(True)
    
 def setAndroidId(user=None, newid='0' * 15):
    
@@ -970,26 +986,26 @@ def setAndroidId(user=None, newid='0' * 15):
    old_id = re.search(r'[0-9]*', old_ids[0]).group(0) #15-18
    
    if not user == None:
-      i = Info()
-   
+
       try:
          if old_id == newid:
             print('WARNING: saveAndroidId() - Ids are already the same.')
          else:
             if newid == '0' * 15:
-               newid = i.fakeID[user]
+               newid = info.fakeID[user]
                
-            print("Old ID: %d, New ID: %d"%(old_id,newid))
+            print("Old ID: %s, New ID: %s"%(old_id,newid))
             Popen('adb %s shell echo "echo %s > /data/youwave_id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
             Popen('adb %s shell echo "echo %s > /sdcard/Id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
             
-            i.fakeID[user] = newid
-            i.write()
+            info.fakeID[user] = newid
+
+            info.write()
       except:
          print("ERROR: User %s does not seem to exist!" % user)
 
    else:
-      print("Old ID: %d, New ID: %d"%(old_id,newid))
+      print("Old ID: %s, New ID: %s"%(old_id,newid))
       Popen("adb %s shell echo 'echo %s > /data/youwave_id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
       Popen("adb %s shell echo 'echo %s > /sdcard/Id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
 

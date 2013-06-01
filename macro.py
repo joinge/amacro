@@ -25,8 +25,10 @@ except: pass
 
 if os.name == "posix":
    ESC = "\\"
+   sys.path.append("./local/linux64/lib/python")
 elif os.name == "nt":
    ESC = "^"
+   sys.path.append("./local/win32/lib/python")
 else:
    print("WARNING: Unsupported OS")
    ESC = "\\"
@@ -239,7 +241,8 @@ class Device():
             print("")
                         
       except:
-         print("ERROR: Unable to parse input/output event devices")
+         self.screenDensity = 0
+         print("ERROR: Unable to parse screen density")
             
       self.printInfo()
             
@@ -711,32 +714,32 @@ def createNewFakeAccount(referral=""):
       backspace()
       
       left_click(ok)
-      ok2 = locateTemplate('tutorial_almost_finished_ok.png', offset=(92,15), click=True, retries=5, interval=1)
+      ok2 = locateTemplate('tutorial_almost_finished_ok.png', offset=(92,15), click=True, retries=5, interval=3)
       
       if not ok2:
          print("ERROR: Could not find referral \"OK\" button")
          return 2 # If the service gets this far without working, it's probably best to call it off.
       
       for i in range(5):
-         time.sleep(2)
+         time.sleep(3)
          left_click((240,150))
       
       printAction("Registering device...")
-      register_device = locateTemplate('tutorial_register_device.png', offset=(124,11), click=True, retries=5)
+      register_device = locateTemplate('tutorial_register_device.png', offset=(124,11), click=True, retries=5, interval=3)
       
       if not register_device:
          printResult(False)
          print("ERROR: Unable to find register device button!")
          return 2 # If the service gets this far without working, it's probably best to call it off.
       
-      agree = locateTemplate('tutorial_agree.png', offset=(124,11), click=True, retries=5)
+      agree = locateTemplate('tutorial_agree.png', offset=(124,11), click=True, retries=5, interval=3)
       
       if not agree:
          printResult(False)
          print("ERROR: Unable to find register device button!")
          return 2 # If the service gets this far without working, it's probably best to call it off.
       
-      locateTemplate('tutorial_mypage.png', offset=(45,8), click=True, retries=3)
+      locateTemplate('tutorial_mypage.png', offset=(45,8), click=True, retries=3, interval=3)
       
       printResult(True)
       printAction("FINISHED!!!", newline=True)
@@ -4569,14 +4572,24 @@ if __name__ == "__main__":
 #   setAndroidId('AxelJp83','8583688437793838')
 #   custom20()
 
-   setActiveDevice("10.42.0.52:5558")
-#   setActiveDevice("localhost:5558",True)
+#    setActiveDevice("10.42.0.52:5558")
+   setActiveDevice("localhost:5558")
 #    setActiveDevice("76.250.209.149:5558",True)
    
 #    startMarvel('kinemb86')
 #   setActiveDevice("10.42.0.52:5558", youwave=True)
 #    setActiveDevice("localhost:5558",True)
-   createNewFakeAccount(referral="test")
+#    createNewFakeAccount(referral="test")
+
+   sys.path.append("./sys/gdata-2.0.17")
+#    from tests import run_data_tests
+#    from samples.spreadsheets import spreadSheetExample
+   
+#    run_data_tests.RunAllTests()
+#    spreadSheetExample.main()
+#    tests.
+#    print(Popen("python ./sys/gdata-2.0.17/tests/run_data_tests.py", stdout=PIPE, shell=True).stdout.read())
+
 #    startMarvel('Account1')
 #   createNewFakeAccount()
 #    setActiveDevice("0123456789ABCDEF", youwave=False)

@@ -29,6 +29,7 @@ if os.name == "posix":
 elif os.name == "nt":
    ESC = "^"
    sys.path.append("./local/win32/lib/python")
+   Popen('mode con: cols=140 lines=70', stdout=PIPE, shell=True).wait()
 else:
    print("WARNING: Unsupported OS")
    ESC = "\\"
@@ -324,12 +325,15 @@ class Info(InfoMeta):
       
       from pprint import pprint
             
-      for key in self.__dict__.keys():
+      for key in Info.__dict__.keys():
       
          s = open('info/%s.txt' % key, 'w')
          pprint(getattr(Info, key), stream=s)
          s.close()
-         
+
+info = Info() # Ideally, don't use this one directly (long term)
+device = Device()
+        
 
 # The user object deals with user info 
 class User():
@@ -346,11 +350,30 @@ class User():
    def getCurrent(self):
       
       return self.current
+   
+   def setFakeAccountInfo(self, user, password=None, email=None):
       
+      if not hasattr(Info, 'fake_accounts_%s'%self.current.lower()):
+         setattr(Info, 'fake_accounts_%s'%self.current.lower(), {})
+         
+      if not hasattr(Info, 'fake_emails_%s'%self.current.lower()):
+         setattr(Info, 'fake_emails_%s'%self.current.lower(), {})
+      
+      if password:
+         try:
+            getattr(Info,'fake_accounts_%s'%self.current.lower())[user] = password
+            info.write()
+         except:
+            printAction("ERROR: Unable to record username/password/password")
+         
+      if email:   
+         try:
+            getattr(Info,'fake_emails_%s'%self.current.lower())[user] = email
+            info.write()
+         except:
+            printAction("ERROR: Unable to record username/password/password")
 
-info = Info() # Ideally, don't use this one directly (long term)
-device = Device()
-user = User()
+user = User() 
       
 # IMEI = 358150 04 524460 6
 # 35     - British Approvals Board of Telecommunications (all phones)
@@ -545,7 +568,7 @@ def createAccount(baseNames=baseN):
    f.write('}')
    e.write('}')
    
-def createNewFakeAccount(referral=""):
+def createNewFakeAccount(referral="", draw_ucp=False):
       
    name_base  = getBaseName()
    email_base = getBaseName().lower()
@@ -636,6 +659,7 @@ def createNewFakeAccount(referral=""):
       # Now we must handle the fact that the nick may be invalid
       success = False
       printAction("Waiting for tutorial start...")
+      username = ''
       for i in range(10):
          
          left_click((232,105)+c) # Nick field         
@@ -648,9 +672,12 @@ def createNewFakeAccount(referral=""):
             for i in range(len(email_base+randNums)+2+len(password)):
                backspace()
             enter_text(name_base)
+            username = name_base
             backspace()
          else:
-            enter_text(tmp2[int(np.random.uniform(0, len(tmp2)-1e-9))])
+            new_char = tmp2[int(np.random.uniform(0, len(tmp2)-1e-9))]
+            enter_text(new_char)
+            username = username + new_char
             backspace()            
          
          left_click((142,172) + c) # Save and Play button
@@ -673,8 +700,9 @@ def createNewFakeAccount(referral=""):
          return 1
 
       printResult(True)
+      user.setFakeAccountInfo(username, password, email)
 
-      printAction("Running through the tutorial like mad... (!!!)", newline=True)
+      printAction("Running through the tutorial like mad!!!")
       OK = [0]*10
       for i in range(200):
          time.sleep(1)
@@ -693,7 +721,7 @@ def createNewFakeAccount(referral=""):
             break
          left_click((240,150))
       printResult(True)
-      printAction("Time for referral service BABY!!!", newline=True)
+      printAction("Time for referral service BABY!!!")
       
       ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=1)
       if not ok:
@@ -701,7 +729,7 @@ def createNewFakeAccount(referral=""):
          print("ERROR: Could not find referral \"OK\" button")
          return 2 # If the service gets this far without working, it's probably best to call it off.
       printResult(True)
-      printAction("Entering the referral code...", newline=True)
+      printAction("Entering the referral code...")
       text_field = ok + np.array((0,-33))
       left_click(text_field)
       
@@ -715,50 +743,108 @@ def createNewFakeAccount(referral=""):
       
       left_click(ok)
       ok2 = locateTemplate('tutorial_almost_finished_ok.png', offset=(92,15), click=True, retries=5, interval=3)
-      
+      printResult(ok)
       if not ok2:
          print("ERROR: Could not find referral \"OK\" button")
          return 2 # If the service gets this far without working, it's probably best to call it off.
-      
+
       for i in range(5):
          time.sleep(3)
          left_click((240,150))
       
       printAction("Registering device...")
       register_device = locateTemplate('tutorial_register_device.png', offset=(124,11), click=True, retries=5, interval=3)
-      
+      printResult(register_device)
       if not register_device:
          printResult(False)
          print("ERROR: Unable to find register device button!")
          return 2 # If the service gets this far without working, it's probably best to call it off.
       
       agree = locateTemplate('tutorial_agree.png', offset=(124,11), click=True, retries=5, interval=3)
-      
+      printResult(agree)
+
       if not agree:
-         printResult(False)
          print("ERROR: Unable to find register device button!")
          return 2 # If the service gets this far without working, it's probably best to call it off.
+
+      if not draw_ucp:
+         locateTemplate('tutorial_mypage.png', offset=(45,8), click=True, retries=3, interval=3)
+         printAction("FINISHED!!!", newline=True)
+         return 0
       
-      locateTemplate('tutorial_mypage.png', offset=(45,8), click=True, retries=3, interval=3)
+      printAction("Drawing UCP...")
       
-      printResult(True)
-      printAction("FINISHED!!!", newline=True)
-      return 0
+      presents = locateTemplate('tutorial_presents.png', offset=(102,14), click=True, retries=5, interval=3)
+      printResult(presents)
+
+      if not presents:
+         print("ERROR: Unable to find presents button!")
+         return 1
+
+      claim_all = locateTemplate('presents_claim_all.png', offset=(44,10), click=True, retries=5, interval=3)
+      printResult(claim_all)
       
+      if not claim_all:
+         print("ERROR: Unable to find \"Claim All\" button!")
+         return 1
+
+      card_pack = locateTemplate('card_pack_button.png', offset=(45,18), click=True, retries=5, interval=3)
+      printResult(card_pack)
       
-def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral=""):
+      if not card_pack:
+         print("ERROR: Unable to find \"Card Pack\" button!")
+         return 1
+
+      basic_tab = locateTemplate('card_pack_basic_tab.png', offset=(45,12), click=True, retries=5, interval=1, swipe_size=[(240, 500), (240, 295)])
+      printResult(basic_tab)
+      
+      if not basic_tab:
+         print("ERROR: Unable to find \"Basic\" tab!")
+         return 1
+
+      get_ucp = locateTemplate('card_pack_get_ucp.png', offset=(89,8), click=True, retries=7, interval=1, swipe_size=[(20, 500), (20, 295)])
+      printResult(get_ucp)
+      
+      if not get_ucp:
+         print("ERROR: Unable to find \"Get Ultimate Card Pack\" button!")
+         return 1
+
+      if not locateTemplate('tutorial_skip.png',  offset=(49,11),  click=True, retries=5, interval=1):
+         left_click((150,150))
+         
+      time.sleep(7)      
+      take_screenshot_adb(SCREEN_PATH+'/ucp_draws/'+user.getCurrent()+'/'+username+'.png')
+      left_click((150,150))
+
+      printAction("FINISHED", newline=True)
+      
+def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", never_abort=False, draw_ucp=False):
    
    for i in range(iterations):
       
       print("")
       print("REFERRAL SERVICE: Iteration %d"%i)
       
-      retcode = createNewFakeAccount(referral=referral)
+      try:
+         retcode = createNewFakeAccount(referral=referral, draw_ucp=draw_ucp)
+      except:
+         retcode = 3
+         
       printAction("",newline=True)
       printAction("SUMMARY",newline=True)
-      if retcode == 2:
+      if retcode == 3:
+         printAction("Referral script crashed! Bad bad bad!",newline=True)
+         if not never_abort:
+            break
+         else:
+            printAction("User asked to never abort. Will keep going...")
+      
+      elif retcode == 2:
          printAction("Referral script asked to abort. Investigate!",newline=True)
-         break
+         if not never_abort:
+            break
+         else:
+            printAction("User asked to never abort. Will keep going...")
 
       elif retcode == 1:
          printAction("Referral script failed but asked to keep going!",newline=True)
@@ -905,10 +991,11 @@ def adbConnect(device):
    
    output = Popen("adb connect %s"%device, stdout=PIPE, shell=True).stdout.read()
 
-   if re.search("unable|error",output):
+   if re.search("unable|error",output) or output == '':
       print("ERROR: Unable to connect to: %s"%device)
       return False
    else:
+      printResult(True)
       setActiveDevice(device)
       return True
 
@@ -1414,7 +1501,7 @@ def lock_phone():
    power_key()
 
 
-def take_screenshot_adb():
+def take_screenshot_adb(filename=None):
 
 #   Popen("adb shell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
 #          adb pull  /sdcard/screenshot.png screenshot.png >error.log 2>&1", stdout=PIPE, shell=True).stdout.read()
@@ -1425,6 +1512,11 @@ def take_screenshot_adb():
 #          dd bs=800 count=1920 if=img.raw of=img.tmp >/dev/null 2>&1;\
 #          ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img.tmp screenshot.png >/dev/null 2>&1",
 #          stdout=PIPE, shell=True).stdout.read()
+    
+   if filename:
+      output = filename
+   else:
+      output = "%s/screenshot_%s.png"%(TEMP_PATH, ACTIVE_DEVICE)
       
    ################
    # CURRENT BEST #
@@ -1442,15 +1534,15 @@ def take_screenshot_adb():
       f.read(12) # ignore 3 first pixels (otherwise the image gets offset)
       rest = f.read() # read rest
       f1.write(rest)
-    
-      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img_%s1.raw %s/screenshot_%s.png >/dev/null 2>&1"
-            % (ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
+            
+      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img_%s1.raw %s >/dev/null 2>&1"
+            %(ACTIVE_DEVICE,output), stdout=PIPE, shell=True).stdout.read()
 
    else:
 #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    
       cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png' % ADB_ACTIVE_DEVICE
-      cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s/screenshot_%s.png"' % (ADB_ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE)
+      cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s"' % (ADB_ACTIVE_DEVICE, output)
     
       Popen(cmd1, stdout=devnull, shell=True).wait()
       Popen(cmd2, stdout=devnull, stderr=devnull, shell=True).wait()
@@ -4581,6 +4673,7 @@ if __name__ == "__main__":
 #    setActiveDevice("localhost:5558",True)
 #    createNewFakeAccount(referral="test")
 
+#    locateTemplate('card_pack_basic_tab', offset=(45,12), click=True)
    sys.path.append("./sys/gdata-2.0.17")
 #    from tests import run_data_tests
 #    from samples.spreadsheets import spreadSheetExample

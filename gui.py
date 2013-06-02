@@ -28,7 +28,7 @@ last edited: October 2011
 
 import macro
 import sys
-from PyQt4 import QtGui, QtCore
+from PyQt4 import Qt, QtGui, QtCore
 from functools import partial
 
 #class embterminal(QtGui.QWidget):
@@ -177,41 +177,53 @@ class ReferralService(QtGui.QFrame):
       super(ReferralService,self).__init__(parent)
       self.setStyleSheet("#ReferralService{ margin:0px; border:1px solid rgb(128, 128, 128); padding: 10px; border-radius: 5px }")
       margin = (10,10)
-      
+            
       self.setObjectName("ReferralService")
    
-      self.ibox = QtGui.QSpinBox(self)
-#       self.sbox.clicked.connect(self.update)
-      self.ibox.setMaximum(999)
-      self.ibox.setMinimum(1)
-      self.ibox.resize(self.ibox.sizeHint())
-      self.ibox.move(margin[0]+170,margin[1])
-      self.ibox.setValue(1)
-   
-      self.ref_field = QtGui.QLineEdit(self)
-#       self.sbox.clicked.connect(self.update)
-      size_hint = self.ref_field.sizeHint()
-      self.ref_field.resize(QtCore.QSize(160,size_hint.height()))
-      self.ref_field.move(margin[0],margin[1])
-      
-      self.start_btn = QtGui.QPushButton('Start referral service', self)
+      self.start_btn = QtGui.QPushButton('Start', self)
+      btn_size = self.start_btn.sizeHint()
       self.start_btn.clicked.connect(self.launchReferral)
       self.start_btn.resize(self.start_btn.sizeHint())
-      self.start_btn.move(margin[0]+0,margin[1]+30)
+   
+      self.ibox = QtGui.QSpinBox(self)
+      self.ibox.setMaximum(999)
+      self.ibox.setMinimum(1)
+      ibox_size = self.ibox.sizeHint()
+      self.ibox.resize(QtCore.QSize(ibox_size.width(),btn_size.height()))
+      self.ibox.setValue(1)
+      self.ibox.setToolTip("Iterations")
+   
+      self.ref_field = QtGui.QLineEdit(self)
+      self.ref_field.resize(self.ref_field.sizeHint())
+      self.ref_field.setToolTip('Referral code')
       
+
+      # Boundary stuff
+      self.interval_text = QtGui.QLabel(self)
+      self.interval_text.setText('Interval:')
+      self.interval_text.resize(self.interval_text.sizeHint())
+
       self.lbox = QtGui.QSpinBox(self)
       self.lbox.setMaximum(999)
       self.lbox.resize(self.lbox.sizeHint())
-      self.lbox.move(margin[0]+10,margin[1]+60)
       self.lbox.setValue(3)
+      self.lbox.setToolTip("Wait interval - lower bound")
+      
+      self.to_text = QtGui.QLabel(self)
+      self.to_text.setText('to')
+      self.to_text.resize(self.to_text.sizeHint())
       
       self.ubox = QtGui.QSpinBox(self)
       self.ubox.setMaximum(999)
       self.ubox.resize(self.ubox.sizeHint())
-      self.ubox.move(margin[0]+60,margin[1]+60)
       self.ubox.setValue(15)
       self.ubox.setStyleSheet("")
-      
+      self.ubox.setToolTip("Wait interval - upper bound")
+
+      self.min_text = QtGui.QLabel(self)
+      self.min_text.setText('minutes')
+      self.min_text.resize(self.min_text.sizeHint())
+
       self.nick = QtGui.QComboBox(self)
       self.nick.move(margin[0]+160,margin[1]+30)
       self.nick.blockSignals(True)
@@ -223,9 +235,59 @@ class ReferralService(QtGui.QFrame):
       self.nick.setCurrentIndex(0)
       self.connect(self.nick, QtCore.SIGNAL("currentIndexChanged(const QString&)"), self.setCurrentUser)
       
+      self.persist = QtGui.QCheckBox(self)
+      self.persist.setText('Never abort')
+      self.persist.setToolTip('Specify whether the macro service should continue even if<BR> Joey think it might be a good idea to call it off (because something unexpected may have happened).')
+      
+      self.draw_ucp = QtGui.QCheckBox(self)
+      self.draw_ucp.setText('Draw UCP')
+      self.draw_ucp.setToolTip('Draw UCP after tutorial is finished?')
 #      self.label = QtGui.QLabel(self)
 #      self.label.setText("Hello")
 #      self.label.move(-10,0)
+
+
+      ##########
+      # LAYOUT #
+      
+
+      self.options_layout = QtGui.QVBoxLayout()
+
+      self.referral_layout = QtGui.QHBoxLayout()
+      self.referral_layout.addWidget(self.ref_field)
+      self.referral_layout.addWidget(self.ibox)
+      
+      self.options_layout.addLayout(self.referral_layout)
+
+      self.interval_layout = QtGui.QHBoxLayout()
+      self.interval_layout.addWidget(self.interval_text)
+      self.interval_layout.addWidget(self.lbox)
+      self.interval_layout.addWidget(self.to_text)
+      self.interval_layout.addWidget(self.ubox)
+      self.interval_layout.addWidget(self.min_text)
+      self.interval_layout.addSpacing(2)
+      
+      self.more_options = QtGui.QHBoxLayout()
+      self.more_options.addWidget(self.persist)
+      self.more_options.addWidget(self.draw_ucp)
+      
+      self.options_layout.addLayout(self.interval_layout)
+      self.options_layout.addLayout(self.more_options)
+     
+      self.buttons_layout = QtGui.QVBoxLayout()
+      self.buttons_layout.addWidget(self.start_btn)
+      self.buttons_layout.addWidget(self.nick)
+      
+#       self.referral_layout.addWidget(self.start_btn)
+     
+      self.service_layout = QtGui.QHBoxLayout()
+      self.service_layout.addLayout(self.options_layout)
+      self.service_layout.addLayout(self.buttons_layout)
+      self.service_layout.setAlignment(self.buttons_layout, QtCore.Qt.AlignTop)
+      self.setLayout(self.service_layout)
+
+      
+
       
       self.setStyleSheet("#ReferralService{ margin:0px; border:1px solid rgb(192, 192, 192); padding: 10px; border-radius: 5px }")
 #      self.setStyleSheet("background-color: rgb(255,0,0); margin:5px; border:1px solid rgb(0, 255, 0); ")
@@ -243,7 +305,12 @@ class ReferralService(QtGui.QFrame):
       
       ref_key = str(self.ref_field.text())
       
-      macro.createMultipleNewFakeAccounts(iterations, interval=(lower,upper), referral=ref_key)
+      never_abort = self.persist.isChecked()
+      draw_ucp= self.draw_ucp.isChecked()
+      
+      macro.createMultipleNewFakeAccounts(iterations, interval=(lower,upper),
+                                          referral=ref_key, never_abort=never_abort,
+                                          draw_ucp=draw_ucp)
       
    def setCurrentUser(self):
       
@@ -316,7 +383,7 @@ class Example(QtGui.QWidget):
       btn.resize(btn.sizeHint())
       btn.move(400,125)
       
-#       macro.adbConnect("localhost:5558")
+      macro.adbConnect("localhost:5558")
       devices = macro.adbDevices()
       
       #Referrals

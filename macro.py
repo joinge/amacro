@@ -820,6 +820,8 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
 def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", never_abort=False, draw_ucp=False):
    
+   retcode_count = [0,0,0,0]
+   
    for i in range(iterations):
       
       print("")
@@ -830,6 +832,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
       except:
          retcode = 3
          
+      retcode_count[retcode] = retcode_count[retcode] + 1 
       printAction("",newline=True)
       printAction("SUMMARY",newline=True)
       if retcode == 3:
@@ -847,7 +850,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
             printAction("User asked to never abort. Will keep going...")
 
       elif retcode == 1:
-         printAction("Referral script failed but asked to keep going!",newline=True)
+         printAction("Referral script failed but nothing serious. Will continue.",newline=True)
          
       elif retcode == 0:  
          printAction("All good! Ready for more action!",newline=True)
@@ -856,6 +859,8 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
          printAction("WARNING: This return code is unknown",newline=True)
       
       printAction("",newline=True)
+      printAction("Total Summary: %d sucesses, %d easy errors, %d bad errors, %d crashes"%tuple(retcode_count))
+      
       wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
       
       printAction("Waiting for roughly %d minutes and %d seconds..."%(wait_time/60,wait_time%60),newline=True)

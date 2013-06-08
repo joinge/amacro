@@ -6,6 +6,7 @@
 from __future__ import print_function
 from random import uniform
 from subprocess import Popen, PIPE
+from threads import run, myPopen
 import multiprocessing
 import numpy as np
 import re, time, os, sys, ast, select
@@ -30,7 +31,7 @@ if os.name == "posix":
 elif os.name == "nt":
    ESC = "^"
    sys.path.append("./local/win32/lib/python")
-   Popen('mode con: cols=140 lines=70', stdout=PIPE, shell=True).wait()
+   myPopen('mode con: cols=140 lines=70')
 else:
    print("WARNING: Unsupported OS")
    ESC = "\\"
@@ -198,7 +199,7 @@ class Device():
       
       global YOUWAVE
       # First we need to know if we are running an emulator.
-      uname = Popen('adb %s shell uname -m' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+      uname = myPopen('adb %s shell uname -m' %ADB_ACTIVE_DEVICE)
       
       if re.search('i686',uname):
          YOUWAVE = True
@@ -213,8 +214,8 @@ class Device():
 #          time.sleep(2)
 #          
 #          event_devices = open('tmp.txt','r').read()
-         Popen('adb %s push getevent /sdcard/' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
-         event_devices = Popen('adb %s shell sh /sdcard/getevent' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()    
+         myPopen('adb %s push getevent /sdcard/' %ADB_ACTIVE_DEVICE)
+         event_devices = myPopen('adb %s shell sh /sdcard/getevent' %ADB_ACTIVE_DEVICE)    
 #          time.sleep(3)
 #          event_devices = open('getevent.txt','r').read()#Popen('adb %s shell getevent > tmp.txt' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True)
          try:
@@ -232,7 +233,7 @@ class Device():
             
             
       try:
-         build_prop = Popen('adb %s shell echo "cat /system/build.prop" %s| su'%(ADB_ACTIVE_DEVICE,ESC), stdout=PIPE, shell=True).stdout.read()
+         build_prop = myPopen('adb %s shell echo "cat /system/build.prop" %s| su'%(ADB_ACTIVE_DEVICE,ESC))
          self.screenDensity = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
          
          if self.screenDensity != 160 and self.screenDensity != 240:
@@ -397,83 +398,6 @@ def sumIMEIDigits(number, nsum=0, even=True):
       else:
          return nsum + sumIMEIDigits(number / 10, sumDigits((number % 10) * 2), not even)
 
-#def printResult(res):
-#   if res:
-#      print(":)")
-#   else:
-#      print(":s")
-#
-#def printAction(str,res=None,newline=False):
-#   string = "   %s"%str
-#   if newline:
-#      print(string.ljust(PAD,' '))
-#   else:
-#      print(string.ljust(PAD,' '),end='')
-#   
-#   if res:
-#      printResult(res)
-
-def updateSource():
-   
-   # On rsync parameters:
-   # https://www.itefix.no/i2/content/bug-cwrsync-throwing-chown-failed
-   
-   print("Updating source to latest version...")
-   
-   old_dir = os.getcwd()
-   
-   # Check if we're in the dist folder
-   if re.search('woh_macro',old_dir):
-      os.chdir('../sync/bin')
-   
-   # Otherwise assume we're in the source folder
-   else:
-      os.chdir('./dist/sync/bin')
-      
-   IS_DEVELOPER = os.path.exists('../../content')
-#    IS_DEVELOPER = False
-      
-   sync_dir = os.getcwd()
-   sync_drive_and_path = os.path.splitdrive(sync_dir)
-   sync_drive = sync_drive_and_path[0].lower().replace(':','')
-   sync_path_cygwin_style = "/cygdrive/%s"%sync_drive \
-                          + sync_drive_and_path[1].replace("\\","/")
-   
-   server = open('../server.txt','r').read()
-         
-   # If a local contents folder exists, sync from this one
-   if IS_DEVELOPER:
-      print("Content directory detected. Assuming developer PC")
-      sources = ['%s/../../content/**'%sync_path_cygwin_style,
-                 '%s/../../gui/**'%sync_path_cygwin_style]
-      #Update contents folder:
-      source_files = ['../../../macro.py','../../../gui.py']
-      for src in source_files:
-         rsync_cmd = 'rsync -e "./ssh -oStrictHostKeyChecking=no" -rtvu %s/%s %s/../../content/'\
-                     %(sync_path_cygwin_style,src,sync_path_cygwin_style)
-         print(Popen(rsync_cmd, stdout=PIPE, shell=True).stdout.read())
-      
-   else:
-      print("Not content directory detected. Assuming client PC")
-      server = open('../server.txt','r').read()
-      sources = ['macro@' + server + ':macro/**']
-   
-   for source in sources:
-      rsync_cmd = 'rsync -e "./ssh -oStrictHostKeyChecking=no" -rtvu %s %s/../../woh_macro/'\
-                  %(source,sync_path_cygwin_style)
-      print(Popen(rsync_cmd, stdout=PIPE, shell=True).stdout.read())
-
-   # If a local contents folder exists, push changes to server
-   if IS_DEVELOPER:
-      destination = 'macro@' + server + ':macro/'
-      sources = ['../../gui/**', '../../content/**']
-      for source in sources: 
-         rsync_cmd = 'rsync -e "./ssh -oStrictHostKeyChecking=no" -rtvu %s/%s %s'\
-                     %(sync_path_cygwin_style,source,destination)
-         print(Popen(rsync_cmd, stdout=PIPE, shell=True).stdout.read())
-
-
-   os.chdir(old_dir)
 
 queue = multiprocessing.Queue()
 class MyPopen( multiprocessing.Process ):
@@ -1141,8 +1065,8 @@ def setAndroidId(user=None, newid='0' * 15):
                newid = info.fakeID[user]
                
             print("Old ID: %s, New ID: %s"%(old_id,newid))
-            Popen('adb %s shell echo "echo %s > /data/youwave_id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
-            Popen('adb %s shell echo "echo %s > /sdcard/Id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
+            myPopen('adb %s shell echo "echo %s > /data/youwave_id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC))
+            myPopen('adb %s shell echo "echo %s > /sdcard/Id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC))
             
             info.fakeID[user] = newid
 
@@ -1152,16 +1076,15 @@ def setAndroidId(user=None, newid='0' * 15):
 
    else:
       print("Old ID: %s, New ID: %s"%(old_id,newid))
-      Popen("adb %s shell echo 'echo %s > /data/youwave_id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
-      Popen("adb %s shell echo 'echo %s > /sdcard/Id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC), stdout=PIPE, shell=True).stdout.read()
+      myPopen("adb %s shell echo 'echo %s > /data/youwave_id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC))
+      myPopen("adb %s shell echo 'echo %s > /sdcard/Id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC))
 
 
 def getAndroidId(user=None):
    
-   out = Popen("adb %s shell \
-               \"cat /data/youwave_id;\
-                 cat /sdcard/Id\"" % ADB_ACTIVE_DEVICE,
-               stdout=PIPE, shell=True).stdout.read()
+   out = myPopen("adb %s shell \
+                 \"cat /data/youwave_id;\
+                   cat /sdcard/Id\"" % ADB_ACTIVE_DEVICE)
    print(out)
    id = out.split('\n')
    if id[0] == id[1]:
@@ -1181,7 +1104,7 @@ def getAndroidId(user=None):
 def exitMarvel():
    check_if_vnc_error()
    
-   Popen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   myPopen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android" % ADB_ACTIVE_DEVICE)
 
 def printResult(res):
       
@@ -1260,14 +1183,14 @@ def connect_adb_wifi():
       
 def clearMarvelCache():
    printAction("Clearing Marvel cache...", newline=True)
-   macro_output = Popen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android 2>>error.log" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   macro_output = myPopen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android 2>>error.log" % ADB_ACTIVE_DEVICE)
    time.sleep(3)
 
    #if macro_output == None:
    #   raise Exception("Unable to clear Marvel cache")
 
 def launch_marvel():
-   macro_output = Popen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity 2>>error.log" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   macro_output = myPopen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity 2>>error.log" % ADB_ACTIVE_DEVICE)
    #if macro_output == None:
    #   raise Exception("Unable to start Marvel")
 
@@ -1277,7 +1200,7 @@ def launch_marvel():
       
 
 def adb_input(text):
-   macro_output = Popen("adb %s shell input text %s 2>>error.log" % (ADB_ACTIVE_DEVICE, text), stdout=PIPE, shell=True).stdout.read()
+   macro_output = myPopen("adb %s shell input text %s 2>>error.log" % (ADB_ACTIVE_DEVICE, text))
 
 def adb_event_batch(events):
    
@@ -1288,7 +1211,7 @@ def adb_event_batch(events):
          
       sendevent_string += "sendevent /dev/input/event%d %d %d %d" % event
         
-   Popen("adb %s shell \"%s\" 2>>error.log" % (ADB_ACTIVE_DEVICE, sendevent_string), stdout=PIPE, shell=True).stdout.read()
+   myPopen("adb %s shell \"%s\" 2>>error.log" % (ADB_ACTIVE_DEVICE, sendevent_string))
       
 #   print( "adb shell %s"%sendevent_string )
       
@@ -1304,7 +1227,7 @@ def adb_event(event_no=2, a=None, b=None , c=None):
                         0003 3a - ABS_MT_PRESSURE       : value 0, min 0, max 30, fuzz 0, flat 0, resolution 0
    """
    
-   macro_output = Popen("adb %s shell sendevent /dev/input/event%d %d %d %d" % (ADB_ACTIVE_DEVICE, event_no, a, b, c), stdout=PIPE, shell=True).stdout.read()
+   macro_output = myPopen("adb %s shell sendevent /dev/input/event%d %d %d %d" % (ADB_ACTIVE_DEVICE, event_no, a, b, c))
 #   time.sleep(0.5)  
    #adbSend("/dev/input/event2",3,48,10);
    
@@ -1464,14 +1387,14 @@ def power_key():
    
 def back_key():
    
-   Popen("adb %s shell input keyevent 4" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   myPopen("adb %s shell input keyevent 4" % ADB_ACTIVE_DEVICE)
    
    
    
 def swipe(start, stop):
 
    if not YOUWAVE:
-      Popen("adb %s shell input swipe %d %d %d %d" % (ADB_ACTIVE_DEVICE, start[0], start[1], stop[0], stop[1]), stdout=PIPE, shell=True).stdout.read()
+      myPopen("adb %s shell input swipe %d %d %d %d" % (ADB_ACTIVE_DEVICE, start[0], start[1], stop[0], stop[1]))
    else:
       linear_swipe(start, stop, steps=5)
    
@@ -1530,7 +1453,7 @@ def linear_swipe(start, stop, steps=1):
 def scroll(dx, dy):
    
    if not YOUWAVE:
-      Popen("adb %s shell input trackball roll %d %d" % (ADB_ACTIVE_DEVICE, dx, dy), stdout=PIPE, shell=True).stdout.read()
+      myPopen("adb %s shell input trackball roll %d %d" % (ADB_ACTIVE_DEVICE, dx, dy))
    else:
 #      xint = 200.0
       yint = 200.0
@@ -1580,10 +1503,9 @@ def take_screenshot_adb(filename=None):
        
 #   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
    if not YOUWAVE:
-      Popen("adb %s shell /system/bin/screencap /sdcard/img.raw >/dev/null 2>&1;\
-             adb %s pull  /sdcard/img.raw %s/img_%s.raw >/dev/null 2>&1"
-             % (ADB_ACTIVE_DEVICE, ADB_ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE),
-            stdout=PIPE, shell=True).stdout.read()
+      myPopen("adb %s shell /system/bin/screencap /sdcard/img.raw >/dev/null 2>&1;\
+               adb %s pull  /sdcard/img.raw %s/img_%s.raw >/dev/null 2>&1"
+               % (ADB_ACTIVE_DEVICE, ADB_ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE))
       
       f = open(TEMP_PATH+'/img_%s.raw' % ACTIVE_DEVICE, 'rb')
       f1 = open(TEMP_PATH+'/img_%s1.raw' % ACTIVE_DEVICE, 'w')
@@ -1591,17 +1513,16 @@ def take_screenshot_adb(filename=None):
       rest = f.read() # read rest
       f1.write(rest)
             
-      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img_%s1.raw %s >/dev/null 2>&1"
-            %(ACTIVE_DEVICE,output), stdout=PIPE, shell=True).stdout.read()
-
+      myPopen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img_%s1.raw %s >/dev/null 2>&1"
+            %(ACTIVE_DEVICE,output))
    else:
 #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    
       cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png' % ADB_ACTIVE_DEVICE
       cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s"' % (ADB_ACTIVE_DEVICE, output)
     
-      Popen(cmd1, stdout=devnull, shell=True).wait()
-      Popen(cmd2, stdout=devnull, stderr=devnull, shell=True).wait()
+      myPopen(cmd1, stdout=devnull)
+      myPopen(cmd2, stdout=devnull)
       
    
    # adb pull /dev/graphics/fb0 img.raw
@@ -1630,7 +1551,7 @@ def take_screenshot_adb(filename=None):
       
       
 def readImage(image_file, xbounds=None, ybounds=None):
-   image = cv2.imread(image_file)
+   image = run(cv2.imread, 5, image_file)
       
    if not xbounds:
       if not ybounds:
@@ -1702,13 +1623,13 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
                template = template_youwave
       
          if os.path.exists(img_path+'/'+template):
-            image_template = cv2.imread(img_path+'/'+template)
+            image_template = run(cv2.imread(img_path+'/'+template))
 
             if DEBUG:
                pl.imshow(image_template)
                pl.show()
                
-            result = cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED)
+            result = run(cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED))
             
             if result.max() > threshold:
                match_found = True
@@ -1811,7 +1732,7 @@ def preOCR(image_name, color_mask=(1, 1, 1), threshold=180, invert=True, xbounds
       pl.show()
    
    # Convert to grey scale
-   image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+   image = run(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
    
    if DEBUG:
       pl.imshow(image, cmap=pl.cm.Greys_r)
@@ -1855,7 +1776,7 @@ def preOCR(image_name, color_mask=(1, 1, 1), threshold=180, invert=True, xbounds
    # Reverting to int8
    image = image.astype('uint8')
    
-   cv2.imwrite(image_name.strip('.png') + '_processed.png', image)
+   run(cv2.imwrite(image_name.strip('.png') + '_processed.png', image))
    
    return image
    
@@ -1875,9 +1796,9 @@ def runOCR(image, mode='', lang='eng'):
    else:
       language = 'eng'
    
-   cv2.imwrite('tmp.png', image)
-   Popen("echo '' > text.txt" , shell=True, stdout=PIPE).stdout.read()
-   Popen("tesseract tmp.png text %s -l %s >/dev/null 2>&1" % (psm, language), shell=True, stdout=PIPE).stdout.read()
+   run(cv2.imwrite('tmp.png', image))
+   myPopen("echo '' > text.txt")
+   myPopen("tesseract tmp.png text %s -l %s >/dev/null 2>&1" % (psm, language))
    
    if os.path.getsize('text.txt') == 1:
       print("ERROR: runOCR() returned no output")
@@ -1955,7 +1876,7 @@ def getMyPageStatus():
    except:
       printAction("Unable to determine roster size.", newline=True)
       info['roster'] = [30, 70]
-      cv2.imwrite('tmp_last_error.png', cards_in_roster_image)
+      run(cv2.imwrite('tmp_last_error.png', cards_in_roster_image))
       
    printAction("Running OCR to figure out amount of silver...")
    silver_image = preOCR("screenshot_%s.png" % ACTIVE_DEVICE, color_mask=(1, 1, 0), xbounds=(332, 446), ybounds=(272, 312))
@@ -1976,7 +1897,7 @@ def getMyPageStatus():
    
    except:
       printAction("Unable to determine silver amount.", newline=True)
-      cv2.imwrite('tmp_last_error.png', silver_image)
+      run(cv2.imwrite('tmp_last_error.png', silver_image))
    
    return info
 
@@ -3403,11 +3324,10 @@ def startMarvel(user, attempts=3, password=None, enable_cache=False):
       if enable_cache and os.path.isdir('./users/%s' % user):
          exitMarvel(False)
          print(
-         Popen("adb %s shell rm -r /sdcard/push_tmp;\
+         myPopen("adb %s shell rm -r /sdcard/push_tmp;\
                 adb push ./users/%s /sdcard/push_tmp;\
                 %s \
-                " % (ADB_ACTIVE_DEVICE, user, adb_copy_to_data_cmd),
-               stdout=PIPE, shell=True).stdout.read())
+                " % (ADB_ACTIVE_DEVICE, user, adb_copy_to_data_cmd)))
          time.sleep(2)
          launch_marvel()
       
@@ -3436,15 +3356,14 @@ def startMarvel(user, attempts=3, password=None, enable_cache=False):
                os.mkdir('./users/%s/shared_prefs' % user)
                
                print(
-               Popen("adb %s shell \
+               myPopen("adb %s shell \
                      \" rm -r /sdcard/pull_tmp;\
                         mkdir /sdcard/pull_tmp;\
                         mkdir /sdcard/pull_tmp/files;\
                         mkdir /sdcard/pull_tmp/shared_prefs\";\
                         %s \
                      adb %s pull /sdcard/pull_tmp ./users/%s\
-                     " % (ADB_ACTIVE_DEVICE, adb_copy_to_sdcard_cmd, ADB_ACTIVE_DEVICE, user),
-                     stdout=PIPE, shell=True).stdout.read())
+                     " % (ADB_ACTIVE_DEVICE, adb_copy_to_sdcard_cmd, ADB_ACTIVE_DEVICE, user)))
 
             time.sleep(1)
             ad  = locateTemplate('home_screen_ad.png', offset=(90, 20), threshold=0.95)
@@ -3753,13 +3672,13 @@ def startAndRestartWhenQuit():
          
 def adjustBrightness(percent=10):
    
-   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, shell=True).stdout.read()
+   myPopen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent))
    
          
 def sleepToCharge(preferred=60):
    
    
-   output = Popen("adb %s shell cat /sys/class/power_supply/battery/capacity" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   output = myPopen("adb %s shell cat /sys/class/power_supply/battery/capacity" % ADB_ACTIVE_DEVICE)
    had_to_rest = False
    while int(output) < 50:
       if not had_to_rest:
@@ -3767,7 +3686,7 @@ def sleepToCharge(preferred=60):
          print("BATTERY below 20\%. Need to sleep for a bit.")
          had_to_rest = True
          
-      output = Popen("adb %s shell cat /sys/class/power_supply/battery/capacity" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()         
+      output = myPopen("adb %s shell cat /sys/class/power_supply/battery/capacity" % ADB_ACTIVE_DEVICE)         
       time.sleep(60)
 
 #   if had_to_rest:
@@ -4707,7 +4626,7 @@ def tradeToJollyMa():
 
 def gimpScreenshot():
    
-   Popen("gimp %s/screenshot_%s.png" %(TEMP_PATH, ACTIVE_DEVICE), stdout=PIPE, shell=True)
+   myPopen("gimp %s/screenshot_%s.png" %(TEMP_PATH, ACTIVE_DEVICE))
 
 if __name__ == "__main__":
 

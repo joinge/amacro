@@ -264,37 +264,29 @@ class Device():
   
 #   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, shell=True).stdout.read()
 
- 
-class InfoMeta():
-   pass
- 
 # The info object reads itself from the info folder!!! 
-class Info(InfoMeta):
-   try:
-      files = os.listdir('info')
-   except:
-      os.mkdir('info')
-   
-   first_run = True
-   for file in files:
-      
-      s = open('info/%s' % file, 'r')
-      
-      attr_name = re.sub('.txt', '', file)
-
-      if first_run:
-         print("Reading Info attributes")
-         first_run= False
-         
-      # Make these settings class variables
-      setattr(InfoMeta, attr_name, ast.literal_eval(s.read()))
-      s.close()
-      
-   
+class Info():
    def __init__(self):
-      pass
-#       self.read()
-#      self.adbInfo()
+      
+      try:
+         files = os.listdir('info')
+      except:
+         os.mkdir('info')
+      
+      first_run = True
+      for file in files:
+         
+         s = open('info/%s' % file, 'r')
+         
+         attr_name = re.sub('.txt', '', file)
+   
+         if first_run:
+            print("Reading Info attributes")
+            first_run= False
+            
+         # Make these settings class variables
+         setattr(self, attr_name, ast.literal_eval(s.read()))
+         s.close()
       
    def read(self):
 
@@ -312,10 +304,10 @@ class Info(InfoMeta):
          attr_name = re.sub('.txt', '', file)
 
          # Only read once
-         if not hasattr(Info,attr_name) and first_run:
+         if not hasattr(self,attr_name) and first_run:
             print("Reading Info attributes")
          # Make these settings class variables
-         setattr(Info, attr_name, ast.literal_eval(s.read()))
+         setattr(self, attr_name, ast.literal_eval(s.read()))
          s.close()
          first_run= False
       
@@ -326,10 +318,10 @@ class Info(InfoMeta):
       
       from pprint import pprint
             
-      for key in Info.__dict__.keys():
+      for key in self.__dict__.keys():
       
          s = open('info/%s.txt' % key, 'w')
-         pprint(getattr(Info, key), stream=s)
+         pprint(getattr(self, key), stream=s)
          s.close()
 
 info = Info() # Ideally, don't use this one directly (long term)
@@ -354,22 +346,22 @@ class User():
    
    def setFakeAccountInfo(self, user, password=None, email=None):
       
-      if not hasattr(Info, 'fake_accounts_%s'%self.current.lower()):
-         setattr(Info, 'fake_accounts_%s'%self.current.lower(), {})
+      if not hasattr(info, 'fake_accounts_%s'%self.current.lower()):
+         setattr(info, 'fake_accounts_%s'%self.current.lower(), {})
          
-      if not hasattr(Info, 'fake_emails_%s'%self.current.lower()):
-         setattr(Info, 'fake_emails_%s'%self.current.lower(), {})
+      if not hasattr(info, 'fake_emails_%s'%self.current.lower()):
+         setattr(info, 'fake_emails_%s'%self.current.lower(), {})
       
       if password:
          try:
-            getattr(Info,'fake_accounts_%s'%self.current.lower())[user] = password
+            getattr(info,'fake_accounts_%s'%self.current.lower())[user] = password
             info.write()
          except:
             printAction("ERROR: Unable to record username/password/password")
          
       if email:   
          try:
-            getattr(Info,'fake_emails_%s'%self.current.lower())[user] = email
+            getattr(info,'fake_emails_%s'%self.current.lower())[user] = email
             info.write()
          except:
             printAction("ERROR: Unable to record username/password/password")
@@ -621,7 +613,8 @@ def createNewFakeAccount(referral="", draw_ucp=False):
    if login_screen:
       
       randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(2, 4))).astype(int).astype('str'))
-      email = email_base + randNums + '@' + emails[int(np.random.uniform(0,len(emails)-1e-9))]
+      emailbase = email_base + randNums
+      emailend = '@' + emails[int(np.random.uniform(0,len(emails)-1e-9))]
       
 #       randABC = ''.join([ABC[0][j] for j in np.random.uniform(0, 26, size=int(np.random.uniform(3))).astype(int)])
 #       randAbc = ''.join([abc[0][j] for j in np.random.uniform(0, 26, size=int(np.random.uniform(3))).astype(int)])
@@ -651,7 +644,8 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       c = np.array(signup_screen)
       for i in range(10):
          
-         if i!=0:              
+         if i!=0:         
+            emailbase = emailbase + tmp2[int(np.random.uniform(0, len(tmp2)-1e-9))]    
             printAction("Wiping both fields...")
             # Wipe both fields:
             left_click((244, 73) + c) # Email field
@@ -659,7 +653,8 @@ def createNewFakeAccount(referral="", draw_ucp=False):
                for i in range(50): backspace()
             left_click((244, 118) + c) # Password field
             if i!=0:
-               for i in range(50): backspace()   
+               for i in range(50): backspace()  
+         email = emailbase + emailend 
          printAction("Trying with email:")
          print(email)
          left_click((244, 73) + c) # Email field
@@ -737,7 +732,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 
       printAction("Running through the tutorial like mad!!!")
       OK = [0]*10
-      for i in range(200):
+      for i in range(50):
          time.sleep(1)
          take_screenshot_adb()
          if   not OK[0] and locateTemplate('mobage_ad.png',               offset=(85,14),  click=True, reuse_last_screenshot=True): OK[0] = 1
@@ -787,7 +782,6 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
       printAction("Registering device...")
       register_device = locateTemplate('tutorial_register_device.png', offset=(124,11), click=True, retries=5, interval=3)
-      printResult(register_device)
       if not register_device:
          printResult(False)
          print("ERROR: Unable to find register device button!")
@@ -797,9 +791,11 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       printResult(agree)
 
       if not agree:
+         printResult(False)
          print("ERROR: Unable to find register device button!")
          return 2 # If the service gets this far without working, it's probably best to call it off.
 
+      printResult(True)
       if not draw_ucp:
          locateTemplate('tutorial_mypage.png', offset=(45,8), click=True, retries=3, interval=3)
          printAction("FINISHED!!!", newline=True)
@@ -812,35 +808,35 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 
       if not presents:
          print("ERROR: Unable to find presents button!")
-         return 1
+         return 4
 
       claim_all = locateTemplate('presents_claim_all.png', offset=(44,10), click=True, retries=5, interval=3)
       printResult(claim_all)
       
       if not claim_all:
          print("ERROR: Unable to find \"Claim All\" button!")
-         return 1
+         return 4
 
       card_pack = locateTemplate('card_pack_button.png', offset=(45,18), click=True, retries=5, interval=3)
       printResult(card_pack)
       
       if not card_pack:
          print("ERROR: Unable to find \"Card Pack\" button!")
-         return 1
+         return 4
 
-      basic_tab = locateTemplate('card_pack_basic_tab.png', offset=(45,12), click=True, retries=5, interval=1, swipe_size=[(240, 500), (240, 295)])
+      basic_tab = locateTemplate('card_pack_basic_tab.png', offset=(45,12), click=True, retries=5, interval=1, swipe_size=[(240, 500), (240, 295)], ybounds=(0,400))
       printResult(basic_tab)
       
       if not basic_tab:
          print("ERROR: Unable to find \"Basic\" tab!")
-         return 1
+         return 4
 
       get_ucp = locateTemplate('card_pack_get_ucp.png', offset=(89,8), click=True, retries=7, interval=1, swipe_size=[(20, 500), (20, 295)])
       printResult(get_ucp)
       
       if not get_ucp:
          print("ERROR: Unable to find \"Get Ultimate Card Pack\" button!")
-         return 1
+         return 4
 
       if not locateTemplate('tutorial_skip.png',  offset=(49,11),  click=True, retries=5, interval=1):
          left_click((150,150))
@@ -851,34 +847,33 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 
       printAction("FINISHED", newline=True)
       
+      return 0
+      
 def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", never_abort=False, draw_ucp=False):
    
-   retcode_count = [0,0,0,0]
-   
-   for i in range(iterations):
-      
-      print("")
-      print("REFERRAL SERVICE: Iteration %d"%i)
-      
-      try:
-         retcode = createNewFakeAccount(referral=referral, draw_ucp=draw_ucp)
-      except:
-         retcode = 3
-         
-      retcode_count[retcode] = retcode_count[retcode] + 1 
+   retcode_count = [0,0,0,0,0]
+
+   def printSummary():
       printAction("",newline=True)
       printAction("SUMMARY",newline=True)
+      if retcode == 4:
+         printAction("UCP draw failed.",newline=True)
+         if not never_abort:
+            return False
+         else:
+            printAction("User asked to never abort. Will keep going...")
+      
       if retcode == 3:
          printAction("Referral script crashed! Bad bad bad!",newline=True)
          if not never_abort:
-            break
+            return False
          else:
             printAction("User asked to never abort. Will keep going...")
       
       elif retcode == 2:
          printAction("Referral script asked to abort. Investigate!",newline=True)
          if not never_abort:
-            break
+            return False
          else:
             printAction("User asked to never abort. Will keep going...")
 
@@ -892,8 +887,32 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
          printAction("WARNING: This return code is unknown",newline=True)
       
       printAction("",newline=True)
-      printAction("Total Summary: %d sucesses, %d easy errors, %d bad errors, %d crashes"%tuple(retcode_count))
+      printAction("Total Summary: %d successes, %d soft errors, %d bad errors, %d crashes"%(retcode_count[0],retcode_count[1],retcode_count[2],retcode_count[3]), newline=True)
+      printAction("Total Summary: %d referrals made successfully."%(retcode_count[0]+retcode_count[4]), newline=True)
+   
+      return True
+   
+   for i in range(iterations):
       
+      print("")
+      print("REFERRAL SERVICE: Iteration %d"%i)
+      
+      try:
+         retcode = createNewFakeAccount(referral=referral, draw_ucp=draw_ucp)
+      except:
+         retcode = 3
+         
+      if retcode == None:
+         retcode = 3
+         
+      retcode_count[retcode] = retcode_count[retcode] + 1
+      
+      try:
+         if not printSummary():
+            break 
+      except:
+         printAction("ERROR: Unable to print summary")
+         
       wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
       
       printAction("Waiting for roughly %d minutes and %d seconds..."%(wait_time/60,wait_time%60),newline=True)

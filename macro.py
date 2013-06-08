@@ -516,7 +516,11 @@ def getBaseName():
    f = open('./data/nick_seeds_%s.txt'%current_nick.lower(), 'r')
    all_names = f.readlines()
    name = all_names[0]
-   name = re.sub('\n','',name)
+#    name.sub('\\r','\\n')
+
+   name = re.sub('\\n','',name)
+   name = re.sub('\\r','',name)
+   name = re.sub('\\t','',name)
    f.close()
 #   lines = re.split("\n+", file)
    f = open('./data/nick_seeds_%s.txt'%current_nick.lower(), 'w')
@@ -542,7 +546,7 @@ def createAccount(baseNames=baseN):
    for i in baseNames:
       
       name = i
-      print(i)
+#       print(i)
       
       randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(0, 3))).astype(int).astype('str'))
       randABC = ''.join([ABC[0][j] for j in np.random.uniform(0, 26, size=int(np.random.uniform(3))).astype(int)])
@@ -588,8 +592,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
       tmp = ['0123456789', ABC, abc]
       tmp2 = ''.join(i for i in tmp)
-      password = ''.join([tmp2[j] for j in np.random.uniform(0, len(tmp2)-1e-9, size=int(np.random.uniform(8,14))).astype(int)])
-      
+            
       c = np.array(login_screen)
    
       if device.getInfo('screenDensity') != 160:
@@ -621,12 +624,16 @@ def createNewFakeAccount(referral="", draw_ucp=False):
             left_click((244, 118) + c) # Password field
             if i!=0:
                for i in range(50): backspace()  
-         email = emailbase + emailend 
+               
+         email = emailbase + emailend
+         password = ''.join([tmp2[j] for j in np.random.uniform(0, len(tmp2)-1e-9, size=int(np.random.uniform(8,14))).astype(int)])
+         
          printAction("Trying with email:")
          print(email)
          left_click((244, 73) + c) # Email field
          enter_text(email)
          backspace()
+         
          printAction("Entering password:")
          print(password)
          left_click((244, 118) + c) # Password field
@@ -698,14 +705,22 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       user.setFakeAccountInfo(username, password, email)
 
       printAction("Running through the tutorial like mad!!!")
+      for i in range(50):
+#          print(i)
+         locateTemplate('mobage_ad.png',              offset=(85,14),  click=True)
+         locateTemplate('tutorial_skip.png',          offset=(49,11),  click=True, reuse_last_screenshot=True)
+         left_click((240,150))
+         if locateTemplate('tutorial_understood.png', offset=(132,7),  click=True, reuse_last_screenshot=True):
+            break
+      
       OK = [0]*10
       for i in range(50):
-         time.sleep(1)
+         time.sleep(.5)
          take_screenshot_adb()
-         if   not OK[0] and locateTemplate('mobage_ad.png',               offset=(85,14),  click=True, reuse_last_screenshot=True): OK[0] = 1
-         elif not OK[1] and locateTemplate('tutorial_understood.png',     offset=(132,7),  click=True, reuse_last_screenshot=True): OK[1] = 1
-         elif not OK[2] and locateTemplate('tutorial_skip.png',           offset=(49,11),  click=True, reuse_last_screenshot=True): OK[2] = 1
-         elif not OK[3] and locateTemplate('tutorial_another_card.png',   offset=(132,8),  click=True, reuse_last_screenshot=True): OK[3] = 1
+#          if   not OK[0] and locateTemplate('mobage_ad.png',               offset=(85,14),  click=True, reuse_last_screenshot=True): OK[0] = 1
+#          elif not OK[1] and locateTemplate('tutorial_understood.png',     offset=(132,7),  click=True, reuse_last_screenshot=True): OK[1] = 1
+#          elif not OK[2] and locateTemplate('tutorial_skip.png',           offset=(49,11),  click=True, reuse_last_screenshot=True): OK[2] = 1
+         if   not OK[3] and locateTemplate('tutorial_another_card.png',   offset=(132,8),  click=True, reuse_last_screenshot=True): OK[3] = 1
          elif not OK[4] and locateTemplate('tutorial_all_right.png',      offset=(127,10), click=True, reuse_last_screenshot=True): OK[4] = 1
          elif not OK[5] and locateTemplate('tutorial_wreck_villains.png', offset=(123,10), click=True, reuse_last_screenshot=True): OK[5] = 1
          elif not OK[6] and locateTemplate('tutorial_battle.png',         offset=(23,11),  click=True, reuse_last_screenshot=True): OK[6] = 1
@@ -728,11 +743,11 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       text_field = ok + np.array((0,-33))
       left_click(text_field)
       
-      enter_text('a')
-      for i in range(len(name_base)+10):
-         right_arrow()            
-      for i in range(len(name_base)+5):
-         backspace()
+#       enter_text('a')
+#       for i in range(3):
+#          right_arrow()            
+#       for i in range(len(name_base)+5):
+#          backspace()
       enter_text(referral)
       backspace()
       
@@ -744,7 +759,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          return 2 # If the service gets this far without working, it's probably best to call it off.
 
       for i in range(5):
-         time.sleep(3)
+         time.sleep(2)
          left_click((240,150))
       
       printAction("Registering device...")
@@ -859,7 +874,11 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
    
       return True
    
-   for i in range(iterations):
+   i=0
+   watchdog = int(1.2*iterations)
+   while iterations > 0 and watchdog > 0:
+      i = i + 1
+#    for i in range(iterations):
       
       print("")
       print("REFERRAL SERVICE: Iteration %d"%i)
@@ -872,13 +891,20 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
       if retcode == None:
          retcode = 3
          
+      # Decrement iterations left the ref. was successful
+      if retcode == 0 or retcode == 4:
+         iterations = iterations - 1
+      
+      # Decrement watchdog regardless
+      watchdog = watchdog - 1
       retcode_count[retcode] = retcode_count[retcode] + 1
       
       try:
          if not printSummary():
             break 
-      except:
+      except Exception as e:
          printAction("ERROR: Unable to print summary")
+         print(e)
          
       wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
       
@@ -1321,7 +1347,7 @@ def left_click(loc):
          (event_no, 0x0001, 0x0110, 0x00000000),
          (event_no, 0x0000, 0x0000, 0x00000000)
          ])
-      time.sleep(0.2)
+#       time.sleep(0.2)
 
 def backspace():
    
@@ -4004,6 +4030,8 @@ class RunUntilTimeout( threading.Thread ):
          print("")
          process.terminate()
          
+      return process
+         
    def exit(self):
       sys.exit()
       
@@ -4689,7 +4717,7 @@ if __name__ == "__main__":
 #   custom20()
 
 #    setActiveDevice("10.42.0.52:5558")
-   setActiveDevice("localhost:5558")
+#    setActiveDevice("localhost:5558")
 #    setActiveDevice("76.250.209.149:5558",True)
    
 #    startMarvel('kinemb86')
@@ -4697,8 +4725,23 @@ if __name__ == "__main__":
 #    setActiveDevice("localhost:5558",True)
 #    createNewFakeAccount(referral="test")
 
+   adbConnect("localhost:5558")
+   user.setCurrent("Joey")
+#    createMultipleNewFakeAccounts(120, interval=(0,0), referral="par943006", never_abort=True, draw_ucp=False)
+
+# Dented
+#    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
+   
+#    a = timeout(Popen,2,"sleep 5",stdout=PIPE,shell=True).stdout.read()
+#    print( "hello" )
+   
+#    createMultipleNewFakeAccounts(44, interval=(0,0), referral="uda182123", never_abort=True, draw_ucp=False)
+#    time.sleep(10)
+#    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
+
+
 #    locateTemplate('card_pack_basic_tab', offset=(45,12), click=True)
-   sys.path.append("./sys/gdata-2.0.17")
+#    sys.path.append("./sys/gdata-2.0.17")
 #    from tests import run_data_tests
 #    from samples.spreadsheets import spreadSheetExample
    

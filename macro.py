@@ -6,6 +6,7 @@
 from __future__ import print_function
 from random import uniform
 from subprocess import Popen, PIPE
+import multiprocessing
 import numpy as np
 import re, time, os, sys, ast, select
 import cv2
@@ -481,6 +482,38 @@ def updateSource():
 
 
    os.chdir(old_dir)
+
+queue = multiprocessing.Queue()
+class MyPopen( multiprocessing.Process ):
+   def __init__(self, function, *args, **kwargs):
+#      super(Run,self).__init__()
+      multiprocessing.Process.__init__(self)
+      self.args = args
+      self.kwargs = kwargs
+      
+      if not 'stdout' in kwargs:
+         self.kwargs['stdout'] = PIPE
+         
+      if not 'shell' in kwargs:
+         self.kwargs['shell'] = True
+         
+           
+   def run ( self ):
+      
+      out = Popen(*self.args, **self.kwargs).stdout.read()
+      
+      queue.put(out)
+
+def myPopen(timeout=5, *args, **kwargs):
+   
+   process = MyPopen(timeout,*args,**kwargs)
+   process.start()
+   process.join(timeout) 
+   
+   if not queue.empty():
+      return queue.get(timeout=timeout)
+   else:
+      return None
    
 
    
@@ -994,7 +1027,7 @@ def adbConnect(device):
    
    print("Connecting to: %s..."%device)
    
-   output = Popen("adb connect %s"%device, stdout=PIPE, shell=True).stdout.read()
+   output = myPopen("adb connect %s"%device)
 
    if re.search("unable|error",output) or output == '':
       print("ERROR: Unable to connect to: %s"%device)
@@ -1014,7 +1047,7 @@ def adbDevices():
 #    cards_in_roster = tuple(map(int, cards_in_roster_numbers))
    
    #devices_string = Popen("adb devices | grep -w device | sed s/device//", stdout=PIPE, shell=True).stdout.read()
-   devices_string = Popen("adb devices", stdout=PIPE, shell=True).stdout.read()
+   devices_string = myPopen("adb devices")
    
    devices = re.findall("\n[a-zA-Z0-9\.:]+",devices_string)
 
@@ -1047,16 +1080,16 @@ def notify():
    
 #   Popen("mplayer audio/ringtones/BentleyDubs.ogg >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
    
-   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   myPopen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su" % ADB_ACTIVE_DEVICE)
    time.sleep(.2)
-   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   myPopen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su" % ADB_ACTIVE_DEVICE)
    time.sleep(.2)
-   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   myPopen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su" % ADB_ACTIVE_DEVICE)
    time.sleep(.2)
-   Popen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
+   myPopen("adb %s shell echo 'echo 100 > /sys/devices/virtual/timed_output/vibrator/enable' \| su" % ADB_ACTIVE_DEVICE)
 
 def notifyWork():
-   Popen("ssh me@$(curl -L work.joinge.net) \"mplayer /home/me/macro/audio/ringtones/CanisMajor.ogg\" >/dev/null 2>&1", stdout=PIPE, shell=True).stdout.read()
+   myPopen("ssh me@$(curl -L work.joinge.net) \"mplayer /home/me/macro/audio/ringtones/CanisMajor.ogg\" >/dev/null 2>&1")
    
 ###########
 # YOUWAVE #
@@ -1069,10 +1102,9 @@ def newAndroidId():
 def setAndroidId(user=None, newid='0' * 15):
    
    printAction("Setting Android ID...")
-   out = Popen("adb %s shell \
-               \"cat /data/youwave_id;\
-                 cat /sdcard/Id\"" % ADB_ACTIVE_DEVICE,
-               stdout=PIPE, shell=True).stdout.read()
+   out = myPopen("adb %s shell \
+                 \"cat /data/youwave_id;\
+                   cat /sdcard/Id\"" % ADB_ACTIVE_DEVICE)
 #    print(out)
    old_ids = out.split('\n')
    if not old_ids[0] == old_ids[1]:

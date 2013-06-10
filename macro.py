@@ -6,7 +6,7 @@
 from __future__ import print_function
 from random import uniform
 from subprocess import Popen, PIPE
-from threads import run, myPopen
+from threads import myRun, myPopen
 import multiprocessing
 import numpy as np
 import re, time, os, sys, ast, select
@@ -31,7 +31,7 @@ if os.name == "posix":
 elif os.name == "nt":
    ESC = "^"
    sys.path.append("./local/win32/lib/python")
-   myPopen('mode con: cols=140 lines=70')
+   Popen('mode con: cols=140 lines=70', stdout=PIPE, shell=True).stdout.read()
 else:
    print("WARNING: Unsupported OS")
    ESC = "\\"
@@ -268,6 +268,39 @@ class Device():
 # The info object reads itself from the info folder!!! 
 class Info():
    def __init__(self):
+      self.initiated = False
+   
+   def get(self, key):
+      
+      self.updateInfo()
+      
+      try:
+         if getattr(self, key):
+            return getattr(self, key)
+      except:
+         return None
+   
+   def set(self, key, value, group=None):
+      
+      self.updateInfo()
+
+      try:
+         if group:
+            setattr(getattr(self, group), key, value)
+         else:
+            setattr(self, key, value)
+         self.write()
+         return True
+      except:
+         return None
+      
+   def updateInfo(self):
+      
+      # Only want to run this once
+      if self.initiated:
+         return
+      else:
+         self.initiated = True
       
       try:
          files = os.listdir('info')
@@ -398,41 +431,7 @@ def sumIMEIDigits(number, nsum=0, even=True):
       else:
          return nsum + sumIMEIDigits(number / 10, sumDigits((number % 10) * 2), not even)
 
-
-queue = multiprocessing.Queue()
-class MyPopen( multiprocessing.Process ):
-   def __init__(self, function, *args, **kwargs):
-#      super(Run,self).__init__()
-      multiprocessing.Process.__init__(self)
-      self.args = args
-      self.kwargs = kwargs
-      
-      if not 'stdout' in kwargs:
-         self.kwargs['stdout'] = PIPE
-         
-      if not 'shell' in kwargs:
-         self.kwargs['shell'] = True
-         
-           
-   def run ( self ):
-      
-      out = Popen(*self.args, **self.kwargs).stdout.read()
-      
-      queue.put(out)
-
-def myPopen(timeout=5, *args, **kwargs):
-   
-   process = MyPopen(timeout,*args,**kwargs)
-   process.start()
-   process.join(timeout) 
-   
-   if not queue.empty():
-      return queue.get(timeout=timeout)
-   else:
-      return None
-   
-
-   
+  
 
 baseN = [
 "Jax",
@@ -998,7 +997,7 @@ def adbConnect(device):
    
    output = myPopen("adb connect %s"%device)
 
-   if re.search("unable|error",output) or output == '':
+   if not output or re.search("unable|error",output) or output == '':
       print("ERROR: Unable to connect to: %s"%device)
       return False
    else:
@@ -1088,15 +1087,14 @@ def setAndroidId(user=None, newid='0' * 15):
             print('WARNING: saveAndroidId() - Ids are already the same.')
          else:
             if newid == '0' * 15:
-               newid = info.fakeID[user]
+               newid = getattr(info.get('fakeID'),user)
                
             print("Old ID: %s, New ID: %s"%(old_id,newid))
             myPopen('adb %s shell echo "echo %s > /data/youwave_id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC))
             myPopen('adb %s shell echo "echo %s > /sdcard/Id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC))
             
-            info.fakeID[user] = newid
+            info.set(user, newid, 'fakeID')
 
-            info.write()
       except:
          print("ERROR: User %s does not seem to exist!" % user)
 
@@ -1117,6 +1115,7 @@ def getAndroidId(user=None):
       id_clean = re.search(r'[0-9]*', id[0]).group(0) #15-18
       
       if not user == None:
+         
          info.fakeAccounts[user] = id_clean
          info.write()
       else:
@@ -1547,8 +1546,8 @@ def take_screenshot_adb(filename=None):
       cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png' % ADB_ACTIVE_DEVICE
       cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s"' % (ADB_ACTIVE_DEVICE, output)
     
-      myPopen(cmd1, stdout=devnull)
-      myPopen(cmd2, stdout=devnull)
+      myPopen(cmd1)
+      myPopen(cmd2)
       
    
    # adb pull /dev/graphics/fb0 img.raw
@@ -1577,7 +1576,7 @@ def take_screenshot_adb(filename=None):
       
       
 def readImage(image_file, xbounds=None, ybounds=None):
-   image = run(cv2.imread, 5, image_file)
+   image = myRun(cv2.imread, image_file)
       
    if not xbounds:
       if not ybounds:
@@ -1649,13 +1648,13 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
                template = template_youwave
       
          if os.path.exists(img_path+'/'+template):
-            image_template = run(cv2.imread(img_path+'/'+template))
+            image_template = myRun(cv2.imread, img_path+'/'+template)
 
             if DEBUG:
                pl.imshow(image_template)
                pl.show()
                
-            result = run(cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED))
+            result = myRun(cv2.matchTemplate, image_screen, image_template, cv2.TM_CCOEFF_NORMED)
             
             if result.max() > threshold:
                match_found = True
@@ -1758,7 +1757,7 @@ def preOCR(image_name, color_mask=(1, 1, 1), threshold=180, invert=True, xbounds
       pl.show()
    
    # Convert to grey scale
-   image = run(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
+   image = myRun(cv2.cvtColor, image, cv2.COLOR_BGR2GRAY)
    
    if DEBUG:
       pl.imshow(image, cmap=pl.cm.Greys_r)
@@ -1802,7 +1801,7 @@ def preOCR(image_name, color_mask=(1, 1, 1), threshold=180, invert=True, xbounds
    # Reverting to int8
    image = image.astype('uint8')
    
-   run(cv2.imwrite(image_name.strip('.png') + '_processed.png', image))
+   myRun(cv2.imwrite, image_name.strip('.png') + '_processed.png', image)
    
    return image
    
@@ -1822,7 +1821,7 @@ def runOCR(image, mode='', lang='eng'):
    else:
       language = 'eng'
    
-   run(cv2.imwrite('tmp.png', image))
+   myRun(cv2.imwrite, 'tmp.png', image)
    myPopen("echo '' > text.txt")
    myPopen("tesseract tmp.png text %s -l %s >/dev/null 2>&1" % (psm, language))
    
@@ -1902,7 +1901,7 @@ def getMyPageStatus():
    except:
       printAction("Unable to determine roster size.", newline=True)
       info['roster'] = [30, 70]
-      run(cv2.imwrite('tmp_last_error.png', cards_in_roster_image))
+      myRun(cv2.imwrite, 'tmp_last_error.png', cards_in_roster_image)
       
    printAction("Running OCR to figure out amount of silver...")
    silver_image = preOCR("screenshot_%s.png" % ACTIVE_DEVICE, color_mask=(1, 1, 0), xbounds=(332, 446), ybounds=(272, 312))
@@ -1923,7 +1922,7 @@ def getMyPageStatus():
    
    except:
       printAction("Unable to determine silver amount.", newline=True)
-      run(cv2.imwrite('tmp_last_error.png', silver_image))
+      myRun(cv2.imwrite, 'tmp_last_error.png', silver_image)
    
    return info
 
@@ -4676,9 +4675,12 @@ if __name__ == "__main__":
 #    setActiveDevice("localhost:5558",True)
 #    createNewFakeAccount(referral="test")
 
+   if os.path.exists('dist'):
+      os.chdir('dist/woh_macro')
+      
    adbConnect("localhost:5558")
    user.setCurrent("Joey")
-#    createMultipleNewFakeAccounts(120, interval=(0,0), referral="par943006", never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts(150, interval=(0,0), referral="fjy574962", never_abort=True, draw_ucp=False)
 
 # Dented
 #    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)

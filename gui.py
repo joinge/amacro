@@ -354,9 +354,9 @@ class Example(QtGui.QWidget):
       
       self.setToolTip('Macro Control GUI')
 
-      print(macro.info.accounts)
+#       print(macro.info.accounts)
       btn = []
-      for i,user in enumerate(macro.info.accounts.keys()):
+      for i,user in enumerate(macro.info.get('accounts')):
          btn.append(QtGui.QPushButton(user, self))
          btn[-1].setToolTip('This is a <b>QPushButton</b> widget')
          btn[-1].clicked.connect(partial(macro.startMarvel, user, 1))
@@ -473,8 +473,6 @@ class Example(QtGui.QWidget):
             
 def main():
     
-#    macro.updateSource()
-    
    app = QtGui.QApplication(sys.argv)
    app.setApplicationName('WoH Macro Control GUI')
    
@@ -489,4 +487,7 @@ def main():
 
 
 if __name__ == '__main__':
+   import os
+   if os.path.exists('dist'):
+      os.chdir('dist/woh_macro')
    main()

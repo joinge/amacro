@@ -1,5 +1,0 @@
-if [ ! -d ".repo" ]; then
-   repo init -u https://github.com/androvm/platform_manifest.git -b androVM-4.1.1_r6.1
-fi
-
-repo sync -j4

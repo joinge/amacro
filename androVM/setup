@@ -1,3 +1,0 @@
-export PATH="/opt/sun-jdk-1.6.0.45/bin:/opt/sun-jdk-1.6.0.45/lib:${PATH}"
-source build/envsetup.sh
-export USE_CCACHE=1

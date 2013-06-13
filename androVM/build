@@ -1,0 +1,6 @@
+lunch vbox86p-userdebug
+
+make CC=gcc-4.4.7 CXX=g++-4.4.7 ARCH=x86 -j12
+
+#make CC=gcc-4.4.7 CXX=g++-4.4.7 ARCH=x86 android_disk_vdi -j12
+

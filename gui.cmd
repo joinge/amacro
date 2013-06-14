@@ -1,7 +1,7 @@
 SETLOCAL
-REM
+
 SET MACROHOME=%cd%
-REM
-SET PATH=%MACROHOME%\Python27;%MACROHOME%\Python27\Lib\site-packages;%PATH%
-REM
+
+SET PATH=%MACROHOME%\local\win32\Python27;%MACROHOME%\Python27\local\win32\Lib\site-packages;%PATH%
+
 python gui.py

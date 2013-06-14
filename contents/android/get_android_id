@@ -1,0 +1,2 @@
+echo 'sqlite3 /data/data/com.android.providers.settings/databases/settings.db "select value from secure where name=\"android_id\""' | su
+

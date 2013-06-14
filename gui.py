@@ -487,7 +487,12 @@ def main():
 
 
 if __name__ == '__main__':
+
    import os
-   if os.path.exists('dist'):
-      os.chdir('dist/woh_macro')
+   try:
+      if os.path.exists('dist'):
+         os.chdir('dist/woh_macro')
+   except:
+      pass
+
    main()

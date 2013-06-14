@@ -1,0 +1,44 @@
+# http://braiden.org/?p=281
+
+mkdir output
+mkdir unpacked
+
+unzip -o -d ./unpacked com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android-2.apk
+java -jar ./lib/baksmali-2.0b2.jar -o ./output ./unpacked/classes.dex
+
+# Find:    sed -r -n /pattern/s/a/a/p
+# Replace: sed -r -n s/pattern/new/p
+# Final:   sed -r -i s/pattern/new/
+
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->MODEL:Ljava\/lang\/String;/const-string \1, "GT-I9300"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->BRAND:Ljava\/lang\/String;/const-string \1, "samsung"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->DEVICE:Ljava\/lang\/String;/const-string \1, "m0"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->MANUFACTURER:Ljava\/lang\/String;/const-string \1, "samsung"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->PRODUCT:Ljava\/lang\/String;/const-string \1, "GT-I9300"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->USER:Ljava\/lang\/String;/const-string \1, ""/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->TAGS:Ljava\/lang\/String;/const-string \1, "test-keys"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->TYPE:Ljava\/lang\/String;/const-string \1, "userdebug"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->HOST:Ljava\/lang\/String;/const-string \1, "cyanogenmod"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->ID:Ljava\/lang\/String;/const-string \1, "JOP40G"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->FINGERPRINT:Ljava\/lang\/String;/const-string \1, "samsung\/m0xx\/m0:4.1.1\/JRO03C\/I9300XXDLIB:user\/release-keys"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->BOARD:Ljava\/lang\/String;/const-string \1, "smdk4x12"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build;->SERIAL:Ljava\/lang\/String;/const-string \1, "GT-I9300"/' '{}' \;
+
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build\$VERSION;->RELEASE:Ljava\/lang\/String;/const-string \1, "4.2.1"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build\$VERSION;->SDK:Ljava\/lang\/String;/const-string \1, "17"/' '{}' \;
+find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build\$VERSION;->INCREMENTAL:Ljava\/lang\/String;/const-string \1, "eng..20130205.005300"/' '{}' \;
+
+java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output
+
+rm -rf ./unpacked/META-INF
+
+(cd ./unpacked && zip -r - .) > com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk
+
+# generate a keystore if one doesn't already exist
+if [ ! -f ./keystore ] ; then
+   keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme
+fi
+
+jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk patch
+
+zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED.apk

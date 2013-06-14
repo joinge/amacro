@@ -4,13 +4,20 @@
 
 
 from __future__ import print_function
+from distutils import dir_util
 from random import uniform
 from subprocess import Popen, PIPE
 from threads import myRun, myPopen
+import ast
+import cv2
 import multiprocessing
 import numpy as np
-import re, time, os, sys, ast, select
-import cv2
+import os
+import re
+import select
+import sys
+import threading
+import time
 
 ACTIVE_DEVICE = ''
 ADB_ACTIVE_DEVICE = ''
@@ -519,6 +526,72 @@ def createAccount(baseNames=baseN):
    
    f.write('}')
    e.write('}')
+   
+def rebuildAPK(newid="a00deadbeef"):
+   
+   # Got to the source folder
+   os.chdir('woh')
+   
+   # Remove old work dir
+   try:
+      os.rmdir('output_current')
+   except:
+      pass
+   
+   # Step 1. Copy .smali ref code to work directoy
+   dir_util.copy_tree('output_ref', 'output_current')
+   
+   # Step 2. Replace all occurences of tag a00beadbeef with Android ID of choice 
+   fileList = []
+   for root, subFolders, files in os.walk('output_current'):
+      for file in files:
+         fileParts = file.split('.')
+         if len(fileParts) > 1 and fileParts[1] == "smali":
+            # Small files, handle in memory:
+            with open(root+'/'+file, 'r') as smali_file:
+               text_in  = smali_file.read()
+            
+            text_out = re.sub('a00beadbeef', newid, text_in)
+            
+            with open(root+'/'+file, 'w') as smali_file:
+               smali_file.write(text_out)
+             
+   # Step 3: Assemble
+   Popen('java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output_current',
+         stdout=PIPE, shell=True).wait()
+
+   # Step 4: Remove signature, we will resign later (needed?)
+   try:
+      os.rmdir('./unpacked/META-INF')
+   except:
+      pass
+
+   # Step 5: Zip up apk
+   os.chdir('unpacked')
+   Popen('zip -r - . > ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk',
+         stdout=PIPE, shell=True).wait()
+   os.chdir('..')
+
+   # Step 6: generate a keystore if one doesn't already exist
+   if not os.path.exists('./keystore'):
+      Popen('keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme',
+         stdout=PIPE, shell=True).wait()
+
+   # Resign
+   Popen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch',
+         stdout=PIPE, shell=True).wait()
+
+   # Realign zip
+   Popen('zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk',
+         stdout=PIPE, shell=True).wait()
+#   zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED.apk
+
+   # Reinstall new apk
+   Popen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE,
+         stdout=PIPE, shell=True).wait()
+   Popen('adb %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE,
+         stdout=PIPE, shell=True).wait()
+   
    
 def createNewFakeAccount(referral="", draw_ucp=False):
       
@@ -3943,7 +4016,6 @@ def eventStarkPresident():
 class CycleTimeout(Exception):
    pass
 
-import threading, multiprocessing
 
 class Run( multiprocessing.Process ):
    def __init__(self, function, *args, **kwargs):
@@ -4675,12 +4747,15 @@ if __name__ == "__main__":
 #    setActiveDevice("localhost:5558",True)
 #    createNewFakeAccount(referral="test")
 
-   if os.path.exists('dist'):
-      os.chdir('dist/woh_macro')
+#   if os.path.exists('dist'):
+#      os.chdir('dist/woh_macro')
+
+   setActiveDevice('192.168.1.10:5555')
+   rebuildAPK()
       
    adbConnect("localhost:5558")
    user.setCurrent("Joey")
-   createMultipleNewFakeAccounts(150, interval=(0,0), referral="fjy574962", never_abort=True, draw_ucp=False)
+#   createMultipleNewFakeAccounts(150, interval=(0,0), referral="fjy574962", never_abort=True, draw_ucp=False)
 
 # Dented
 #    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)

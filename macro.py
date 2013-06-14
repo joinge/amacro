@@ -38,7 +38,8 @@ if os.name == "posix":
 elif os.name == "nt":
    ESC = "^"
 #   sys.path.append("./local/win32/Python27")
-   Popen('mode con: cols=140 lines=70', stdout=PIPE, shell=True).stdout.read()
+#    Popen('mode con: cols=140 lines=70', stdout=PIPE, shell=True).stdout.read()
+#    Popen('cmd mode con: cols=140', stdout=PIPE, shell=True).stdout.read()
 else:
    print("WARNING: Unsupported OS")
    ESC = "\\"

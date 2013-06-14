@@ -158,7 +158,7 @@ class DeviceView(QtGui.QWidget):
       self.model.itemChanged.connect(self.deviceClicked)
       
    def deviceConnect(self):
-      macro.adbConnect(self.device_name.text()+':'+self.device_port.text())
+      macro.adbConnect(str(self.device_name.text())+':'+str(self.device_port.text()))
       self.updateList()
       
    def deviceClicked(self):

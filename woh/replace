@@ -1,10 +1,5 @@
 # http://braiden.org/?p=281
-
-mkdir output
-mkdir unpacked
-
-unzip -o -d ./unpacked com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android-2.apk
-java -jar ./lib/baksmali-2.0b2.jar -o ./output ./unpacked/classes.dex
+#!/bin/bash
 
 # Find:    sed -r -n /pattern/s/a/a/p
 # Replace: sed -r -n s/pattern/new/p
@@ -29,18 +24,3 @@ find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landr
 find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build\$VERSION;->INCREMENTAL:Ljava\/lang\/String;/const-string \1, "eng..20130205.005300"/' '{}' \;
 
 #find . -iname "*.smali" -exec sed -r -i 's/invoke-virtual\s+\{([^\}]+)\},\s+Landroid\/telephony\/TelephonyManager;->getDeviceId\(\)Ljava\/lang\/String;/const-string \1, "a00deadbeef"/' {} \;
-
-java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output
-
-rm -rf ./unpacked/META-INF
-
-(cd ./unpacked && zip -r - .) > com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk
-
-# generate a keystore if one doesn't already exist
-if [ ! -f ./keystore ] ; then
-   keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme
-fi
-
-jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk patch
-
-zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED.apk

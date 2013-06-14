@@ -2,7 +2,7 @@
 
 cp -r output_ref output_current
 
-find output_current -iname "*.smali" -exec sed -r -i 's/a00beadbeef/$1/' {} \;
+find output_current -iname "*.smali" -exec sed -r -i "s/a00beadbeef/$1/" {} \;
 
 java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output_current
 

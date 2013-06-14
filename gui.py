@@ -88,28 +88,28 @@ class DeviceView(QtGui.QWidget):
       super(DeviceView,self).__init__(parent)
       
       #      macro.adbConnect("localhost:5558")
-         
-      self.updateList()
+
+      self.model = QtGui.QStandardItemModel()
+      self.model.setColumnCount(2)
+      self.model.setHorizontalHeaderLabels(["       Device ID","YW"])
 
       self.tree = QtGui.QTreeView(self)
       self.tree.setModel(self.model)
       self.tree.setRootIsDecorated(False)
 
-#      view.setColumnWidth(0,20)
       self.tree.setColumnWidth(0,170)
       self.tree.setColumnWidth(1,30)
-#      self.tree.resize(210,150)
-#      tree.move(50,250)
+
 
       self.device_name = QtGui.QLineEdit(self)
-#      self.ref_field.resize(self.ref_field.sizeHint())
       self.device_name.setToolTip('Device')
-      self.device_name.resize(QtCore.QSize(100,self.device_name.sizeHint().height()))
+      self.device_name.resize(QtCore.QSize(150,self.device_name.height()))
+      self.device_name.setMinimumWidth(150)
       
       self.device_port = QtGui.QLineEdit(self)
-#      self.ref_field.resize(self.ref_field.sizeHint())
       self.device_port.setToolTip('Port')
       self.device_port.setText("5555")
+      self.device_port.setMaximumWidth(50)
       
       self.device_add = QtGui.QPushButton('Add device', self)
       self.device_add.clicked.connect(self.deviceConnect)
@@ -126,14 +126,14 @@ class DeviceView(QtGui.QWidget):
 
       self.setLayout(self.full_layout)
 
-      a = self.model.item(0,0)
+      self.updateList()
       
    def updateList(self):
 
       devices = macro.adbDevices()
+      
+      self.model.beginResetModel()
 
-      self.model = QtGui.QStandardItemModel()
-      self.model.setColumnCount(2)
       self.deviceActiveList = {}
       self.deviceYouwaveList = {}
       for i,device in enumerate(devices):
@@ -154,8 +154,10 @@ class DeviceView(QtGui.QWidget):
          self.model.appendRow([device_item,box])
 #         model.appendColumn(box)
 
-      self.model.setHorizontalHeaderLabels(["       Device ID","YW"])
       self.model.itemChanged.connect(self.deviceClicked)
+      self.device_name.setText('')
+      
+      self.model.beginResetModel()
       
    def deviceConnect(self):
       macro.adbConnect(str(self.device_name.text())+':'+str(self.device_port.text()))
@@ -216,7 +218,7 @@ class ReferralService(QtGui.QFrame):
       self.ibox.setMinimum(1)
       ibox_size = self.ibox.sizeHint()
       self.ibox.resize(QtCore.QSize(ibox_size.width(),btn_size.height()))
-      self.ibox.setValue(1)
+      self.ibox.setValue(100)
       self.ibox.setToolTip("Iterations")
    
       self.ref_field = QtGui.QLineEdit(self)
@@ -232,7 +234,7 @@ class ReferralService(QtGui.QFrame):
       self.lbox = QtGui.QSpinBox(self)
       self.lbox.setMaximum(999)
       self.lbox.resize(self.lbox.sizeHint())
-      self.lbox.setValue(3)
+      self.lbox.setValue(0)
       self.lbox.setToolTip("Wait interval - lower bound")
       
       self.to_text = QtGui.QLabel(self)
@@ -242,7 +244,7 @@ class ReferralService(QtGui.QFrame):
       self.ubox = QtGui.QSpinBox(self)
       self.ubox.setMaximum(999)
       self.ubox.resize(self.ubox.sizeHint())
-      self.ubox.setValue(15)
+      self.ubox.setValue(0)
       self.ubox.setStyleSheet("")
       self.ubox.setToolTip("Wait interval - upper bound")
 
@@ -264,6 +266,7 @@ class ReferralService(QtGui.QFrame):
       self.persist = QtGui.QCheckBox(self)
       self.persist.setText('Never abort')
       self.persist.setToolTip('Specify whether the macro service should continue even if<BR> Joey think it might be a good idea to call it off (because something unexpected may have happened).')
+      self.persist.setChecked(True)
       
       self.draw_ucp = QtGui.QCheckBox(self)
       self.draw_ucp.setText('Draw UCP')

@@ -10,6 +10,7 @@ from subprocess import Popen, PIPE
 from threads import myRun, myPopen
 import ast
 import cv2
+import logging
 import multiprocessing
 import numpy as np
 import os
@@ -19,15 +20,23 @@ import sys
 import threading
 import time
 
+GLOBAL_DEBUG = False # Extremely verbose output
+
+SCREEN_PATH        = './screens'
+TEMP_PATH          = './tmp'
+ANDROID_UTILS_PATH = './contents/android' 
+LOG_STDOUT         = 'log.log'
+LOG_STDERR         = 'log.log'
+
 ACTIVE_DEVICE = ''
 ADB_ACTIVE_DEVICE = ''
 YOUWAVE = False
 # STDOUT_ALTERNATIVE = None
 ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 abc = 'abcdefghijklmnopqrstuvwxyz'
+num = '0123456789'
+hex = num+'abcdef'
 
-SCREEN_PATH = './screens'
-TEMP_PATH   = './tmp'
 
 try:    os.mkdir(TEMP_PATH)
 except: pass
@@ -109,6 +118,24 @@ all_feeder_cards = [
 
 sell_cards = ['common_mrfantastic']
 
+
+# set up logging to file - see previous section for more details
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename=TEMP_PATH+'macro.log',
+                    filemode='w')
+# define a Handler which writes INFO messages or higher to the sys.stderr
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(message)s')
+# tell the handler to use this format
+console.setFormatter(formatter)
+# add the handler to the root logger
+logging.getLogger('').addHandler(console)
+
+
 class Stats:
    def __init__(self):
       self.info = {}
@@ -189,32 +216,46 @@ class Stats:
  
 class Device():
    def __init__(self):
-      pass
+      myPopen('adb %s shell mkdir /sdcard/macro'%ADB_ACTIVE_DEVICE)
+      myPopen('adb %s push %s /sdcard/macro'%(ADB_ACTIVE_DEVICE, ANDROID_UTILS_PATH))
 
    def getInfo(self,key):
       
       for i in range(2):
          try:
-            if getattr(self,key):
-               return getattr(self,key)
-               break
+            return getattr(self,key)
          except:
             self.updateInfo()
       
       return None
+   
+   def isAndroidVM(self):
+      return self.getInfo('android_vm')
+   
+   def isYouwave(self):
+      return self.getInfo('youwave')
          
    def updateInfo(self):
       
       global YOUWAVE
       # First we need to know if we are running an emulator.
-      uname = myPopen('adb %s shell uname -m' %ADB_ACTIVE_DEVICE)
+      uname_machine = myPopen('adb %s shell uname -m' %ADB_ACTIVE_DEVICE)
+      uname_all = myPopen('adb %s shell uname -a' %ADB_ACTIVE_DEVICE)
       
-      if re.search('i686',uname):
-         YOUWAVE = True
-      else:
-         YOUWAVE = False
-         
-      if YOUWAVE:
+      # Query on arch. But really, Android version would be better.
+      YOUWAVE = False
+      self.youwave = False
+      self.android_vm = False
+      if re.search('i686',uname_machine):
+         if re.search('qemu',uname_all):
+            self.android_vm = True
+         else:
+            self.youwave = True
+            YOUWAVE = True
+            
+      event_devices = myPopen('adb %s shell sh /sdcard/macro/getevent' %ADB_ACTIVE_DEVICE)  
+      
+      if self.youwave:
          
 #          thread = RunUntilTimeout(Popen,1,'adb %s shell getevent > tmp.txt' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True)
 #          thread.start()
@@ -222,8 +263,6 @@ class Device():
 #          time.sleep(2)
 #          
 #          event_devices = open('tmp.txt','r').read()
-         myPopen('adb %s push getevent /sdcard/' %ADB_ACTIVE_DEVICE)
-         event_devices = myPopen('adb %s shell sh /sdcard/getevent' %ADB_ACTIVE_DEVICE)    
 #          time.sleep(3)
 #          event_devices = open('getevent.txt','r').read()#Popen('adb %s shell getevent > tmp.txt' %ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True)
          try:
@@ -239,10 +278,30 @@ class Device():
          except:
             print("ERROR: Unable to parse input/output event keyboard device")
             
+      if self.android_vm:
+#         try:
+#            self.eventTablet = int(re.search('/dev/input/event([0-9]).*\n.*VirtualBox USB Tablet',event_devices).group(1))
+#         except:
+#            print("ERROR: Unable to parse input/output event touchscreen device")
+#         try:
+#            self.eventMouse = int(re.search('/dev/input/event([0-9]).*\n.*ImExPS/2 Generic Explorer Mouse',event_devices).group(1))
+#         except:
+#            print("ERROR: Unable to parse input/output event mouse device")
+         try:
+            self.eventKeyboard = int(re.search('/dev/input/event([0-9]).*\n.*AT Translated Set 2 keyboard',event_devices).group(1))
+         except:
+            print("ERROR: Unable to parse input/output event keyboard device")
             
       try:
          build_prop = myPopen('adb %s shell echo "cat /system/build.prop" %s| su'%(ADB_ACTIVE_DEVICE,ESC))
-         self.screenDensity = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
+         try:
+            self.screenDensity = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
+         except:
+            try:
+               if re.search('vbox86p',build_prop):
+                  self.screenDensity = 160 # Not defined in Android VM
+            except:
+               self.screenDensity = 160
          
          if self.screenDensity != 160 and self.screenDensity != 240:
             
@@ -262,12 +321,12 @@ class Device():
       print("")
       print("Device info updated. New parameters:")
       if YOUWAVE:
-         print("Youwave detected?       YES")
+         print("youwave detected?       YES")
          print("  Device - touchscreen: /dev/input/event%d"%self.eventTablet)
          print("  Device - keyboard:    /dev/input/event%d"%self.eventKeyboard)
          print("  Device - mouse:       /dev/input/event%d"%self.eventMouse)
       else:
-         print("Youwave detected?       NO")         
+         print("youwave detected?       NO")         
       print("Screen density:         %d"%self.screenDensity)
       print("")
   
@@ -539,9 +598,11 @@ def rebuildAPK(newid="a00deadbeef"):
    except:
       pass
    
+   printAction("   Copy prepatched code to work dir...", newline=True)
    # Step 1. Copy .smali ref code to work directoy
    dir_util.copy_tree('output_ref', 'output_current')
    
+   printAction("   Find and replace Android IDs in the disassembled code...", newline=True)
    # Step 2. Replace all occurences of tag a00beadbeef with Android ID of choice 
    fileList = []
    for root, subFolders, files in os.walk('output_current'):
@@ -557,9 +618,9 @@ def rebuildAPK(newid="a00deadbeef"):
             with open(root+'/'+file, 'w') as smali_file:
                smali_file.write(text_out)
              
+   printAction("   Reasemble code back to bytecode...", newline=True)
    # Step 3: Assemble
-   Popen('java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output_current',
-         stdout=PIPE, shell=True).wait()
+   myPopen('java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output_current')
 
    # Step 4: Remove signature, we will resign later (needed?)
    try:
@@ -567,31 +628,33 @@ def rebuildAPK(newid="a00deadbeef"):
    except:
       pass
 
+   printAction("   Zip the code into an APK...", newline=True)
    # Step 5: Zip up apk
    os.chdir('unpacked')
-   Popen('zip -r - . > ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk',
-         stdout=PIPE, shell=True).wait()
+   myPopen('zip -r - . > ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk')
    os.chdir('..')
 
+   printAction("   Sign the APK...", newline=True)
    # Step 6: generate a keystore if one doesn't already exist
    if not os.path.exists('./keystore'):
-      Popen('keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme',
-         stdout=PIPE, shell=True).wait()
+      myPopen('keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme')
 
    # Resign
-   Popen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch',
-         stdout=PIPE, shell=True).wait()
+   myPopen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch')
 
+   printAction("   Zipalign the APK...", newline=True)
    # Realign zip
-   Popen('zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk',
-         stdout=PIPE, shell=True).wait()
+   myPopen('zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
 #   zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED.apk
 
+   printAction("   Reinstall the APK...", newline=True)
    # Reinstall new apk
-   Popen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE,
-         stdout=PIPE, shell=True).wait()
-   Popen('adb %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE,
-         stdout=PIPE, shell=True).wait()
+   myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+   myPopen('adb %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
+         
+   os.chdir('..')
+   
+   printAction("   Finished. New ID: %s"%newid, newline=True)
    
    
 def createNewFakeAccount(referral="", draw_ucp=False):
@@ -603,8 +666,9 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
    # Set new Android ID and start WoH
    setAndroidId(name_base,newAndroidId())
-   unlock_phone()
-   clearMarvelCache()
+#   unlock_phone()
+   if not device.isAndroidVM():
+      clearMarvelCache()
    launch_marvel()
    
    printAction("Searching for login screen...")
@@ -629,6 +693,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          print("ERROR: Not implemented")
          return 2
          
+      
       left_click((140, 160) + c) # Login Mobage
       left_click((206, 160) + c) # Login button
       
@@ -662,20 +727,23 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          print(email)
          left_click((244, 73) + c) # Email field
          enter_text(email)
-         backspace()
+         if device.isYouwave():
+            backspace()
          
          printAction("Entering password:")
          print(password)
          left_click((244, 118) + c) # Password field
          
-         # Like usual Youwave has problems here...
-         enter_text('a')
-         for i in range(len(email)):
-            right_arrow()
-         for i in range(len(email) + 2):
-            backspace()
+         # Like usual youwave has problems here...
+         if device.isYouwave():
+            enter_text('a')
+            for i in range(len(email)):
+               right_arrow()
+            for i in range(len(email) + 2):
+               backspace()
          enter_text(password)
-         backspace()
+         if device.isYouwave():
+            backspace()
          left_click((205, 159) + c) # Signup button
          
          printAction("Searching for \"Last Step\" screen...")
@@ -697,20 +765,27 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          left_click((232,105)+c) # Nick field         
 
          if i==0:
-            enter_text('a')
-            for i in range(len(email_base+randNums)+2):
-               right_arrow()            
-
-            for i in range(len(email_base+randNums)+2+len(password)):
-               backspace()
+            if device.isYouwave():
+               enter_text('a')
+               for i in range(len(email_base+randNums)+2):
+                  right_arrow()            
+   
+               for i in range(len(email_base+randNums)+2+len(password)):
+                  backspace()
+            else:
+               for i in range(len(email_base+randNums)+2):
+                  backspace()
+                  
             enter_text(name_base)
             username = name_base
-            backspace()
+            if device.isYouwave():
+               backspace()
          else:
             new_char = tmp2[int(np.random.uniform(0, len(tmp2)-1e-9))]
             enter_text(new_char)
             username = username + new_char
-            backspace()            
+            if device.isYouwave():
+               backspace()            
          
          left_click((142,172) + c) # Save and Play button
          
@@ -779,21 +854,24 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 #       for i in range(len(name_base)+5):
 #          backspace()
       enter_text(referral)
-      backspace()
+      if device.isYouwave():
+         backspace()
       
       left_click(ok)
       ok2 = locateTemplate('tutorial_almost_finished_ok.png', offset=(92,15), click=True, retries=5, interval=3)
       printResult(ok)
       if not ok2:
-         print("ERROR: Could not find referral \"OK\" button")
+         print("ERROR: Could not find almost finished \"OK\" button")
          return 2 # If the service gets this far without working, it's probably best to call it off.
 
-      for i in range(5):
-         time.sleep(2)
-         left_click((240,150))
-      
       printAction("Registering device...")
-      register_device = locateTemplate('tutorial_register_device.png', offset=(124,11), click=True, retries=5, interval=3)
+      register_device = None
+      for i in range(10):
+         register_device = locateTemplate('tutorial_register_device.png', offset=(124,11), click=True)
+         if register_device:
+            break
+         left_click((240,150))
+
       if not register_device:
          printResult(False)
          print("ERROR: Unable to find register device button!")
@@ -956,7 +1034,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
 #       left_click((76, 174) + c) # Mobage password field
 #    else:
 #       left_click((142, 114) + c) # Mobage password field
-#    if YOUWAVE: # Youwave screws this up. Need to insert text, then erase it once
+#    if YOUWAVE: # youwave screws this up. Need to insert text, then erase it once
 #       enter_text('a')
 #       
 #       for i in range(len(user)):
@@ -1139,11 +1217,23 @@ def notifyWork():
 
 def newAndroidId():
    printAction("Creating new Android ID...", newline=True)
-   return ''.join(np.random.uniform(10, size=int(np.random.uniform(15, 18))).astype(int).astype('str'))
+   if device.isAndroidVM():
+      return ''.join(hex[i] for i in np.random.uniform(0,16-1e-9, size=int(np.random.uniform(8, 11))).astype(int))
+   elif device.isYouwave():
+      return ''.join(np.random.uniform(0,10-1e-9, size=int(np.random.uniform(15, 18))).astype(int).astype('str'))
    
+   else:
+      print("ERROR: Android ID creation for this device type is not supported!!!")
+      return None
 def setAndroidId(user=None, newid='0' * 15):
    
    printAction("Setting Android ID...")
+   
+   if device.isAndroidVM():
+      printAction("Android VM detected. Rebuilding APK with a new Android ID", newline=True)
+      rebuildAPK(newid)
+      return
+   
    out = myPopen("adb %s shell \
                  \"cat /data/youwave_id;\
                    cat /sdcard/Id\"" % ADB_ACTIVE_DEVICE)
@@ -1219,6 +1309,7 @@ def printAction(str, res=None, newline=False):
    string = "   %s" % str
       
    if newline:
+#      logging.debug(string.ljust(PAD, ' '))
       sys.stdout.write(string.ljust(PAD, ' '))
       sys.stdout.flush()
       sys.stdout.write("\n")
@@ -1283,7 +1374,7 @@ def connect_adb_wifi():
 def clearMarvelCache():
    printAction("Clearing Marvel cache...", newline=True)
    macro_output = myPopen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android 2>>error.log" % ADB_ACTIVE_DEVICE)
-   time.sleep(3)
+   time.sleep(1)
 
    #if macro_output == None:
    #   raise Exception("Unable to clear Marvel cache")
@@ -1346,16 +1437,19 @@ def left_click(loc):
    
    
    if not YOUWAVE:
-      adb_event_batch([
-         (2, 0x0003, 0x0039, 0x00000d45),
-         (2, 0x0003, 0x0035, loc[0]),
-         (2, 0x0003, 0x0036, loc[1]),
-         (2, 0x0003, 0x0030, 0x00000032),
-         (2, 0x0003, 0x003a, 0x00000002),
-         (2, 0x0000, 0x0000, 0x00000000),
-         (2, 0x0003, 0x0039, 0xffffffff),
-         (2, 0x0000, 0x0000, 0x00000000)
-         ])
+      
+      myPopen('adb %s shell input tap %d %d'%(ADB_ACTIVE_DEVICE,loc[0],loc[1]))
+      
+#      adb_event_batch([
+#         (2, 0x0003, 0x0039, 0x00000d45),
+#         (2, 0x0003, 0x0035, loc[0]),
+#         (2, 0x0003, 0x0036, loc[1]),
+#         (2, 0x0003, 0x0030, 0x00000032),
+#         (2, 0x0003, 0x003a, 0x00000002),
+#         (2, 0x0000, 0x0000, 0x00000000),
+#         (2, 0x0003, 0x0039, 0xffffffff),
+#         (2, 0x0000, 0x0000, 0x00000000)
+#         ])
    
    else:
       
@@ -1380,10 +1474,9 @@ def left_click(loc):
 def backspace():
    
 
-   if YOUWAVE:
-      if device.getInfo('eventKeyboard'):
-         event_no = device.eventKeyboard
-      else:
+   if device.isYouwave() or device.isAndroidVM():
+      event_no = device.getInfo('eventKeyboard')
+      if not event_no:
          event_no = 2
       
       adb_event_batch([
@@ -1400,10 +1493,9 @@ def backspace():
      
 def right_arrow():
 
-   if YOUWAVE:
-      if device.getInfo('eventKeyboard'):
-         event_no = device.eventKeyboard
-      else:
+   if device.isYouwave() or device.isAndroidVM():
+      event_no = device.getInfo('eventKeyboard')
+      if not event_no:
          event_no = 2
       
       adb_event_batch([
@@ -1445,7 +1537,7 @@ def adb_login(login_screen_coords, user, password=None):
       left_click((76, 174) + c) # Mobage password field
    else:
       left_click((142, 114) + c) # Mobage password field
-   if YOUWAVE: # Youwave screws this up. Need to insert text, then erase it once
+   if YOUWAVE: # youwave screws this up. Need to insert text, then erase it once
       enter_text('a')
       
       for i in range(len(user)):
@@ -1601,9 +1693,9 @@ def take_screenshot_adb(filename=None):
    ################
        
 #   Popen("adb %s shell screencap | sed 's/\r$//' > img.raw"%ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
-   if not YOUWAVE:
-      myPopen("adb %s shell /system/bin/screencap /sdcard/img.raw >/dev/null 2>&1;\
-               adb %s pull  /sdcard/img.raw %s/img_%s.raw >/dev/null 2>&1"
+   if not device.isYouwave() and not device.isAndroidVM():
+      myPopen("adb %s shell /system/bin/screencap /sdcard/img.raw;\
+               adb %s pull  /sdcard/img.raw %s/img_%s.raw"
                % (ADB_ACTIVE_DEVICE, ADB_ACTIVE_DEVICE, TEMP_PATH, ACTIVE_DEVICE))
       
       f = open(TEMP_PATH+'/img_%s.raw' % ACTIVE_DEVICE, 'rb')
@@ -1612,8 +1704,8 @@ def take_screenshot_adb(filename=None):
       rest = f.read() # read rest
       f1.write(rest)
             
-      myPopen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img_%s1.raw %s >/dev/null 2>&1"
-            %(ACTIVE_DEVICE,output))
+      myPopen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i %s/img_%s1.raw %s"
+            %(TEMP_PATH,ACTIVE_DEVICE,output))
    else:
 #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, shell=True).stdout.read()
    
@@ -4752,11 +4844,10 @@ if __name__ == "__main__":
 #      os.chdir('dist/woh_macro')
 
    setActiveDevice('192.168.1.10:5555')
-   rebuildAPK()
       
-   adbConnect("localhost:5558")
+#   adbConnect("localhost:5558")
    user.setCurrent("Joey")
-#   createMultipleNewFakeAccounts(150, interval=(0,0), referral="fjy574962", never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts(150, interval=(0,0), referral="fjy574962", never_abort=True, draw_ucp=False)
 
 # Dented
 #    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)

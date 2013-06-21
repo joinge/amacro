@@ -37,6 +37,7 @@ abc = 'abcdefghijklmnopqrstuvwxyz'
 num = '0123456789'
 hex = num+'abcdef'
 
+# sys.path.append("./local/win32")
 
 try:    os.mkdir(TEMP_PATH)
 except: pass
@@ -216,8 +217,7 @@ class Stats:
  
 class Device():
    def __init__(self):
-      myPopen('adb %s shell mkdir /sdcard/macro'%ADB_ACTIVE_DEVICE)
-      myPopen('adb %s push %s /sdcard/macro'%(ADB_ACTIVE_DEVICE, ANDROID_UTILS_PATH))
+      pass
 
    def getInfo(self,key):
       
@@ -241,6 +241,9 @@ class Device():
       # First we need to know if we are running an emulator.
       uname_machine = myPopen('adb %s shell uname -m' %ADB_ACTIVE_DEVICE)
       uname_all = myPopen('adb %s shell uname -a' %ADB_ACTIVE_DEVICE)
+      
+      myPopen('adb %s shell mkdir /sdcard/macro'%ADB_ACTIVE_DEVICE)
+      myPopen('adb %s push %s /sdcard/macro'%(ADB_ACTIVE_DEVICE, ANDROID_UTILS_PATH))
       
       # Query on arch. But really, Android version would be better.
       YOUWAVE = False
@@ -1169,14 +1172,14 @@ def adbDevices():
    #devices_string = Popen("adb devices | grep -w device | sed s/device//", stdout=PIPE, shell=True).stdout.read()
    devices_string = myPopen("adb devices")
    
-   devices = re.findall("\n[a-zA-Z0-9\.:]+",devices_string)
+   device_list1 = re.findall("\n[a-zA-Z0-9\.:]+",devices_string)
 
 #   devices = re.sub("\tdevice\r", '', devices[0])
 #   lines = re.split("\n+", devices)
    
    device_list = []
-   for device in devices:
-      device_list.append(re.sub("\n", '', device))
+   for dev in device_list1:
+      device_list.append(re.sub("\n", '', dev))
 #      if l != '':
 #         device_list.append(l)
          
@@ -4850,6 +4853,7 @@ if __name__ == "__main__":
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
    createMultipleNewFakeAccounts(500, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
+
 # Dented
 #    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
    

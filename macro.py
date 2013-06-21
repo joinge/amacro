@@ -19,6 +19,7 @@ import select
 import sys
 import threading
 import time
+import urllib2
 
 GLOBAL_DEBUG = False # Extremely verbose output
 
@@ -532,27 +533,51 @@ emails = [
 'hotmail.com'
  ]
 
+nick_list = []
 def getBaseName():
    
 # for i in {1..20}; do curl -L http://www.spinxo.com/ | sed -r -n "s/^\s+([a-zA-Z]+)<\/a><\/li>.*$/\1/p" >> data/nick_seeds_joey.txt; done
 # cat info/nick_seeds.txt | sort -R > ./info/nick_seeds2.txt
+   global nick_list
+   
+   printAction("Fetching nick seeds...", newline=True)
+   
+   # NEW APPROACH: Fetch nicks online whenever our nicks_list is empty   
+   if len(nick_list) == 0:
+      
+      printAction("   Nick list is empty! Fetching a new one from http://www.spinxo.com...")
+      
+      try:
+         # Fetch contents of the nick generator page spinxo.com
+         nick_seed_page = urllib2.urlopen('http://www.spinxo.com/').read()
+      
+         # Parse is and retrieve the list of nicks between 4-10 characters long
+         nick_list = re.findall('\s+([A-Z][a-zA-Z]{3,9})</a></li>', nick_seed_page)
+         printResult(True)
+         
+      except:
+         printResult(False)
+         return None    
+      
+   name = nick_list.pop(int(np.random.uniform(0,len(nick_list)-1e-9)))
+   
+   printAction("   Selected nick:")
+   print(name)
 
-   printAction("Fetching nick seeds...")
-   current_nick = user.getCurrent()
-   f = open('./data/nick_seeds_%s.txt'%current_nick.lower(), 'r')
-   all_names = f.readlines()
-   name = all_names[0]
-#    name.sub('\\r','\\n')
-
-   name = re.sub('\\n','',name)
-   name = re.sub('\\r','',name)
-   name = re.sub('\\t','',name)
-   f.close()
-#   lines = re.split("\n+", file)
-   f = open('./data/nick_seeds_%s.txt'%current_nick.lower(), 'w')
-   f.write( "".join(all_names[1:]) )
-   f.close()
-   printResult(True)
+#   # OLD APPROACH
+#   current_nick = user.getCurrent()
+#   f = open('./data/nick_seeds_%s.txt'%current_nick.lower(), 'r')
+#   all_names = f.readlines()
+#   name = all_names[0]
+#
+#   name = re.sub('\\n','',name)
+#   name = re.sub('\\r','',name)
+#   name = re.sub('\\t','',name)
+#   f.close()
+#
+#   f = open('./data/nick_seeds_%s.txt'%current_nick.lower(), 'w')
+#   f.write( "".join(all_names[1:]) )
+#   f.close()
    
    return name
 
@@ -657,7 +682,8 @@ def rebuildAPK(newid="a00deadbeef"):
          
    os.chdir('..')
    
-   printAction("   Finished. New ID: %s"%newid, newline=True)
+   printAction("   Finished. New ID:")
+   print(newid)
    
    
 def createNewFakeAccount(referral="", draw_ucp=False):
@@ -4845,6 +4871,7 @@ if __name__ == "__main__":
 
 #   if os.path.exists('dist'):
 #      os.chdir('dist/woh_macro')
+   getBaseName()
 
    setActiveDevice('192.168.1.10:5555')
       

@@ -26,6 +26,15 @@ class MyPopen( multiprocessing.Process ):
       else:
          self.kwargs['stdout'] = PIPE
          
+      if 'stderr' in self.kwargs:
+         if self.kwargs['stderr'] == 'devnull':
+            self.kwargs['stderr'] = devnull
+            self.SUPPRESS_OUTPUT = True
+         else:
+            self.stdout = kwargs['stderr']   
+      else:
+         self.kwargs['stderr'] = PIPE
+         
       if not 'shell' in kwargs:
          self.kwargs['shell'] = True
          

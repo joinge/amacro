@@ -4847,8 +4847,9 @@ if __name__ == "__main__":
       
 #   adbConnect("localhost:5558")
    user.setCurrent("Joey")
-   createMultipleNewFakeAccounts(150, interval=(0,0), referral="fjy574962", never_abort=True, draw_ucp=False)
-
+#   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
+#   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts(500, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
 # Dented
 #    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
    

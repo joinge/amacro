@@ -1402,14 +1402,16 @@ def connect_adb_wifi():
       
 def clearMarvelCache():
    printAction("Clearing Marvel cache...", newline=True)
-   macro_output = myPopen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android 2>>error.log" % ADB_ACTIVE_DEVICE)
+   macro_output = myPopen("adb %s shell pm clear com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android" % ADB_ACTIVE_DEVICE)
    time.sleep(1)
 
    #if macro_output == None:
    #   raise Exception("Unable to clear Marvel cache")
 
 def launch_marvel():
-   macro_output = myPopen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity 2>>error.log" % ADB_ACTIVE_DEVICE)
+   macro_output = myPopen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.SplashActivity" % ADB_ACTIVE_DEVICE)
+#   SplashActivity
+#   macro_output = myPopen("adb %s shell am start -n com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android/.WebGameFrameworkActivity" % ADB_ACTIVE_DEVICE)
    #if macro_output == None:
    #   raise Exception("Unable to start Marvel")
 
@@ -1419,7 +1421,7 @@ def launch_marvel():
       
 
 def adb_input(text):
-   macro_output = myPopen("adb %s shell input text %s 2>>error.log" % (ADB_ACTIVE_DEVICE, text))
+   macro_output = myPopen("adb %s shell input text %s" % (ADB_ACTIVE_DEVICE, text))
 
 def adb_event_batch(events):
    
@@ -1430,7 +1432,7 @@ def adb_event_batch(events):
          
       sendevent_string += "sendevent /dev/input/event%d %d %d %d" % event
         
-   myPopen("adb %s shell \"%s\" 2>>error.log" % (ADB_ACTIVE_DEVICE, sendevent_string))
+   myPopen("adb %s shell \"%s\"" % (ADB_ACTIVE_DEVICE, sendevent_string))
       
 #   print( "adb shell %s"%sendevent_string )
       
@@ -4871,7 +4873,7 @@ if __name__ == "__main__":
 
 #   if os.path.exists('dist'):
 #      os.chdir('dist/woh_macro')
-   getBaseName()
+#   getBaseName()
 
    setActiveDevice('192.168.1.10:5555')
       

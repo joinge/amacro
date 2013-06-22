@@ -28,8 +28,6 @@ find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landr
 find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build\$VERSION;->SDK:Ljava\/lang\/String;/const-string \1, "17"/' '{}' \;
 find ./output -iname "*.smali" -exec sed -r -i 's/sget-object\s+([^,]+),\s+Landroid\/os\/Build\$VERSION;->INCREMENTAL:Ljava\/lang\/String;/const-string \1, "eng..20130205.005300"/' '{}' \;
 
-#find . -iname "*.smali" -exec sed -r -i 's/invoke-virtual\s+\{([^\}]+)\},\s+Landroid\/telephony\/TelephonyManager;->getDeviceId\(\)Ljava\/lang\/String;/const-string \1, "a00deadbeef"/' {} \;
-
 java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output
 
 rm -rf ./unpacked/META-INF

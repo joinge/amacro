@@ -83,15 +83,60 @@ class MyConsole(QtGui.QWidget):
 
 class DeviceView(QtGui.QWidget):
 
-   def __init__(self, parent, items):
+   def __init__(self, parent):
          
       super(DeviceView,self).__init__(parent)
-   
+      
+      #      macro.adbConnect("localhost:5558")
+
       self.model = QtGui.QStandardItemModel()
       self.model.setColumnCount(2)
+      self.model.setHorizontalHeaderLabels(["       Device ID","YW"])
+
+      self.tree = QtGui.QTreeView(self)
+      self.tree.setModel(self.model)
+      self.tree.setRootIsDecorated(False)
+
+      self.tree.setColumnWidth(0,170)
+      self.tree.setColumnWidth(1,30)
+
+
+      self.device_name = QtGui.QLineEdit(self)
+      self.device_name.setToolTip('Device')
+      self.device_name.resize(QtCore.QSize(150,self.device_name.height()))
+      self.device_name.setMinimumWidth(150)
+      
+      self.device_port = QtGui.QLineEdit(self)
+      self.device_port.setToolTip('Port')
+      self.device_port.setText("5555")
+      self.device_port.setMaximumWidth(50)
+      
+      self.device_add = QtGui.QPushButton('Add device', self)
+      self.device_add.clicked.connect(self.deviceConnect)
+      self.device_add.resize(self.device_add.sizeHint())
+      
+      self.add_device_layout = QtGui.QHBoxLayout()
+      self.add_device_layout.addWidget(self.device_name)
+      self.add_device_layout.addWidget(self.device_port)
+      self.add_device_layout.addWidget(self.device_add)
+      
+      self.full_layout = QtGui.QVBoxLayout()
+      self.full_layout.addWidget(self.tree)
+      self.full_layout.addLayout(self.add_device_layout)
+
+      self.setLayout(self.full_layout)
+
+      self.updateList()
+      
+   def updateList(self):
+
+      devices = macro.adbDevices()
+      
+      self.model.beginResetModel()
+
       self.deviceActiveList = {}
       self.deviceYouwaveList = {}
-      for i,device in enumerate(items):
+      for i,device in enumerate(devices):
 #         status = QtGui.QStandardItem("")
          device_item = QtGui.QStandardItem(device)
          self.deviceActiveList[str(i)] = False
@@ -109,31 +154,14 @@ class DeviceView(QtGui.QWidget):
          self.model.appendRow([device_item,box])
 #         model.appendColumn(box)
 
-      self.model.setHorizontalHeaderLabels(["       Device ID","YW"])
       self.model.itemChanged.connect(self.deviceClicked)
-
-      self.tree = QtGui.QTreeView(self)
-      self.tree.setModel(self.model)
-      self.tree.setRootIsDecorated(False)
-
-#      view.setColumnWidth(0,20)
-      self.tree.setColumnWidth(0,170)
-      self.tree.setColumnWidth(1,30)
-      self.tree.resize(210,150)
-#      tree.move(50,250)
-
-      self.add_btn = QtGui.QPushButton('Add...', self)
-      self.add_btn.clicked.connect(macro.checkTraining)
-      self.add_btn.resize(self.add_btn.sizeHint())
-      self.add_btn.move(0,160)
+      self.device_name.setText('')
       
-      self.del_btn = QtGui.QPushButton('Delete...', self)
-      self.del_btn.clicked.connect(macro.checkTraining)
-      self.del_btn.resize(self.del_btn.sizeHint())
-      self.del_btn.move(210-self.del_btn.sizeHint().width(),160)
+      self.model.beginResetModel()
       
-      a = self.model.item(0,0)
-      
+   def deviceConnect(self):
+      macro.adbConnect(str(self.device_name.text())+':'+str(self.device_port.text()))
+      self.updateList()
       
    def deviceClicked(self):
       
@@ -190,7 +218,7 @@ class ReferralService(QtGui.QFrame):
       self.ibox.setMinimum(1)
       ibox_size = self.ibox.sizeHint()
       self.ibox.resize(QtCore.QSize(ibox_size.width(),btn_size.height()))
-      self.ibox.setValue(1)
+      self.ibox.setValue(100)
       self.ibox.setToolTip("Iterations")
    
       self.ref_field = QtGui.QLineEdit(self)
@@ -206,7 +234,7 @@ class ReferralService(QtGui.QFrame):
       self.lbox = QtGui.QSpinBox(self)
       self.lbox.setMaximum(999)
       self.lbox.resize(self.lbox.sizeHint())
-      self.lbox.setValue(3)
+      self.lbox.setValue(0)
       self.lbox.setToolTip("Wait interval - lower bound")
       
       self.to_text = QtGui.QLabel(self)
@@ -216,7 +244,7 @@ class ReferralService(QtGui.QFrame):
       self.ubox = QtGui.QSpinBox(self)
       self.ubox.setMaximum(999)
       self.ubox.resize(self.ubox.sizeHint())
-      self.ubox.setValue(15)
+      self.ubox.setValue(0)
       self.ubox.setStyleSheet("")
       self.ubox.setToolTip("Wait interval - upper bound")
 
@@ -238,6 +266,7 @@ class ReferralService(QtGui.QFrame):
       self.persist = QtGui.QCheckBox(self)
       self.persist.setText('Never abort')
       self.persist.setToolTip('Specify whether the macro service should continue even if<BR> Joey think it might be a good idea to call it off (because something unexpected may have happened).')
+      self.persist.setChecked(True)
       
       self.draw_ucp = QtGui.QCheckBox(self)
       self.draw_ucp.setText('Draw UCP')
@@ -318,6 +347,41 @@ class ReferralService(QtGui.QFrame):
       
       macro.user.setCurrent(user)
       
+class Buttons(QtGui.QWidget):
+   def __init__(self, parent):
+      super(Buttons,self).__init__(parent)
+      
+      self.btn = []
+      for i,user in enumerate(macro.info.get('accounts')):
+         self.btn.append(QtGui.QPushButton(user, self))
+         self.btn[-1].setToolTip('This is a <b>QPushButton</b> widget')
+         self.btn[-1].clicked.connect(partial(macro.startMarvel, user, 1))
+         self.btn[-1].resize(self.btn[-1].sizeHint())
+         self.btn[-1].move(0, 25*i)
+         
+      self.btn1 = QtGui.QPushButton('Take screenshot', self)
+      self.btn1.clicked.connect(macro.take_screenshot_adb)
+      self.btn1.resize(self.btn1.sizeHint())
+      self.btn1.move(100,50)
+      
+      self.btn2 = QtGui.QPushButton('GIMP', self)
+      self.btn2.clicked.connect(macro.gimpScreenshot)
+      self.btn2.resize(self.btn2.sizeHint())
+      self.btn2.move(100,75)
+      
+      self.btn3 = QtGui.QPushButton('Clear cache', self)
+      self.btn3.clicked.connect(macro.clearMarvelCache)
+      self.btn3.resize(self.btn3.sizeHint())
+      self.btn3.move(100,100)
+      
+      self.btn4 = QtGui.QPushButton('Check Training', self)
+      self.btn4.clicked.connect(macro.checkTraining)
+      self.btn4.resize(self.btn4.sizeHint())
+      self.btn4.move(100,125)
+      
+      self.custom8_btn = QtGui.QPushButton('Custom 8', self)
+      self.custom8_btn.clicked.connect(macro.custom8)
+      self.custom8_btn.resize(self.custom8_btn.sizeHint())
 
 class EmittingStream(QtCore.QObject):
 
@@ -326,10 +390,10 @@ class EmittingStream(QtCore.QObject):
    def write(self, text):
       self.textWritten.emit(str(text))
 
-class Example(QtGui.QWidget):
+class WoHMacro(QtGui.QWidget):
     
    def __init__(self):
-      super(Example, self).__init__()
+      super(WoHMacro, self).__init__()
 #      self.process = QtCore.QProcess(self)
 #      self.terminal = QtGui.QWidget(self)
 #      sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
@@ -353,119 +417,29 @@ class Example(QtGui.QWidget):
       QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
       
       self.setToolTip('Macro Control GUI')
-
-      print(macro.info.accounts)
-      btn = []
-      for i,user in enumerate(macro.info.accounts.keys()):
-         btn.append(QtGui.QPushButton(user, self))
-         btn[-1].setToolTip('This is a <b>QPushButton</b> widget')
-         btn[-1].clicked.connect(partial(macro.startMarvel, user, 1))
-         btn[-1].resize(btn[-1].sizeHint())
-         btn[-1].move(300, 50+25*i)
-         
-      btn = QtGui.QPushButton('Take screenshot', self)
-      btn.clicked.connect(macro.take_screenshot_adb)
-      btn.resize(btn.sizeHint())
-      btn.move(400,50)
       
-      btn = QtGui.QPushButton('GIMP', self)
-      btn.clicked.connect(macro.gimpScreenshot)
-      btn.resize(btn.sizeHint())
-      btn.move(400,75)
       
-      btn = QtGui.QPushButton('Clear cache', self)
-      btn.clicked.connect(macro.clearMarvelCache)
-      btn.resize(btn.sizeHint())
-      btn.move(400,100)
-      
-      btn = QtGui.QPushButton('Check Training', self)
-      btn.clicked.connect(macro.checkTraining)
-      btn.resize(btn.sizeHint())
-      btn.move(400,125)
-      
-      macro.adbConnect("localhost:5558")
-      devices = macro.adbDevices()
-      
-      #Referrals
-
-      ref_service = ReferralService(self)
-      ref_service.move(50,250)
-      
-#       sbox = QtGui.QSpinBox(self)
-#       sbox.clicked.connect(macro.checkTraining)
-#       sbox.resize(sbox.sizeHint())
-#       sbox.move(400,150)
-
-      
-#      devices = ["255.255.255.255:5555","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1"]
-
-#      listWidget = QtGui.QRadioButton()
-
-
-#      x = bool(int(settings.value("pyuic4x", "0").toString()))
-#  ds    self.pyuic4xCheckBox.setChecked(x)
-
-#      for i,device in enumerate(devices):
-#         btn = QtGui.QRadioButton(device, self)
-##         btn.setToolTip('This is a <b>QPushButton</b> widget')
-#         btn.clicked.connect(partial(macro.setActiveDevice, device, None))
-#         btn.resize(btn.sizeHint())
-#         btn.move(400, 350+25*i)
-         
-#      checkbox = QtGui.QCheckBox("Youwave?", self)
-#      checkbox.toggled.connect(partial(macro.setActiveDevice, None, checkbox ))
-#      checkbox.resize(checkbox.sizeHint())
-#      checkbox.move(250, 350)
-      
-#      tableWidget = QtGui.QTableWidget(self)
-#      tableWidget.setRowCount(len(devices))
-#      tableWidget.setColumnCount(2)
-#      tableWidget.setHorizontalHeaderLabels(["Device ID", "Youwave?"])
-#      tableWidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-#      tableWidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-#      tableWidget.move(50, 350)
-#      
-#      for i,device in enumerate(devices):
-#         
-#         item = QtGui.QTableWidgetItem(device)
-#         item.setTextAlignment(QtCore.Qt.AlignCenter)
-#         tableWidget.setItem(i, 0, item)
-#              
-#         no_text = QtGui.QTableWidgetItem("No")
-#         no_text.setTextAlignment(QtCore.Qt.AlignCenter)
-#         tableWidget.setItem(i, 1, no_text)
-#         
-#      tableWidget.setColumnWidth(0,120)
-#      tableWidget.setColumnWidth(1,70)
-#      tableWidget.resize(tableWidget.sizeHint())
-
-#      tableWidget.resizeColumnsToContents()
-
-#      listWidget = QtGui.QListWidget(self)
-#      
-#      for i in range(10):
-#         item = QtGui.QListWidgetItem("Item %i" % i)
-#         listWidget.addItem(item)
-#       
-#      listWidget.move(250, 450)
-#      listWidget.show()
-#      
-#      
-#      listWidget.resize(200,200)
-#      listWidget.move(300,75)
-#      listWidget.show()
-
-      device_list = DeviceView(self,devices)
-      device_list.move(50,50)
-      
+      self.device_list = DeviceView(self)
+      self.buttons = Buttons(self)
+      self.ref_service = ReferralService(self)
       self.console = MyConsole(self)
-      self.console.move(50,450)
       
-      self.custom8_btn = QtGui.QPushButton('Custom 8', self)
-      self.custom8_btn.clicked.connect(macro.custom8)
-      self.custom8_btn.resize(self.custom8_btn.sizeHint())
-      self.custom8_btn.move(400,210)
+      self.buttons.move(350,10)
+      self.ref_service.move(0,250)
+      self.console.move(0,450)
       
+      
+
+#      self.top_layout = QtGui.QHBoxLayout()
+#      self.top_layout.addWidget(self.device_list)
+#      self.top_layout.addWidget(self.buttons)
+#      
+#      self.full_layout = QtGui.QVBoxLayout()
+#      self.full_layout.addLayout(self.top_layout)
+#      self.full_layout.addWidget(self.ref_service)
+#      self.full_layout.addWidget(self.console)
+#      self.setLayout(self.full_layout)
+#      
 
       self.setGeometry(300, 300, 600, 800)
       self.setWindowTitle('WoH Macro Control')    
@@ -473,12 +447,10 @@ class Example(QtGui.QWidget):
             
 def main():
     
-#    macro.updateSource()
-    
    app = QtGui.QApplication(sys.argv)
    app.setApplicationName('WoH Macro Control GUI')
    
-   ex = Example()
+   ex = WoHMacro()
    
    myStream = MyStream()
    myStream.message.connect(ex.console.on_myStream_message)
@@ -489,4 +461,12 @@ def main():
 
 
 if __name__ == '__main__':
+
+   import os
+   try:
+      if os.path.exists('dist'):
+         os.chdir('dist/woh_macro')
+   except:
+      pass
+
    main()

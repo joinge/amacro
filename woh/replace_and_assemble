@@ -1,0 +1,16 @@
+# http://braiden.org/?p=281
+
+java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./outputM
+
+rm -rf ./unpacked/META-INF
+
+(cd ./unpacked && zip -r - .) > com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk
+
+# generate a keystore if one doesn't already exist
+if [ ! -f ./keystore ] ; then
+   keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme
+fi
+
+jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk patch
+
+zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED.apk

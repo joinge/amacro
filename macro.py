@@ -966,18 +966,18 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
 #   f.write('}')
 #   e.write('}')
 
-def adbConnect(device):
+def adbConnect(device_name):
    
-   print("Connecting to: %s..."%device)
+   print("Connecting to: %s..."%device_name)
    
-   output = myPopen("adb connect %s"%device)
+   output = myPopen("adb connect %s"%device_name)
 
    if re.search("unable|error",output) or output == '':
-      print("ERROR: Unable to connect to: %s"%device)
+      print("ERROR: Unable to connect to: %s"%device_name)
       return False
    else:
       printResult(True)
-      setActiveDevice(device)
+      setActiveDevice(device_name)
       return True
 
 def adbDevices():

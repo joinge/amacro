@@ -723,8 +723,9 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          return 2
          
       
-      left_click((140, 160) + c) # Login Mobage
-      left_click((206, 160) + c) # Login button
+      leftClick((140, 160) + c) # Login Mobage
+      time.sleep(0.3)
+      leftClick((206, 160) + c) # Login button
       
       
       printAction("Searching for sign up screen...")
@@ -742,10 +743,10 @@ def createNewFakeAccount(referral="", draw_ucp=False):
             emailbase = emailbase + tmp2[int(np.random.uniform(0, len(tmp2)-1e-9))]    
             printAction("Wiping both fields...")
             # Wipe both fields:
-            left_click((244, 73) + c) # Email field
+            leftClick((244, 73) + c) # Email field
             if i!=0:
                for i in range(50): backspace()
-            left_click((244, 118) + c) # Password field
+            leftClick((244, 118) + c) # Password field
             if i!=0:
                for i in range(50): backspace()  
                
@@ -754,26 +755,28 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          
          printAction("Trying with email:")
          print(email)
-         left_click((244, 73) + c) # Email field
-         enter_text(email)
+         leftClick((244, 73) + c) # Email field
+         time.sleep(0.3)
+         enterText(email)
          if device.isYouwave():
             backspace()
          
          printAction("Entering password:")
          print(password)
-         left_click((244, 118) + c) # Password field
+         leftClick((244, 118) + c) # Password field
+         time.sleep(0.3)
          
          # Like usual youwave has problems here...
          if device.isYouwave():
-            enter_text('a')
+            enterText('a')
             for i in range(len(email)):
                right_arrow()
             for i in range(len(email) + 2):
                backspace()
-         enter_text(password)
+         enterText(password)
          if device.isYouwave():
             backspace()
-         left_click((205, 159) + c) # Signup button
+         leftClick((205, 159) + c) # Signup button
          
          printAction("Searching for \"Last Step\" screen...")
          signup_last_screen = locateTemplate('login_signup_last.png', threshold=0.95, retries=20, interval=1)
@@ -783,7 +786,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
             success = True
             break
          
-      left_click((20,140) + c) # Uncheck "Get Mobage news and updates" button
+      leftClick((20,140) + c) # Uncheck "Get Mobage news and updates" button
             
       # Now we must handle the fact that the nick may be invalid
       success = False
@@ -791,11 +794,12 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       username = ''
       for i in range(10):
          
-         left_click((232,105)+c) # Nick field         
-
+         leftClick((232,105)+c) # Nick field         
+         time.sleep(0.3)
+         
          if i==0:
             if device.isYouwave():
-               enter_text('a')
+               enterText('a')
                for i in range(len(email_base+randNums)+2):
                   right_arrow()            
    
@@ -805,26 +809,26 @@ def createNewFakeAccount(referral="", draw_ucp=False):
                for i in range(len(email_base+randNums)+2):
                   backspace()
                   
-            enter_text(name_base)
+            enterText(name_base)
             username = name_base
             if device.isYouwave():
                backspace()
          else:
             new_char = tmp2[int(np.random.uniform(0, len(tmp2)-1e-9))]
-            enter_text(new_char)
+            enterText(new_char)
             username = username + new_char
             if device.isYouwave():
                backspace()            
          
-         left_click((142,172) + c) # Save and Play button
+         leftClick((142,172) + c) # Save and Play button
          
 #          invalid_nick  = locateTemplate('login_signup_invalid_nick.png', threshold=0.95)
          time.sleep(5)
          login_box     = locateTemplate('login_signup_part.png', threshold=0.95)
          
 #          if invalid_nick:
-#             left_click((232,105)+c) # Nick field
-#             enter_text(tmp2[np.random.uniform(0, len(tmp2)-1e-9)])
+#             leftClick((232,105)+c) # Nick field
+#             enterText(tmp2[np.random.uniform(0, len(tmp2)-1e-9)])
             
          if not login_box:
             success = True
@@ -843,14 +847,14 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 #          print(i)
          locateTemplate('mobage_ad.png',              offset=(85,14),  click=True)
          locateTemplate('tutorial_skip.png',          offset=(49,11),  click=True, reuse_last_screenshot=True)
-         left_click((240,150))
+         leftClick((240,150))
          if locateTemplate('tutorial_understood.png', offset=(132,7),  click=True, reuse_last_screenshot=True):
             break
       
       OK = [0]*10
       for i in range(50):
          time.sleep(.5)
-         take_screenshot_adb()
+         takeScreenshot()
 #          if   not OK[0] and locateTemplate('mobage_ad.png',               offset=(85,14),  click=True, reuse_last_screenshot=True): OK[0] = 1
 #          elif not OK[1] and locateTemplate('tutorial_understood.png',     offset=(132,7),  click=True, reuse_last_screenshot=True): OK[1] = 1
 #          elif not OK[2] and locateTemplate('tutorial_skip.png',           offset=(49,11),  click=True, reuse_last_screenshot=True): OK[2] = 1
@@ -863,43 +867,46 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          elif not OK[9] and locateTemplate('tutorial_referral.png',       offset=(124,13), click=True, reuse_last_screenshot=True):
             OK[9] = 1
             break
-         left_click((240,150))
+         leftClick((240,150))
       printResult(True)
       printAction("Time for referral service BABY!!!")
       
-      ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=1)
-      if not ok:
-         printResult(False)
-         print("ERROR: Could not find referral \"OK\" button")
-         return 2 # If the service gets this far without working, it's probably best to call it off.
-      printResult(True)
       printAction("Entering the referral code...")
-      text_field = ok + np.array((0,-33))
-      left_click(text_field)
-      
-#       enter_text('a')
-#       for i in range(3):
-#          right_arrow()            
-#       for i in range(len(name_base)+5):
-#          backspace()
-      enter_text(referral)
-      if device.isYouwave():
-         backspace()
-      
-      left_click(ok)
-      ok2 = locateTemplate('tutorial_almost_finished_ok.png', offset=(92,15), click=True, retries=5, interval=3)
-      printResult(ok)
-      if not ok2:
-         print("ERROR: Could not find almost finished \"OK\" button")
+      success = False
+      for i in range(3):
+         ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=1)
+
+         if ok:
+            text_field = ok + np.array((30,-33))
+            leftClick(text_field)
+            time.sleep(0.3)
+            
+            if i!=0:         
+               for i in range(10): backspace()
+
+            enterText(referral)
+            if device.isYouwave():
+               backspace()
+         
+            leftClick(ok)
+            ok2 = locateTemplate('tutorial_almost_finished_ok.png', offset=(92,15), click=True, retries=4, interval=1)
+            if ok2:
+               success = True
+               break
+
+      printResult(success)
+      if not success:
+         print("ERROR: Unable to process referral code")
          return 2 # If the service gets this far without working, it's probably best to call it off.
 
+         
       printAction("Registering device...")
       register_device = None
       for i in range(10):
          register_device = locateTemplate('tutorial_register_device.png', offset=(124,11), click=True)
          if register_device:
             break
-         left_click((240,150))
+         leftClick((240,150))
 
       if not register_device:
          printResult(False)
@@ -958,11 +965,11 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          return 4
 
       if not locateTemplate('tutorial_skip.png',  offset=(49,11),  click=True, retries=5, interval=1):
-         left_click((150,150))
+         leftClick((150,150))
          
       time.sleep(7)      
-      take_screenshot_adb(SCREEN_PATH+'/ucp_draws/'+user.getCurrent()+'/'+username+'.png')
-      left_click((150,150))
+      takeScreenshot(SCREEN_PATH+'/ucp_draws/'+user.getCurrent()+'/'+username+'.png')
+      leftClick((150,150))
 
       printAction("FINISHED", newline=True)
       
@@ -1054,17 +1061,17 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
 #          
 # 
 #    
-#    enter_text(user)      
+#    enterText(user)      
 #    
 #    if YOUWAVE:
 #       backspace()
 #       
 #    if info.getAdbInfo('screenDensity') == 240:
-#       left_click((76, 174) + c) # Mobage password field
+#       leftClick((76, 174) + c) # Mobage password field
 #    else:
-#       left_click((142, 114) + c) # Mobage password field
+#       leftClick((142, 114) + c) # Mobage password field
 #    if YOUWAVE: # youwave screws this up. Need to insert text, then erase it once
-#       enter_text('a')
+#       enterText('a')
 #       
 #       for i in range(len(user)):
 #          right_arrow()
@@ -1075,17 +1082,17 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
 # #         time.sleep(0.1)
 #    
 #    if password:
-#       enter_text(password)
+#       enterText(password)
 #    else:
-#       enter_text(info.accounts[user])
+#       enterText(info.accounts[user])
 #       
 #    if YOUWAVE:
 #       backspace()
 #       
 #    if info.getAdbInfo('screenDensity') == 240:
-#       left_click((313, 237) + c) # Login button
+#       leftClick((313, 237) + c) # Login button
 #    else:
-#       left_click((207, 157) + c) # Login button
+#       leftClick((207, 157) + c) # Login button
 #       
 #       
 # 
@@ -1120,12 +1127,12 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
 #            ad2 = locateTemplate('home_screen_ad2.png', offset=(90, 20), threshold=0.95, reuse_last_screenshot=True)
 #            if ad or ad2:
 #               if ad:
-#                  left_click(ad) # kills ads
+#                  leftClick(ad) # kills ads
 #               if ad2:
-#                  left_click(ad2) # kills ads
+#                  leftClick(ad2) # kills ads
 #               time.sleep(1)
 #            
-##            left_click((346,551)) # kills ads
+##            leftClick((346,551)) # kills ads
 #            login_success = True
 #            break
 #   
@@ -1452,7 +1459,7 @@ def adb_event(event_no=2, a=None, b=None , c=None):
 #   time.sleep(0.5)  
    #adbSend("/dev/input/event2",3,48,10);
    
-def left_click(loc):
+def leftClick(loc):
     
    global YOUWAVE
 #   adb_event( 2, 0x0003, 0x0039, 0x00000d45 )
@@ -1542,7 +1549,7 @@ def right_arrow():
       print("ERROR: right_arrow() is not implemented for regular phones")   
        
    
-def enter_text(text):
+def enterText(text):
    adb_input(text)
   
 
@@ -1551,25 +1558,25 @@ def adb_login(login_screen_coords, user, password=None):
    c = np.array(login_screen_coords)
    
    if device.getInfo('screenDensity') == 240:
-      left_click((205, 254) + c) # Login Mobage
-      left_click((106, 255) + c) # Login button
-      left_click((76, 108) + c) # Mobage name field
+      leftClick((205, 254) + c) # Login Mobage
+      leftClick((106, 255) + c) # Login button
+      leftClick((76, 108) + c) # Mobage name field
    else:
-      left_click((140, 160) + c) # Login Mobage
-      left_click((74, 160) + c) # Login button
-      left_click((144, 71) + c) # Mobage name field
+      leftClick((140, 160) + c) # Login Mobage
+      leftClick((74, 160) + c) # Login button
+      leftClick((144, 71) + c) # Mobage name field
    
-   enter_text(user)      
+   enterText(user)      
    
    if YOUWAVE:
       backspace()
       
    if device.getInfo('screenDensity') == 240:
-      left_click((76, 174) + c) # Mobage password field
+      leftClick((76, 174) + c) # Mobage password field
    else:
-      left_click((142, 114) + c) # Mobage password field
+      leftClick((142, 114) + c) # Mobage password field
    if YOUWAVE: # youwave screws this up. Need to insert text, then erase it once
-      enter_text('a')
+      enterText('a')
       
       for i in range(len(user)):
          right_arrow()
@@ -1580,17 +1587,17 @@ def adb_login(login_screen_coords, user, password=None):
 #         time.sleep(0.1)
    
    if password:
-      enter_text(password)
+      enterText(password)
    else:
-      enter_text(info.accounts[user])
+      enterText(info.accounts[user])
       
    if YOUWAVE:
       backspace()
       
    if device.getInfo('screenDensity') == 240:
-      left_click((313, 237) + c) # Login button
+      leftClick((313, 237) + c) # Login button
    else:
-      left_click((207, 157) + c) # Login button
+      leftClick((207, 157) + c) # Login button
 #   
 def home_key():
    
@@ -1702,7 +1709,7 @@ def lock_phone():
    power_key()
 
 
-def take_screenshot_adb(filename=None):
+def takeScreenshot(filename=None):
 
 #   Popen("adb shell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
 #          adb pull  /sdcard/screenshot.png screenshot.png >error.log 2>&1", stdout=PIPE, shell=True).stdout.read()
@@ -1817,7 +1824,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
    
    for i in range(retries):
       if not reuse_last_screenshot:
-         take_screenshot_adb()
+         takeScreenshot()
       
       time.sleep(.1)
       try:
@@ -1878,7 +1885,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          template_coords = np.array([template_coords[1], template_coords[0]])
          object_coords = tuple(template_coords + np.array(offset))
          if click:
-            left_click(object_coords)
+            leftClick(object_coords)
             time.sleep(3)
          if print_coeff:
             sys.stdout.write("(%d,%d) " % (object_coords[0], object_coords[1]))
@@ -1896,7 +1903,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          if image_error:
             print(' ')
             printAction("Android error detected and will (hopefully) be dealt with.", newline=True)
-            left_click(image_error)
+            leftClick(image_error)
             time.sleep(10) # In case we hit a "wait" button
             retries = retries + 1
 
@@ -1924,7 +1931,7 @@ def check_if_vnc_error():
 #   ok_button = locateTemplate('vnc_error.png', correlation_threshold=0.992, offset=(318,124))
 #   printResult(not ok_button)
 #   if ok_button:
-#      replay_macro("left_click",offset=ok_button)
+#      replay_macro("leftClick",offset=ok_button)
    pass
       
 def abort_if_vnc_died():
@@ -2044,7 +2051,7 @@ def gotoMyPage():
       printAction("Huh? Unable to find MyPage button!!! That is bad.", newline=True)
       return False
    
-   left_click(mypage_button)
+   leftClick(mypage_button)
    time.sleep(1)
    return True
 
@@ -2073,7 +2080,7 @@ def getMyPageStatus():
          break
       
       else:
-         left_click((200, 200)) # Possibly daily reward screen
+         leftClick((200, 200)) # Possibly daily reward screen
          time.sleep(5)
 #         printNotify('Unable to read MyPage. Daily reward?', 60)
                   
@@ -2082,7 +2089,7 @@ def getMyPageStatus():
       return False
 
    printAction("Running OCR to figure out cards in roster...")
-   take_screenshot_adb()
+   takeScreenshot()
    cards_in_roster_image = preOCR("screenshot_%s.png" % ACTIVE_DEVICE, color_mask=(0, 1, 0), xbounds=(92, 185), ybounds=(195, 241))
    cards_in_roster_string = runOCR(cards_in_roster_image, mode='line')
 
@@ -2137,7 +2144,7 @@ def gotoEventHome():
       printAction("Huh? Unable to find event button!!! That is bad.", newline=True)
       return False
    
-#   left_click(event_fantastic4)
+#   leftClick(event_fantastic4)
    return True
 
    
@@ -2170,7 +2177,7 @@ def eventPlayMission(repeat=1):
          
          elif event_mission_button:
             printAction("Searching for event mission button...")
-            left_click(event_mission_button)
+            leftClick(event_mission_button)
             printResult(event_mission_button)
             time.sleep(3)
             scroll(0, 1000)
@@ -2211,7 +2218,7 @@ def eventPlayMission(repeat=1):
             printResult(event_mission_button)
                   
             if event_mission_button:
-               left_click(event_mission_button)
+               leftClick(event_mission_button)
                time.sleep(3)
                scroll(0, 1000)
                time.sleep(1)
@@ -2223,7 +2230,7 @@ def eventPlayMission(repeat=1):
          
       else:
          
-         left_click(proceed)
+         leftClick(proceed)
       
          printAction("Avaiting event mission screen...")
          mission_success = False
@@ -2264,7 +2271,7 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
    info = {'is_enraged':False}
    keep_assessing = True
    swipe((10, 600), (10, 200))
-   take_screenshot_adb()
+   takeScreenshot()
    while keep_assessing and watchdog > 0:
       keep_assessing = False
       is_enraged = False
@@ -2353,7 +2360,7 @@ def eventKillEnemies(find_enraged=False):
    time.sleep(1)
    
    for i in range(1):
-      take_screenshot_adb()
+      takeScreenshot()
 #      if not i:
 #         swipeReference("event_enemy_info_frame.png", destination=(0,80), reuse_last_screenshot=False)
       enemy_found = False
@@ -2379,7 +2386,7 @@ def eventKillEnemies(find_enraged=False):
 #            offset=(240,-54), threshold=0.92, retries=2, reuse_last_screenshot=False, click=True)
 #         if not event_face_enemy:
 #            return False
-         take_screenshot_adb()
+         takeScreenshot()
          
       if not enemy_found:
          return False
@@ -2392,8 +2399,8 @@ def eventKillEnemies(find_enraged=False):
       if not attack_villain and not support:
          printAction("Unable to find an enemy to attack!", newline=True)
          return False
-#      left_click(event_enemy_corner+np.array((66,164)))
-#      left_click(event_enemy_corner+np.array((66,164)))
+#      leftClick(event_enemy_corner+np.array((66,164)))
+#      leftClick(event_enemy_corner+np.array((66,164)))
 #      time.sleep(1)
 #      swipe((20, 400), (20, 200))
       time.sleep(3)
@@ -2434,21 +2441,21 @@ def eventKillEnemies(find_enraged=False):
       if info['badguy_health'][0] < base_attack and attack_light:
          printResult(True)
          printAction("Attacking with the 1 RDS option...", newline=True)
-         left_click(attack_light)
+         leftClick(attack_light)
          time.sleep(2)
-         left_click(attack_light)
+         leftClick(attack_light)
       elif info['badguy_health'][0] < 4*base_attack and attack_normal:
          printResult(True)
          printAction("Attacking with the 3 RDS option...", newline=True)
-         left_click(attack_normal)
+         leftClick(attack_normal)
          time.sleep(2)
-         left_click(attack_normal)
+         leftClick(attack_normal)
       elif attack_blitz:
          printResult(True)
          printAction("Attacking with the 6 RDS option...", newline=True)
-         left_click(attack_blitz)
+         leftClick(attack_blitz)
          time.sleep(2)
-         left_click(attack_blitz)
+         leftClick(attack_blitz)
          rds6 = True
       else:
          printAction("No attack power left. Quitting...", newline=True)
@@ -2459,7 +2466,7 @@ def eventKillEnemies(find_enraged=False):
       confirmed = False
       taken_out = False
       for i in range(15):
-         left_click((200, 200))
+         leftClick((200, 200))
          final_blow     = locateTemplate("event_final_blow_button.png", threshold=0.85, offset=(74, 24), click=True)
          confirm        = locateTemplate("event_mission_boss_confirm_button.png", offset=(74, 24), click=True, reuse_last_screenshot=True)
          decor          = locateTemplate("mission_top_decor.png", reuse_last_screenshot=True)
@@ -2533,21 +2540,21 @@ def eventKillEnemies(find_enraged=False):
             printResult(True)
             success = True
             printAction("Found \"ask for support\" button. Clicking it...", newline=True)
-            left_click(ask_for_support)
+            leftClick(ask_for_support)
             return True and not rds6
             
          elif reward:
             printResult(True)
             success = True
             printAction("Found \"reward\" button. Clicking it...", newline=True)
-            left_click(reward)
+            leftClick(reward)
             return True and not rds6
          
       if not success:
          printResult(False)
       time.sleep(3)
       return False
-#         left_click(face_the_enemy)
+#         leftClick(face_the_enemy)
 #         time.sleep(3)
 #         
 #         printAction( "Avaiting mission screen..." )
@@ -2656,7 +2663,7 @@ def listSortAlignment(alignment_type):
          printAction("Unable to find alignment \"%s\" button!." % alignment_type, newline=True)
          return False
          
-      left_click(alignment_button)
+      leftClick(alignment_button)
       time.sleep(2)
 
 
@@ -2696,7 +2703,7 @@ def selectCard(card_name, alignment='all'):
       card_coords = locateTemplate("card_%s.png" % card_name, threshold=0.95, offset=(214, 86), ybounds=(0, 550))
       select_bar = locateTemplate("list_select_button_area.png", offset=(18, 26), ybounds=(150, 550), reuse_last_screenshot=True)
       if card_coords and select_bar:
-         left_click([select_bar[0], select_bar[1] + 150])
+         leftClick([select_bar[0], select_bar[1] + 150])
          number_of_cards_selected += 1
          time.sleep(.5)
          break
@@ -2739,12 +2746,12 @@ def markCards(cards_list, alignment='all'):
    number_of_cards_selected = 0
    
    for i in range(15):
-      take_screenshot_adb()
+      takeScreenshot()
       for card in cards_list:
          card_coords = locateTemplate("card_%s.png" % card, threshold=0.95, offset=(214, 86), ybounds=(300, 800), reuse_last_screenshot=True)
          
          if card_coords:
-            left_click([card_coords[0], card_coords[1] + 300])
+            leftClick([card_coords[0], card_coords[1] + 300])
             number_of_cards_selected += 1
             stats.add(card, 1)
             time.sleep(.5)
@@ -2779,7 +2786,7 @@ def sellCards(cards_list, alignment='all'):
       printResult(False)
       return False
    
-   left_click(menu_button)
+   leftClick(menu_button)
    time.sleep(int(uniform(.5, 1)))
    
    roster_button = locateTemplate("main_menu.png", offset=(317, 189), retries=3)
@@ -2790,7 +2797,7 @@ def sellCards(cards_list, alignment='all'):
       return False
    
    printResult(True)
-   left_click(roster_button)
+   leftClick(roster_button)
    time.sleep(int(uniform(1, 2)))
    
    printAction("Searching for \"Sell Cards\" button...")
@@ -2801,7 +2808,7 @@ def sellCards(cards_list, alignment='all'):
       printAction("Unable to find \"Sell Cards\" button!.", newline=True)
       return False
 
-   left_click(sell_cards_button)
+   leftClick(sell_cards_button)
    time.sleep(1)
    
    cards_found = markCards(cards_list, alignment='all')
@@ -2819,7 +2826,7 @@ def sellCards(cards_list, alignment='all'):
       printAction("Unable to find \"Sell Selected\" button", newline=True)
       return False
 
-   left_click(sell_selected_button)
+   leftClick(sell_selected_button)
    time.sleep(3)
    
    scroll(0, 1000)
@@ -2829,7 +2836,7 @@ def sellCards(cards_list, alignment='all'):
       printAction("Unable to find \"Sell\" button", newline=True)
       return False
       
-   left_click(sell_button)
+   leftClick(sell_button)
    printResult(True)
    time.sleep(3)
 
@@ -2857,7 +2864,7 @@ def boostCard(card_name, cards_list, alignment='all'):
       printAction("Huh? Unable to find boost button!!! That is bad.", newline=True)
       return False
    
-   left_click(boost_from_fuse)
+   leftClick(boost_from_fuse)
    time.sleep(4)
    
    swipe((240, 650), (240, 100))
@@ -2870,7 +2877,7 @@ def boostCard(card_name, cards_list, alignment='all'):
    printResult(multiple_cards_link)
    
    if multiple_cards_link:
-      left_click(multiple_cards_link)
+      leftClick(multiple_cards_link)
       time.sleep(3)
       swipe((240, 650), (240, 100))
       time.sleep(1)
@@ -2895,12 +2902,12 @@ def boostCard(card_name, cards_list, alignment='all'):
    number_of_cards_selected = 0
    
    for i in range(11):
-      take_screenshot_adb()
+      takeScreenshot()
       for card in cards_list:
          card_coords = locateTemplate("card_%s.png" % card, threshold=0.95, offset=(214, 86), ybounds=(300, 800), reuse_last_screenshot=True)
          
          if card_coords:
-            left_click([card_coords[0], card_coords[1] + 300])
+            leftClick([card_coords[0], card_coords[1] + 300])
             number_of_cards_selected += 1
             time.sleep(.5)
             break
@@ -2923,7 +2930,7 @@ def boostCard(card_name, cards_list, alignment='all'):
       printAction("Unable to find \"Boost\" button", newline=True)
       return True
 
-   left_click(boost_now)
+   leftClick(boost_now)
    time.sleep(3)
    
    printAction("Clicking \"Boost\" button (second time)...")
@@ -2936,7 +2943,7 @@ def boostCard(card_name, cards_list, alignment='all'):
       printAction("Unable to find \"Boost\" button", newline=True)
       return True
    
-   left_click(boost_now)
+   leftClick(boost_now)
    
    printAction("Waiting for boost finished screen...")
    time.sleep(5)
@@ -2948,9 +2955,9 @@ def boostCard(card_name, cards_list, alignment='all'):
       return True
    
    time.sleep(10)
-   left_click((200, 200))
+   leftClick((200, 200))
    time.sleep(3)
-   left_click((200, 200))
+   leftClick((200, 200))
    time.sleep(4)
       
    return True
@@ -2971,9 +2978,9 @@ def fuseCard(card_type, alignment='all'):
       return
    
    if fusion_button_coords:
-      left_click(fusion_button_coords)
+      leftClick(fusion_button_coords)
    else:
-      left_click(fusion_button2_coords)
+      leftClick(fusion_button2_coords)
       
    time.sleep(int(uniform(.5, 1)))
    
@@ -2991,7 +2998,7 @@ def fuseCard(card_type, alignment='all'):
             
       if change_base_card_coords:
          time.sleep(.3)
-         left_click(change_base_card_coords)
+         leftClick(change_base_card_coords)
          time.sleep(1)
          break
          
@@ -3024,7 +3031,7 @@ def fuseCard(card_type, alignment='all'):
       return False
    
    time.sleep(1)
-   left_click(fuse_this_card_button_coords)
+   leftClick(fuse_this_card_button_coords)
    time.sleep(4) # The fusion thing takes some time.
    
    printAction("Waiting for first fusion screen...")
@@ -3038,7 +3045,7 @@ def fuseCard(card_type, alignment='all'):
 #      ironman_fused_screen1 = locateTemplate("fusion_ironman_fused1.png", offset=(155,200), retries=5)
 #            
 #      if ironman_fused_screen1:
-#         left_click(ironman_fused_screen1)
+#         leftClick(ironman_fused_screen1)
 #         break
    
    printResult(rarity_upgraded) 
@@ -3048,13 +3055,13 @@ def fuseCard(card_type, alignment='all'):
    
    time.sleep(1)
    stats.add(card_type, 2)
-   left_click(rarity_upgraded)
+   leftClick(rarity_upgraded)
    time.sleep(1)
    
    printAction("Waiting for fusion finished screen...")
    for i in range(10):
       time.sleep(int(uniform(1, 2)))
-      left_click(rarity_upgraded)
+      leftClick(rarity_upgraded)
       fusion_finished = locateTemplate("fusion_finished.png", offset=(240, 110), retries=3)
             
       if fusion_finished:
@@ -3084,7 +3091,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       printResult(False)
       return False
    
-   left_click(menu_button)
+   leftClick(menu_button)
    time.sleep(1)
    
    player_search_button = locateTemplate("main_menu.png", offset=(107, 340), retries=3)
@@ -3095,7 +3102,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       return False
    
    printResult(True)
-   left_click(player_search_button)
+   leftClick(player_search_button)
    time.sleep(2)
    
    printAction("Entering receiver name...")
@@ -3106,16 +3113,16 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       printAction("Unable to find text field to enter receiver!.", newline=True)
       return False
 
-   left_click(text_field)
+   leftClick(text_field)
    time.sleep(1)
-   enter_text(receiver)
+   enterText(receiver)
    time.sleep(1)
    search = locateTemplate("player_search_button.png", offset=(57, 17), print_coeff=False, reuse_last_screenshot=True)
    time.sleep(1)
-   left_click(search) # Mobage password field
+   leftClick(search) # Mobage password field
    time.sleep(3)
    printAction("Clicking receiver name...")
-   left_click((345, 672))
+   leftClick((345, 672))
    time.sleep(3)
    
    trade = locateTemplate("player_info_trade_button.png", offset=(55, 14), retries=3)
@@ -3125,7 +3132,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       printAction("Unable to find trade button on player info page!.", newline=True)
       return False
 
-   left_click(trade)
+   leftClick(trade)
    time.sleep(2)
    
    one_or_more_card_found = False
@@ -3139,7 +3146,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
          return False
       
       time.sleep(1)
-      left_click(trade_card)
+      leftClick(trade_card)
       time.sleep(3)
       printResult(trade_card)
       
@@ -3168,7 +3175,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       return False
    
    time.sleep(1)
-   left_click(trade_silver)
+   leftClick(trade_silver)
    time.sleep(3)
    printResult(trade_silver)
    
@@ -3180,14 +3187,14 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       printAction("Unable to silver text field!.", newline=True)
       return False
    
-   left_click(text_field)
+   leftClick(text_field)
    time.sleep(1)
-   enter_text("1")
+   enterText("1")
    time.sleep(1)
-   left_click((453, 757))
+   leftClick((453, 757))
 #   add = locateTemplate("add_button.png", offset=(46,17), reuse_last_screenshot=True)
 #   time.sleep(1)
-#   left_click(add) # Mobage password field
+#   leftClick(add) # Mobage password field
    time.sleep(3)
    
    scroll(0, 1000)
@@ -3203,7 +3210,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       printAction("Huh? Unable to find \"Offer Trade\" button!!! That is bad.", newline=True)
       return False
    
-   left_click(offer_trade)
+   leftClick(offer_trade)
    time.sleep(3)
 
    return True
@@ -3251,7 +3258,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
          else:
             printAction("Navigating to missions list...", newline=True)
             initial_run = False
-            left_click((181, 774)) # mission button
+            leftClick((181, 774)) # mission button
             time.sleep(3)
             scroll(0, 1000)
    #         swipe((250,390),(250,80))
@@ -3262,7 +3269,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
             if not operations_button:
                return True
             #time.sleep(2)
-            #left_click((240,602)) #operations button
+            #leftClick((240,602)) #operations button
             
             time.sleep(3)
             printAction("Locating mission %d button..." % mission_number[0])
@@ -3284,7 +3291,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
                
                return True # Retry
             
-            left_click(mission_button_coords)
+            leftClick(mission_button_coords)
             time.sleep(int(uniform(1, 2)))
             #printAction( "Navigating to mission %d-%d..."%mission_number, newline=True )
             scroll(0, 1000)
@@ -3306,7 +3313,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
          
       else:
          initial_run = False
-         left_click(mission_button_coords)
+         leftClick(mission_button_coords)
          printAction("Avaiting mission screen...")
          mission_success = False
          for i in range(10):
@@ -3404,7 +3411,7 @@ def playNewestMission(repeat=50):
 
             mission_button = locateTemplate('mission_button.png', offset=(49, 13), print_coeff=False, reuse_last_screenshot=True)
             
-            left_click(mission_button) # mission button
+            leftClick(mission_button) # mission button
             time.sleep(3)
          
             printAction("Searching for newest mission button...")
@@ -3419,7 +3426,7 @@ def playNewestMission(repeat=50):
             repeat = repeat + 1
                     
       else:
-         left_click(mission_newest_button)
+         leftClick(mission_newest_button)
          printAction("Avaiting newest mission screen...")
          mission_success = False
          for i in range(30):
@@ -3592,12 +3599,12 @@ def startMarvel(user, attempts=3, password=None, enable_cache=False):
             ad2 = locateTemplate('home_screen_ad2.png', offset=(90, 20), threshold=0.95, reuse_last_screenshot=True)
             if ad or ad2:
                if ad:
-                  left_click(ad) # kills ads
+                  leftClick(ad) # kills ads
                if ad2:
-                  left_click(ad2) # kills ads
+                  leftClick(ad2) # kills ads
                time.sleep(1)
             
-#            left_click((346,551)) # kills ads
+#            leftClick((346,551)) # kills ads
             login_success = True
             break
          
@@ -3988,7 +3995,7 @@ def checkRaid(health_limit):
 #      confirmed = False
 #      taken_out = False
 #      for i in range(10):
-#         left_click((200, 200))
+#         leftClick((200, 200))
 #         final_blow = locateTemplate("event_final_blow_button.png", threshold=0.85, offset=(74, 24), click=True)
 #         confirm = locateTemplate("event_mission_boss_confirm_button.png", offset=(74, 24), click=True, reuse_last_screenshot=True)
 #         decor = locateTemplate("mission_top_decor.png", reuse_last_screenshot=True)
@@ -4017,14 +4024,14 @@ def checkRaid(health_limit):
 #            printResult(True)
 #            success = True
 #            printAction("Found \"ask for support\" button. Clicking it...", newline=True)
-#            left_click(ask_for_support)
+#            leftClick(ask_for_support)
 #            break
 #            
 #         elif reward:
 #            printResult(True)
 #            success = True
 #            printAction("Found \"reward\" button. Clicking it...", newline=True)
-#            left_click(reward)
+#            leftClick(reward)
 #            break
 #         
 #      if not success:
@@ -4881,8 +4888,9 @@ if __name__ == "__main__":
    user.setCurrent("Joey")
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
-   createMultipleNewFakeAccounts(500, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
-
+#   createMultipleNewFakeAccounts(500, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts(290, interval=(0,0), referral="npy855717", never_abort=True, draw_ucp=False)
+   
 # Dented
 #    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
    
@@ -4915,7 +4923,7 @@ if __name__ == "__main__":
 #    locateTemplate("mission_2_4.png")
 #   setActiveDevice("00190e8364f46e", youwave=False)
 #   event7(True)
-#   take_screenshot_adb()
+#   takeScreenshot()
 #   custom20()
 #   checkRaid()
 #    playNewestMission()

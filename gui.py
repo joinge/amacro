@@ -360,7 +360,7 @@ class Buttons(QtGui.QWidget):
          self.btn[-1].move(0, 25*i)
          
       self.btn1 = QtGui.QPushButton('Take screenshot', self)
-      self.btn1.clicked.connect(macro.take_screenshot_adb)
+      self.btn1.clicked.connect(macro.takeScreenshot)
       self.btn1.resize(self.btn1.sizeHint())
       self.btn1.move(100,50)
       

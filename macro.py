@@ -671,7 +671,7 @@ def rebuildAPK(newid="a00deadbeef"):
 #       myPopen('keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme')
 
    if os.name == "nt":
-      myPopen('lib\jarsigner.exe  -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch')
+      myPopen('lib\jarsigner.exe  -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch')
    else:
       myPopen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch')
 
@@ -686,7 +686,9 @@ def rebuildAPK(newid="a00deadbeef"):
    printAction("   Reinstall the APK...", newline=True)
    if os.name == "nt":
       myPopen('..\adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+      time.sleep(2)
       myPopen('..\adb.exe %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
+      time.sleep(2)
    else:
       myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
       myPopen('adb %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)

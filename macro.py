@@ -685,9 +685,9 @@ def rebuildAPK(newid="a00deadbeef"):
 
    printAction("   Reinstall the APK...", newline=True)
    if os.name == "nt":
-      myPopen('..\adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+      print(myPopen('..\adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE))
       time.sleep(2)
-      myPopen('..\adb.exe %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
+      print(myPopen('..\adb.exe %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE))
       time.sleep(2)
    else:
       myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)

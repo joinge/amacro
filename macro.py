@@ -655,30 +655,41 @@ def rebuildAPK(newid="a00deadbeef"):
       os.rmdir('./unpacked/META-INF')
    except:
       pass
-
+  
    printAction("   Zip the code into an APK...", newline=True)
    # Step 5: Zip up apk
    os.chdir('unpacked')
-   myPopen('zip -r - . > ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk')
+   if os.name == "nt":
+      myPopen('..\lib\7z.exe a -tzip -r ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk .')
+   else:   
+      myPopen('zip -r - . > ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk')
    os.chdir('..')
 
    printAction("   Sign the APK...", newline=True)
    # Step 6: generate a keystore if one doesn't already exist
-   if not os.path.exists('./keystore'):
-      myPopen('keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme')
+#    if not os.path.exists('./keystore'):
+#       myPopen('keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme')
 
-   # Resign
-   myPopen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch')
+   if os.name == "nt":
+      myPopen('lib\jarsigner.exe  -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch')
+   else:
+      myPopen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch')
+
 
    printAction("   Zipalign the APK...", newline=True)
-   # Realign zip
-   myPopen('zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
+   if os.name == "nt":
+      myPopen('lib\zipalign.exe -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
+   else:
+      myPopen('zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
 #   zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED.apk
 
    printAction("   Reinstall the APK...", newline=True)
-   # Reinstall new apk
-   myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
-   myPopen('adb %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
+   if os.name == "nt":
+      myPopen('..\adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+      myPopen('..\adb.exe %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
+   else:
+      myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+      myPopen('adb %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
          
    os.chdir('..')
    

@@ -660,7 +660,7 @@ def rebuildAPK(newid="a00deadbeef"):
    # Step 5: Zip up apk
    os.chdir('unpacked')
    if os.name == "nt":
-      myPopen('..\lib\7z.exe a -tzip -r ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk .')
+      myPopen('..\lib\7z.exe a -tzip -r ..\com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk .')
    else:   
       myPopen('zip -r - . > ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk')
    os.chdir('..')

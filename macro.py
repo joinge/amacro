@@ -686,8 +686,8 @@ def rebuildAPK(newid="a00deadbeef"):
    printAction("   Reinstall the APK...", newline=True)
    os.chdir('..')
    if os.name == "nt":
-      print(Popen('adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE, shell=True, stdout=PIPE).stdout.read())
-      print(Popen('adb.exe %s install woh\com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE, shell=True, stdout=PIPE).stdout.read())
+      myPopen('adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+      myPopen('adb.exe %s install woh\com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
    else:
       myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
       myPopen('adb %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
@@ -989,7 +989,6 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
 def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", never_abort=False, draw_ucp=False):
    
-   retcode_count = [0,0,0,0,0]
 
    def printSummary():
       printAction("",newline=True)
@@ -1024,49 +1023,62 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
       else:
          printAction("WARNING: This return code is unknown",newline=True)
       
-      printAction("",newline=True)
-      printAction("Total Summary: %d successes, %d soft errors, %d bad errors, %d crashes"%(retcode_count[0],retcode_count[1],retcode_count[2],retcode_count[3]), newline=True)
-      printAction("Total Summary: %d referrals made successfully."%(retcode_count[0]+retcode_count[4]), newline=True)
-   
+      for i in range(len(iterations)):
+         retcode_count = retcode_counts[i]
+         printAction("",newline=True)
+         printAction("Refcode:       %s"%referral[i], newline=True)
+         printAction("Total Summary: %d successes, %d soft errors, %d bad errors, %d crashes"%(retcode_count[0],retcode_count[1],retcode_count[2],retcode_count[3]), newline=True)
+         printAction("Total Summary: %d referrals made successfully."%(retcode_count[0]+retcode_count[4]), newline=True)
+      
       return True
    
-   i=0
-   watchdog = int(1.2*iterations)
-   while iterations > 0 and watchdog > 0:
-      i = i + 1
-#    for i in range(iterations):
+   
+   if type(iterations) == int and type(referral) == str:
+      iterations = [iterations]
+      referral   = [referral]
       
-      print("")
-      print("REFERRAL SERVICE: Iteration %d"%i)
       
-      try:
-         retcode = createNewFakeAccount(referral=referral, draw_ucp=draw_ucp)
-      except:
-         retcode = 3
+   retcode_counts = []
+   for iteration, ref_code in zip(iterations, referral):
+   
+      retcode_counts.append([0,0,0,0,0])
+      i=0
+      watchdog = int(1.3*iterations)
+      while iteration > 0 and watchdog > 0:
+         i = i + 1
+   #    for i in range(iterations):
          
-      if retcode == None:
-         retcode = 3
+         print("")
+         print("REFERRAL SERVICE: Iteration %d"%i)
          
-      # Decrement iterations left the ref. was successful
-      if retcode == 0 or retcode == 4:
-         iterations = iterations - 1
-      
-      # Decrement watchdog regardless
-      watchdog = watchdog - 1
-      retcode_count[retcode] = retcode_count[retcode] + 1
-      
-      try:
-         if not printSummary():
-            break 
-      except Exception as e:
-         printAction("ERROR: Unable to print summary")
-         print(e)
+         try:
+            retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
+         except:
+            retcode = 3
+            
+         if retcode == None:
+            retcode = 3
+            
+         # Decrement iterations left the ref. was successful
+         if retcode == 0 or retcode == 4:
+            iteration = iteration - 1
          
-      wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
-      
-      printAction("Waiting for roughly %d minutes and %d seconds..."%(wait_time/60,wait_time%60),newline=True)
-      
-      time.sleep(wait_time)
+         # Decrement watchdog regardless
+         watchdog = watchdog - 1
+         retcode_counts[-1][retcode] = retcode_counts[-1][retcode] + 1
+         
+         try:
+            if not printSummary():
+               break 
+         except Exception as e:
+            printAction("ERROR: Unable to print summary")
+            print(e)
+            
+         wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
+         
+         printAction("Waiting for roughly %d minutes and %d seconds..."%(wait_time/60,wait_time%60),newline=True)
+         
+         time.sleep(wait_time)
       
       
 #       for i in range(10):

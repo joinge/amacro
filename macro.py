@@ -1043,7 +1043,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
    
       retcode_counts.append([0,0,0,0,0])
       i=0
-      watchdog = int(1.3*iterations)
+      watchdog = int(1.3*iteration)
       while iteration > 0 and watchdog > 0:
          i = i + 1
    #    for i in range(iterations):

@@ -650,10 +650,12 @@ def rebuildAPK(newid="a00deadbeef"):
             with open(root+'/'+file, 'w') as smali_file:
                smali_file.write(text_out)
              
-   printAction("   Reasemble code back to bytecode...", newline=True)
+   printAction("   Reassemble code back to bytecode...", newline=True)
    # Step 3: Assemble
-   myPopen('java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output_current')
-
+   if os.name == "nt":
+      myPopen('lib\java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output_current')
+   else:
+      myPopen('java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output_current')
    # Step 4: Remove signature, we will resign later (needed?)
    try:
       os.rmdir('./unpacked/META-INF')
@@ -666,6 +668,10 @@ def rebuildAPK(newid="a00deadbeef"):
    if os.name == "nt":
       import shutil
       shutil.make_archive("WOHU", "zip", "unpacked")
+      try:
+         os.remove('WOHU.apk')
+      except:
+         pass
       os.rename('WOHU.zip','WOHU.apk')
    else:   
       os.chdir('unpacked')

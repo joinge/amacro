@@ -125,7 +125,7 @@ sell_cards = ['common_mrfantastic']
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename=TEMP_PATH+'macro.log',
+                    filename=TEMP_PATH+'/macro.log',
                     filemode='w')
 # define a Handler which writes INFO messages or higher to the sys.stderr
 console = logging.StreamHandler()
@@ -553,7 +553,11 @@ def getBaseName():
       
          # Parse is and retrieve the list of nicks between 4-10 characters long
          nick_list = re.findall('\s+([A-Z][a-zA-Z]{3,9})</a></li>', nick_seed_page)
-         printResult(True)
+         
+         if len(nick_list) == 0:
+            printResult(False)
+            printAction('Unable to parse the internet page. Internet problem?', newline=True, msg_type='error')
+            return None
          
       except:
          printResult(False)
@@ -658,12 +662,15 @@ def rebuildAPK(newid="a00deadbeef"):
   
    printAction("   Zip the code into an APK...", newline=True)
    # Step 5: Zip up apk
-   os.chdir('unpacked')
+
    if os.name == "nt":
-      myPopen('..\lib\7z.exe a -tzip -r ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk .')
+      import shutil
+      shutil.make_archive("WOHU", "zip", "unpacked")
+      os.rename('WOHU.zip','WOHU.apk')
    else:   
-      myPopen('zip -r - . > ../com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk')
-   os.chdir('..')
+      os.chdir('unpacked')
+      myPopen('zip -r - . > ../WOHU.apk')
+      os.chdir('..')
 
    printAction("   Sign the APK...", newline=True)
    # Step 6: generate a keystore if one doesn't already exist
@@ -671,27 +678,28 @@ def rebuildAPK(newid="a00deadbeef"):
 #       myPopen('keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme')
 
    if os.name == "nt":
-      myPopen('lib\jarsigner.exe  -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch')
+      myPopen('lib\jarsigner.exe  -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore keystore -storepass changeme WOHU.apk patch')
    else:
-      myPopen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk patch')
-
+      myPopen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme WOHU.apk patch')
 
    printAction("   Zipalign the APK...", newline=True)
    if os.name == "nt":
-      myPopen('lib\zipalign.exe -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
+      myPopen('lib\zipalign.exe -f -v 4 WOHU.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
    else:
-      myPopen('zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED_current.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
-#   zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.UNALIGNED.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED.apk
+      myPopen('zipalign -f -v 4 WOHU.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
+#   zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.WOHU.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED.apk
+   os.remove('WOHU.apk')
 
    printAction("   Reinstall the APK...", newline=True)
+   os.chdir('..')
    if os.name == "nt":
-      myPopen('..\adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
-      myPopen('..\adb.exe %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
+      myPopen('adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+      myPopen('adb.exe %s install woh\com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
    else:
       myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
-      myPopen('adb %s install com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
+      myPopen('adb %s install woh/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
          
-   os.chdir('..')
+#   os.chdir('..')
    
    printAction("   Finished. New ID:")
    print(newid)
@@ -988,7 +996,6 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
 def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", never_abort=False, draw_ucp=False):
    
-   retcode_count = [0,0,0,0,0]
 
    def printSummary():
       printAction("",newline=True)
@@ -998,7 +1005,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
          if not never_abort:
             return False
          else:
-            printAction("User asked to never abort. Will keep going...")
+            printAction("User asked to never abort. Will keep going...",newline=True)
       
       if retcode == 3:
          printAction("Referral script crashed! Bad bad bad!",newline=True)
@@ -1023,49 +1030,62 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
       else:
          printAction("WARNING: This return code is unknown",newline=True)
       
-      printAction("",newline=True)
-      printAction("Total Summary: %d successes, %d soft errors, %d bad errors, %d crashes"%(retcode_count[0],retcode_count[1],retcode_count[2],retcode_count[3]), newline=True)
-      printAction("Total Summary: %d referrals made successfully."%(retcode_count[0]+retcode_count[4]), newline=True)
-   
+      for i in range(len(iterations)):
+         retcode_count = retcode_counts[i]
+         printAction("",newline=True)
+         printAction("Refcode:       %s"%referral[i], newline=True)
+         printAction("Total Summary: %d successes, %d soft errors, %d bad errors, %d crashes"%(retcode_count[0],retcode_count[1],retcode_count[2],retcode_count[3]), newline=True)
+         printAction("Total Summary: %d referrals made successfully."%(retcode_count[0]+retcode_count[4]), newline=True)
+      
       return True
    
-   i=0
-   watchdog = int(1.2*iterations)
-   while iterations > 0 and watchdog > 0:
-      i = i + 1
-#    for i in range(iterations):
+   
+   if type(iterations) == int and type(referral) == str:
+      iterations = [iterations]
+      referral   = [referral]
       
-      print("")
-      print("REFERRAL SERVICE: Iteration %d"%i)
       
-      try:
-         retcode = createNewFakeAccount(referral=referral, draw_ucp=draw_ucp)
-      except:
-         retcode = 3
+   retcode_counts = []
+   for iteration, ref_code in zip(iterations, referral):
+   
+      retcode_counts.append([0,0,0,0,0])
+      i=0
+      watchdog = int(1.3*iteration)
+      while iteration > 0 and watchdog > 0:
+         i = i + 1
+   #    for i in range(iterations):
          
-      if retcode == None:
-         retcode = 3
+         print("")
+         print("REFERRAL SERVICE: Iteration %d"%i)
          
-      # Decrement iterations left the ref. was successful
-      if retcode == 0 or retcode == 4:
-         iterations = iterations - 1
-      
-      # Decrement watchdog regardless
-      watchdog = watchdog - 1
-      retcode_count[retcode] = retcode_count[retcode] + 1
-      
-      try:
-         if not printSummary():
-            break 
-      except Exception as e:
-         printAction("ERROR: Unable to print summary")
-         print(e)
+         try:
+            retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
+         except:
+            retcode = 3
+            
+         if retcode == None:
+            retcode = 3
+            
+         # Decrement iterations left the ref. was successful
+         if retcode == 0 or retcode == 4:
+            iteration = iteration - 1
          
-      wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
-      
-      printAction("Waiting for roughly %d minutes and %d seconds..."%(wait_time/60,wait_time%60),newline=True)
-      
-      time.sleep(wait_time)
+         # Decrement watchdog regardless
+         watchdog = watchdog - 1
+         retcode_counts[-1][retcode] = retcode_counts[-1][retcode] + 1
+         
+         try:
+            if not printSummary():
+               break 
+         except Exception as e:
+            printAction("ERROR: Unable to print summary")
+            print(e)
+            
+         wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
+         
+         printAction("Waiting for roughly %d minutes and %d seconds..."%(wait_time/60,wait_time%60),newline=True)
+         
+         time.sleep(wait_time)
       
       
 #       for i in range(10):
@@ -1270,7 +1290,7 @@ def newAndroidId():
       return ''.join(np.random.uniform(0,10-1e-9, size=int(np.random.uniform(15, 18))).astype(int).astype('str'))
    
    else:
-      print("ERROR: Android ID creation for this device type is not supported!!!")
+      print("Android ID creation for this device type is not supported!!!", type='error')
       return None
 def setAndroidId(user=None, newid='0' * 15):
    
@@ -1342,29 +1362,55 @@ def exitMarvel():
    
    myPopen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android" % ADB_ACTIVE_DEVICE)
 
-def printResult(res):
+msg_queue = multiprocessing.Queue()
+def print(arg, **kwargs):
+   
+   msg = ''
+   if not msg_queue.empty():
+      msg = msg_queue.get()
+   
+   if 'type' in kwargs:
+      severity = kwargs.pop('type')
+      getattr(logging, severity)(msg+arg,**kwargs)
+   else:
+      logging.debug(msg+arg,**kwargs)
       
+   __builtins__.print(msg+arg, **kwargs)
+
+def printResult(res, msg_type='debug'):
+   global msg_queue
+   msg = ''
+   
+   if not msg_queue.empty():
+      msg = msg_queue.get()
+      
+#   logging.debug('Happy Hoppy')
    if res:
+      getattr(logging, msg_type)(msg.ljust(PAD, ' ')+':)')
       sys.stdout.write(":)")
    else:
+      getattr(logging, msg_type)(msg.ljust(PAD, ' ')+':s')
       sys.stdout.write(":s")
       
    sys.stdout.flush()
    sys.stdout.write("\n")
 
-def printAction(str, res=None, newline=False):
+def printAction(str, res=None, newline=False, msg_type='debug'):
    string = "   %s" % str
+   global msg_queue
       
    if newline:
-#      logging.debug(string.ljust(PAD, ' '))
+      getattr(logging, msg_type)(string)
+#      logging.debug(string)
       sys.stdout.write(string.ljust(PAD, ' '))
       sys.stdout.flush()
       sys.stdout.write("\n")
    else:
+      msg_queue.put(string.ljust(PAD, ' '), True)
       sys.stdout.write(string.ljust(PAD, ' '))
       sys.stdout.flush()
    if res:
-      printResult(res)
+      printResult(res, msg_type=msg_type)
       
 def printNotify(message, timeout=30):
    print("NOTIFICATION: " + message)
@@ -1761,8 +1807,8 @@ def takeScreenshot(filename=None):
       cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png' % ADB_ACTIVE_DEVICE
       cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s"' % (ADB_ACTIVE_DEVICE, output)
     
-      myPopen(cmd1)
-      myPopen(cmd2)
+      myPopen(cmd1, stderr='devnull')
+      myPopen(cmd2, stderr='devnull')
       
    
    # adb pull /dev/graphics/fb0 img.raw
@@ -4899,8 +4945,8 @@ if __name__ == "__main__":
    user.setCurrent("Joey")
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
-#   createMultipleNewFakeAccounts(500, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
-   createMultipleNewFakeAccounts(290, interval=(0,0), referral="npy855717", never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts(100, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
+#   createMultipleNewFakeAccounts(290, interval=(0,0), referral="npy855717", never_abort=True, draw_ucp=False)
    
 # Dented
 #    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)

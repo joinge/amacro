@@ -1,13 +1,17 @@
-#cnee --record --events-to-record -1 --mouse --keyboard -o /tmp/xnee.xns -e /tmp/xnee.log -v
+# cnee --record --events-to-record -1 --mouse --keyboard -o /tmp/xnee.xns -e /tmp/xnee.log -v
 
-#cnee --record --seconds-to-record 150 --mouse --keyboard -o joinge.xns -e joinge.log -v
+# cnee --record --seconds-to-record 150 --mouse --keyboard -o joinge.xns -e joinge.log -v
 
 
 from subprocess import Popen, PIPE
-import multiprocessing, os
-devnull = open(os.devnull,'w')
+import logging
+import multiprocessing
+import os
+devnull = open(os.devnull, 'w')
 
-class MyPopen( multiprocessing.Process ):
+logging.getLogger('')
+
+class MyPopen(multiprocessing.Process):
    def __init__(self, queue, *args, **kwargs):
 #      super(Run,self).__init__()
       multiprocessing.Process.__init__(self)
@@ -19,16 +23,16 @@ class MyPopen( multiprocessing.Process ):
       
       if 'stdout' in self.kwargs:
          if self.kwargs['stdout'] == 'devnull':
-            self.kwargs['stdout'] = devnull
+            self.kwargs['stdout'] = PIPE
             self.SUPPRESS_OUTPUT = True
          else:
             self.stdout = kwargs['stdout']   
       else:
          self.kwargs['stdout'] = PIPE
-         
+      
       if 'stderr' in self.kwargs:
          if self.kwargs['stderr'] == 'devnull':
-            self.kwargs['stderr'] = devnull
+            self.kwargs['stderr'] = PIPE
             self.SUPPRESS_OUTPUT = True
          else:
             self.stdout = kwargs['stderr']   
@@ -39,18 +43,20 @@ class MyPopen( multiprocessing.Process ):
          self.kwargs['shell'] = True
          
            
-   def run ( self ):
+   def run (self):
       
-      if self.SUPPRESS_OUTPUT:
-         Popen(*self.args, **self.kwargs).wait()
-#          Popen('adb shell /system/bin/screencap -p /sdcard/screenshot.png', stdout=devnull, shell=True).wait()
-#          self.queue.put(0)
-      else:
-         out = Popen(*self.args, **self.kwargs).stdout.read()
-         self.queue.put(out)
+      proc = Popen(*self.args, **self.kwargs)
+      sout = proc.stdout.read()
+      serr = proc.stderr.read()
+      logging.debug(sout)
+      if serr:
+         logging.error(serr)
+         
+      if not self.SUPPRESS_OUTPUT:
+         self.queue.put(sout)
 
 
-class MyRun( multiprocessing.Process ):
+class MyRun(multiprocessing.Process):
    def __init__(self, function, queue, *args, **kwargs):
       multiprocessing.Process.__init__(self)
       self.function = function
@@ -58,10 +64,11 @@ class MyRun( multiprocessing.Process ):
       self.args = args
       self.kwargs = kwargs
            
-   def run ( self ):
+   def run (self):
       
       out = self.function(*self.args, **self.kwargs)
-      
+#      if type(out) == str:
+#         logging.debug(out)
       self.queue.put(out)
 
 

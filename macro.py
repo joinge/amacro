@@ -1407,7 +1407,6 @@ def printAction(str, res=None, newline=False, msg_type='debug'):
       
    if newline:
       getattr(logging, msg_type)(string)
-#      logging.debug(string)
       sys.stdout.write(string.ljust(PAD, ' '))
       sys.stdout.flush()
       sys.stdout.write("\n")
@@ -1813,8 +1812,8 @@ def takeScreenshot(filename=None):
       cmd1 = 'adb %s shell /system/bin/screencap -p /sdcard/screenshot.png' % ADB_ACTIVE_DEVICE
       cmd2 = 'adb %s pull  /sdcard/screenshot.png "%s"' % (ADB_ACTIVE_DEVICE, output)
     
-      myPopen(cmd1, stderr='devnull')
-      myPopen(cmd2, stderr='devnull')
+      myPopen(cmd1, stdout='devnull', stderr='devnull', log=False)
+      myPopen(cmd2, stdout='devnull', stderr='devnull', log=False)
       
    
    # adb pull /dev/graphics/fb0 img.raw

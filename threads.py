@@ -19,25 +19,33 @@ class MyPopen(multiprocessing.Process):
       self.args = args
       self.kwargs = kwargs
       
-      self.SUPPRESS_OUTPUT = False
+      self.LOGGING = True
+      if 'log' in self.kwargs:
+         self.LOGGING = self.kwargs.pop('log')
       
+      self.STDOUT = True
       if 'stdout' in self.kwargs:
          if self.kwargs['stdout'] == 'devnull':
             self.kwargs['stdout'] = PIPE
-            self.SUPPRESS_OUTPUT = True
+            self.STDOUT = False
          else:
-            self.stdout = kwargs['stdout']   
+            self.kwargs['stdout'] = kwargs['stdout']   
       else:
          self.kwargs['stdout'] = PIPE
       
+      self.STDERR = True
       if 'stderr' in self.kwargs:
          if self.kwargs['stderr'] == 'devnull':
             self.kwargs['stderr'] = PIPE
-            self.SUPPRESS_OUTPUT = True
+            self.STDERR = False
          else:
-            self.stdout = kwargs['stderr']   
+            self.kwargs['stdout'] = kwargs['stderr']   
       else:
          self.kwargs['stderr'] = PIPE
+         
+      self.QUIET = False
+      if not self.STDOUT and not self.STDERR:
+         self.QUIET = True
          
       if not 'shell' in kwargs:
          self.kwargs['shell'] = True
@@ -45,16 +53,37 @@ class MyPopen(multiprocessing.Process):
            
    def run (self):
       
+      status=''
+      if self.STDOUT: status+='stdout '
+      if self.STDERR: status+='stderr '
+      if self.QUIET:   status+='quiet '
+      if self.LOGGING: status+='logging '
+      print(status)
+      
       proc = Popen(*self.args, **self.kwargs)
-      sout = proc.stdout.read()
-      serr = proc.stderr.read()
-      logging.debug(sout)
-      if serr:
-         logging.error(serr)
+      
+      if False: #not self.LOGGING and self.QUIET:
+         proc.wait()
          
-      if not self.SUPPRESS_OUTPUT:
-         self.queue.put(sout)
+      else:
+         if self.LOGGING:
+            sout = proc.stdout.read()
+            serr = proc.stderr.read()
+            if sout:
+               logging.debug(sout)
+            if serr:
+               logging.error(serr) 
 
+            if self.STDOUT:
+               self.queue.put(sout)
+            if self.STDERR:
+               self.queue.put(serr)             
+               
+         else:
+            if self.STDOUT:
+               self.queue.put(proc.stdout.read())
+            if self.STDERR:
+               self.queue.put(proc.stderr.read())         
 
 class MyRun(multiprocessing.Process):
    def __init__(self, function, queue, *args, **kwargs):
@@ -75,7 +104,7 @@ class MyRun(multiprocessing.Process):
 def myPopen(*args, **kwargs):
    
    queue = multiprocessing.Queue()
-
+   
    if not 'timeout' in kwargs:
       timeout = 10
    else:

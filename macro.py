@@ -52,7 +52,7 @@ elif os.name == "nt":
 #    Popen('mode con: cols=140 lines=70', stdout=PIPE, shell=True).stdout.read()
 #    Popen('cmd mode con: cols=140', stdout=PIPE, shell=True).stdout.read()
 else:
-   print("WARNING: Unsupported OS")
+   myPrint("WARNING: Unsupported OS")
    ESC = "\\"
 
 devnull = open(os.devnull,'w')
@@ -181,7 +181,7 @@ class Stats:
             self.info = ast.literal_eval(s.read())
             s.close()
       except:
-         print("ERROR: Unable to open stats.txt")
+         myPrint("ERROR: Unable to open stats.txt")
       
 #      if os.path.getsize('stats.txt') > 0:
 #         s = open('stats.txt','a')
@@ -272,29 +272,29 @@ class Device():
          try:
             self.eventTablet = int(re.search('/dev/input/event([0-9]).*\n.*VirtualBox USB Tablet',event_devices).group(1))
          except:
-            print("ERROR: Unable to parse input/output event touchscreen device")
+            myPrint("ERROR: Unable to parse input/output event touchscreen device")
          try:
             self.eventMouse = int(re.search('/dev/input/event([0-9]).*\n.*ImExPS/2 Generic Explorer Mouse',event_devices).group(1))
          except:
-            print("ERROR: Unable to parse input/output event mouse device")
+            myPrint("ERROR: Unable to parse input/output event mouse device")
          try:
             self.eventKeyboard = int(re.search('/dev/input/event([0-9]).*\n.*AT Translated Set 2 keyboard',event_devices).group(1))
          except:
-            print("ERROR: Unable to parse input/output event keyboard device")
+            myPrint("ERROR: Unable to parse input/output event keyboard device")
             
       if self.android_vm:
 #         try:
 #            self.eventTablet = int(re.search('/dev/input/event([0-9]).*\n.*VirtualBox USB Tablet',event_devices).group(1))
 #         except:
-#            print("ERROR: Unable to parse input/output event touchscreen device")
+#            myPrint("ERROR: Unable to parse input/output event touchscreen device")
 #         try:
 #            self.eventMouse = int(re.search('/dev/input/event([0-9]).*\n.*ImExPS/2 Generic Explorer Mouse',event_devices).group(1))
 #         except:
-#            print("ERROR: Unable to parse input/output event mouse device")
+#            myPrint("ERROR: Unable to parse input/output event mouse device")
          try:
             self.eventKeyboard = int(re.search('/dev/input/event([0-9]).*\n.*AT Translated Set 2 keyboard',event_devices).group(1))
          except:
-            print("ERROR: Unable to parse input/output event keyboard device")
+            myPrint("ERROR: Unable to parse input/output event keyboard device")
             
       try:
          build_prop = myPopen('adb %s shell echo "cat /system/build.prop" %s| su'%(ADB_ACTIVE_DEVICE,ESC))
@@ -309,30 +309,30 @@ class Device():
          
          if self.screenDensity != 160 and self.screenDensity != 240:
             
-            print("")
-            print("<<<WARNING>>> ")
-            print("A screen density of %d detected. This is NOT SUPPORTED!!!"%self.screenDensity)
-            print("")
+            myPrint("")
+            myPrint("<<<WARNING>>> ")
+            myPrint("A screen density of %d detected. This is NOT SUPPORTED!!!"%self.screenDensity)
+            myPrint("")
                         
       except:
          self.screenDensity = 0
-         print("ERROR: Unable to parse screen density")
+         myPrint("ERROR: Unable to parse screen density")
             
       self.printInfo()
             
    def printInfo(self):
       
-      print("")
-      print("Device info updated. New parameters:")
+      myPrint("")
+      myPrint("Device info updated. New parameters:")
       if YOUWAVE:
-         print("youwave detected?       YES")
-         print("  Device - touchscreen: /dev/input/event%d"%self.eventTablet)
-         print("  Device - keyboard:    /dev/input/event%d"%self.eventKeyboard)
-         print("  Device - mouse:       /dev/input/event%d"%self.eventMouse)
+         myPrint("youwave detected?       YES")
+         myPrint("  Device - touchscreen: /dev/input/event%d"%self.eventTablet)
+         myPrint("  Device - keyboard:    /dev/input/event%d"%self.eventKeyboard)
+         myPrint("  Device - mouse:       /dev/input/event%d"%self.eventMouse)
       else:
-         print("youwave detected?       NO")         
-      print("Screen density:         %d"%self.screenDensity)
-      print("")
+         myPrint("youwave detected?       NO")         
+      myPrint("Screen density:         %d"%self.screenDensity)
+      myPrint("")
   
 #   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, shell=True).stdout.read()
 
@@ -386,7 +386,7 @@ class Info():
          attr_name = re.sub('.txt', '', file)
    
          if first_run:
-            print("Reading Info attributes")
+            myPrint("Reading Info attributes")
             first_run= False
             
          # Make these settings class variables
@@ -410,7 +410,7 @@ class Info():
 
          # Only read once
          if not hasattr(self,attr_name) and first_run:
-            print("Reading Info attributes")
+            myPrint("Reading Info attributes")
          # Make these settings class variables
          setattr(self, attr_name, ast.literal_eval(s.read()))
          s.close()
@@ -441,7 +441,7 @@ class User():
    def setCurrent(self, user):
       
       printAction("Current user:")
-      print(user)
+      myPrint(user)
       
       self.current = user
       
@@ -481,7 +481,7 @@ user = User()
 
 def getIMEI():
    output = Popen("adb %s shell dumpsys iphonesubinfo | grep Device | sed s/\".*= \"//" % ADB_ACTIVE_DEVICE, stdout=PIPE, shell=True).stdout.read()
-   print(output)
+   myPrint(output)
    return int(output)
 #   358150045244606
 
@@ -566,7 +566,7 @@ def getBaseName():
    name = nick_list.pop(int(np.random.uniform(0,len(nick_list)-1e-9)))
    
    printAction("   Selected nick:")
-   print(name)
+   myPrint(name)
 
 #   # OLD APPROACH
 #   current_nick = user.getCurrent()
@@ -601,7 +601,7 @@ def createAccount(baseNames=baseN):
    for i in baseNames:
       
       name = i
-#       print(i)
+#       myPrint(i)
       
       randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(0, 3))).astype(int).astype('str'))
       randABC = ''.join([ABC[0][j] for j in np.random.uniform(0, 26, size=int(np.random.uniform(3))).astype(int)])
@@ -708,7 +708,7 @@ def rebuildAPK(newid="a00deadbeef"):
 #   os.chdir('..')
    
    printAction("   Finished. New ID:")
-   print(newid)
+   myPrint(newid)
    
    
 def createNewFakeAccount(referral="", draw_ucp=False):
@@ -744,7 +744,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       c = np.array(login_screen)
    
       if device.getInfo('screenDensity') != 160:
-         print("ERROR: Not implemented")
+         myPrint("ERROR: Not implemented")
          return 2
          
       
@@ -779,7 +779,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          password = ''.join([tmp2[j] for j in np.random.uniform(0, len(tmp2)-1e-9, size=int(np.random.uniform(8,14))).astype(int)])
          
          printAction("Trying with email:")
-         print(email)
+         myPrint(email)
          leftClick((244, 73) + c) # Email field
          time.sleep(0.3)
          enterText(email)
@@ -787,7 +787,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
             backspace()
          
          printAction("Entering password:")
-         print(password)
+         myPrint(password)
          leftClick((244, 118) + c) # Password field
          time.sleep(0.3)
          
@@ -861,7 +861,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          
       if not success:
          printResult(False)
-         print("ERROR: Unable to enter valid nick")
+         myPrint("ERROR: Unable to enter valid nick")
          return 1
 
       printResult(True)
@@ -869,7 +869,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 
       printAction("Running through the tutorial like mad!!!")
       for i in range(50):
-#          print(i)
+#          myPrint(i)
          locateTemplate('mobage_ad.png',              offset=(85,14),  click=True)
          locateTemplate('tutorial_skip.png',          offset=(49,11),  click=True, reuse_last_screenshot=True)
          leftClick((240,150))
@@ -921,7 +921,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 
       printResult(success)
       if not success:
-         print("ERROR: Unable to process referral code")
+         myPrint("ERROR: Unable to process referral code")
          return 2 # If the service gets this far without working, it's probably best to call it off.
 
          
@@ -935,7 +935,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 
       if not register_device:
          printResult(False)
-         print("ERROR: Unable to find register device button!")
+         myPrint("ERROR: Unable to find register device button!")
          return 2 # If the service gets this far without working, it's probably best to call it off.
       
       agree = locateTemplate('tutorial_agree.png', offset=(124,11), click=True, retries=5, interval=3)
@@ -943,7 +943,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 
       if not agree:
          printResult(False)
-         print("ERROR: Unable to find register device button!")
+         myPrint("ERROR: Unable to find register device button!")
          return 2 # If the service gets this far without working, it's probably best to call it off.
 
       printResult(True)
@@ -958,35 +958,35 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       printResult(presents)
 
       if not presents:
-         print("ERROR: Unable to find presents button!")
+         myPrint("ERROR: Unable to find presents button!")
          return 4
 
       claim_all = locateTemplate('presents_claim_all.png', offset=(44,10), click=True, retries=5, interval=3)
       printResult(claim_all)
       
       if not claim_all:
-         print("ERROR: Unable to find \"Claim All\" button!")
+         myPrint("ERROR: Unable to find \"Claim All\" button!")
          return 4
 
       card_pack = locateTemplate('card_pack_button.png', offset=(45,18), click=True, retries=5, interval=3)
       printResult(card_pack)
       
       if not card_pack:
-         print("ERROR: Unable to find \"Card Pack\" button!")
+         myPrint("ERROR: Unable to find \"Card Pack\" button!")
          return 4
 
       basic_tab = locateTemplate('card_pack_basic_tab.png', offset=(45,12), click=True, retries=5, interval=1, swipe_size=[(240, 500), (240, 295)], ybounds=(0,400))
       printResult(basic_tab)
       
       if not basic_tab:
-         print("ERROR: Unable to find \"Basic\" tab!")
+         myPrint("ERROR: Unable to find \"Basic\" tab!")
          return 4
 
       get_ucp = locateTemplate('card_pack_get_ucp.png', offset=(89,8), click=True, retries=7, interval=1, swipe_size=[(20, 500), (20, 295)])
       printResult(get_ucp)
       
       if not get_ucp:
-         print("ERROR: Unable to find \"Get Ultimate Card Pack\" button!")
+         myPrint("ERROR: Unable to find \"Get Ultimate Card Pack\" button!")
          return 4
 
       if not locateTemplate('tutorial_skip.png',  offset=(49,11),  click=True, retries=5, interval=1):
@@ -1061,8 +1061,8 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
          i = i + 1
    #    for i in range(iterations):
          
-         print("")
-         print("REFERRAL SERVICE: Iteration %d"%i)
+         myPrint("")
+         myPrint("REFERRAL SERVICE: Iteration %d"%i)
          
          try:
             retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
@@ -1085,7 +1085,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
                break 
          except Exception as e:
             printAction("ERROR: Unable to print summary")
-            print(e)
+            myPrint(e)
             
          wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
          
@@ -1148,7 +1148,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
 #               os.mkdir('./users/%s/files' % user)
 #               os.mkdir('./users/%s/shared_prefs' % user)
 #               
-#               print(
+#               myPrint(
 #               Popen("adb %s shell \
 #                     \" rm -r /sdcard/pull_tmp;\
 #                        mkdir /sdcard/pull_tmp;\
@@ -1198,7 +1198,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
 #   for i in baseNames:
 #      
 #      name = i
-#      print(i)
+#      myPrint(i)
 #      
 #      randNums = ''.join(np.random.uniform(9, size=int(np.random.uniform(0, 3))).astype(int).astype('str'))
 #      randABC = ''.join([ABC[0][j] for j in np.random.uniform(0, 26, size=int(np.random.uniform(3))).astype(int)])
@@ -1218,12 +1218,12 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
 
 def adbConnect(device_name):
    
-   print("Connecting to: %s..."%device_name)
+   myPrint("Connecting to: %s..."%device_name)
    
    output = myPopen("adb connect %s"%device_name)
 
    if not output or re.search("unable|error",output) or output == '':
-      print("ERROR: Unable to connect to: %s"%device)
+      myPrint("ERROR: Unable to connect to: %s"%device)
       return False
    else:
       printResult(True)
@@ -1296,7 +1296,7 @@ def newAndroidId():
       return ''.join(np.random.uniform(0,10-1e-9, size=int(np.random.uniform(15, 18))).astype(int).astype('str'))
    
    else:
-      print("Android ID creation for this device type is not supported!!!", type='error')
+      myPrint("Android ID creation for this device type is not supported!!!", type='error')
       return None
 def setAndroidId(user=None, newid='0' * 15):
    
@@ -1310,10 +1310,10 @@ def setAndroidId(user=None, newid='0' * 15):
    out = myPopen("adb %s shell \
                  \"cat /data/youwave_id;\
                    cat /sdcard/Id\"" % ADB_ACTIVE_DEVICE)
-#    print(out)
+#    myPrint(out)
    old_ids = out.split('\n')
    if not old_ids[0] == old_ids[1]:
-      print("WARNING: IDs in /data (%s) and /sdcard (%s) do not match!!!" % (old_ids[0], old_ids[1]))
+      myPrint("WARNING: IDs in /data (%s) and /sdcard (%s) do not match!!!" % (old_ids[0], old_ids[1]))
       
    old_id = re.search(r'[0-9]*', old_ids[0]).group(0) #15-18
    
@@ -1321,22 +1321,22 @@ def setAndroidId(user=None, newid='0' * 15):
 
       try:
          if old_id == newid:
-            print('WARNING: saveAndroidId() - Ids are already the same.')
+            myPrint('WARNING: saveAndroidId() - Ids are already the same.')
          else:
             if newid == '0' * 15:
                newid = getattr(info.get('fakeID'),user)
                
-            print("Old ID: %s, New ID: %s"%(old_id,newid))
+            myPrint("Old ID: %s, New ID: %s"%(old_id,newid))
             myPopen('adb %s shell echo "echo %s > /data/youwave_id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC))
             myPopen('adb %s shell echo "echo %s > /sdcard/Id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC))
             
             info.set(user, newid, 'fakeID')
 
       except:
-         print("ERROR: User %s does not seem to exist!" % user)
+         myPrint("ERROR: User %s does not seem to exist!" % user)
 
    else:
-      print("Old ID: %s, New ID: %s"%(old_id,newid))
+      myPrint("Old ID: %s, New ID: %s"%(old_id,newid))
       myPopen("adb %s shell echo 'echo %s > /data/youwave_id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC))
       myPopen("adb %s shell echo 'echo %s > /sdcard/Id' %s| su" % (ADB_ACTIVE_DEVICE, newid, ESC))
 
@@ -1346,7 +1346,7 @@ def getAndroidId(user=None):
    out = myPopen("adb %s shell \
                  \"cat /data/youwave_id;\
                    cat /sdcard/Id\"" % ADB_ACTIVE_DEVICE)
-   print(out)
+   myPrint(out)
    id = out.split('\n')
    if id[0] == id[1]:
       id_clean = re.search(r'[0-9]*', id[0]).group(0) #15-18
@@ -1356,9 +1356,9 @@ def getAndroidId(user=None):
          info.fakeAccounts[user] = id_clean
          info.write()
       else:
-         print(id_clean)
+         myPrint(id_clean)
    else:
-      print("WARNING: IDs in /data and /sdcard do not match!!!")
+      myPrint("WARNING: IDs in /data and /sdcard do not match!!!")
 #   out.communicate()
 
 
@@ -1369,7 +1369,7 @@ def exitMarvel():
    myPopen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android" % ADB_ACTIVE_DEVICE)
 
 msg_queue = multiprocessing.Queue()
-def print(arg, **kwargs):
+def myPrint(arg, **kwargs):
    
    msg = ''
    if not msg_queue.empty():
@@ -1381,7 +1381,7 @@ def print(arg, **kwargs):
    else:
       logging.debug(msg+arg,**kwargs)
       
-   __builtins__.print(msg+arg, **kwargs)
+   print(msg+arg, **kwargs)
 
 def printResult(res, msg_type='debug'):
    global msg_queue
@@ -1419,9 +1419,9 @@ def printAction(str, res=None, newline=False, msg_type='debug'):
       printResult(res, msg_type=msg_type)
       
 def printNotify(message, timeout=30):
-   print("NOTIFICATION: " + message)
+   myPrint("NOTIFICATION: " + message)
    notify()
-   print("Type Enter to continue (will do so anyways in 30s)")
+   myPrint("Type Enter to continue (will do so anyways in 30s)")
    
    select.select([sys.stdin], [], [], timeout)
 #   i, o, e = 
@@ -1590,7 +1590,7 @@ def backspace():
          ])     
 
    else:
-      print("ERROR: backspace() is not implemented for regular phones")     
+      myPrint("ERROR: backspace() is not implemented for regular phones")     
      
 def right_arrow():
 
@@ -1609,7 +1609,7 @@ def right_arrow():
          ])     
 
    else:
-      print("ERROR: right_arrow() is not implemented for regular phones")   
+      myPrint("ERROR: right_arrow() is not implemented for regular phones")   
        
    
 def enterText(text):
@@ -1900,7 +1900,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          image_screen = readImage(TEMP_PATH+"/screenshot_%s.png" %ACTIVE_DEVICE, xbounds, ybounds)
 #         image_screen   = readImage("test.png", xbounds, ybounds)
       except:
-         print("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!" % ACTIVE_DEVICE)
+         myPrint("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!" % ACTIVE_DEVICE)
          return False
       
       result = np.array(0)
@@ -1935,7 +1935,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
 #       try:
 #          result = cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED)
 #       except:
-#          print("ERROR: Unable to match template \"%s\" with screenshot!!!" % template)
+#          myPrint("ERROR: Unable to match template \"%s\" with screenshot!!!" % template)
 #          return False
       
       if print_coeff:
@@ -1953,7 +1953,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          if print_coeff:
             sys.stdout.write("(%d,%d) " % (object_coords[0], object_coords[1]))
             sys.stdout.flush()
-#         print(" (%d,%d)"%(object_coords[0],object_coords[1]),end=' ')
+#         myPrint(" (%d,%d)"%(object_coords[0],object_coords[1]),end=' ')
          return object_coords
       
       else:
@@ -1964,7 +1964,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          image_error = locateTemplate("android_error.png", recurse=True, threshold=0.9, offset=(65,31), reuse_last_screenshot=True)
          
          if image_error:
-            print(' ')
+            myPrint(' ')
             printAction("Android error detected and will (hopefully) be dealt with.", newline=True)
             leftClick(image_error)
             time.sleep(10) # In case we hit a "wait" button
@@ -2080,7 +2080,7 @@ def runOCR(image, mode='', lang='eng'):
    elif mode == '':
       psm = ''
    else:
-      print("ERROR: runOCR() - Mode %s is not supported")
+      myPrint("ERROR: runOCR() - Mode %s is not supported")
       return ''
    
    if lang == 'event_enemy':
@@ -2093,7 +2093,7 @@ def runOCR(image, mode='', lang='eng'):
    myPopen("tesseract tmp.png text %s -l %s >/dev/null 2>&1" % (psm, language))
    
    if os.path.getsize('text.txt') == 1:
-      print("ERROR: runOCR() returned no output")
+      myPrint("ERROR: runOCR() returned no output")
       return ''
    
    # TODO make sure file is not empty!!!
@@ -2122,7 +2122,7 @@ def getMyPageStatus():
    
    info = {'roster':[]}
    
-   print("Get MyPage info...")
+   myPrint("Get MyPage info...")
    
    entered_mypage = False
    for i in range(2):
@@ -2160,10 +2160,10 @@ def getMyPageStatus():
    cards_in_roster = tuple(map(int, cards_in_roster_numbers))
    
    try:
-      print("Cards: %d/%d" % cards_in_roster)
+      myPrint("Cards: %d/%d" % cards_in_roster)
       info['roster'] = cards_in_roster
       if cards_in_roster[1] - cards_in_roster[0] < 15:
-         print("WARNING: Roster is soon full!!!")
+         myPrint("WARNING: Roster is soon full!!!")
 
    except:
       printAction("Unable to determine roster size.", newline=True)
@@ -2184,7 +2184,7 @@ def getMyPageStatus():
 
 
       silver = int(silver_numbers)
-      print("Silver: %d" % silver)
+      myPrint("Silver: %d" % silver)
       info['silver'] = silver
    
    except:
@@ -2213,7 +2213,7 @@ def gotoEventHome():
    
 def eventPlayMission(repeat=1):
 
-   print("Playing event mission...")
+   myPrint("Playing event mission...")
    
    swipe((240, 100), (240, 750))
    swipe((240, 100), (240, 750))
@@ -2286,7 +2286,7 @@ def eventPlayMission(repeat=1):
                scroll(0, 1000)
                time.sleep(1)
             else:
-               print("Could not find event mission button!")
+               myPrint("Could not find event mission button!")
                   
             repeat = repeat + 1
                              
@@ -2309,14 +2309,14 @@ def eventPlayMission(repeat=1):
             #printResult(mission_started)
 
             if out_of_energy:
-               print('')
+               myPrint('')
                printAction("No energy left! Exiting.", newline=True)
                back_key()
                time.sleep(1)
                return True
                
             if mission_started:
-               print('')
+               myPrint('')
                printAction("Mission started. Returning.", newline=True)
                back_key()
                time.sleep(1)
@@ -2376,7 +2376,7 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
       badguy_level = re.sub(r'.+Lv\.', '', badguy_string)
    #   badguy_level= tuple(map(int, badguy_string))
       
-      print("%s at level %s" % (badguy_name, badguy_level))
+      myPrint("%s at level %s" % (badguy_name, badguy_level))
             
       printAction("Running OCR to figure out enemy info...")
       e = event_enemy_corner
@@ -2386,13 +2386,13 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
       enemy_health = re.findall(r'\d+', enemy_info)
       try:
          enemy_health = tuple(map(int, enemy_health))
-         print("Health: %d / %d" %(enemy_health[0],enemy_health[1]))
+         myPrint("Health: %d / %d" %(enemy_health[0],enemy_health[1]))
       except:
-         print('WARNING: Unable to convert enemy health to int.')
+         myPrint('WARNING: Unable to convert enemy health to int.')
          enemy_health = (1000,1000)
       
-      print(enemy_health)
-      print("Health: %d / %d" %(enemy_health[0],enemy_health[1]))
+      myPrint(enemy_health)
+      myPrint("Health: %d / %d" %(enemy_health[0],enemy_health[1]))
 #      try:
 #         if int(badguy_level) < 50  or (int(badguy_level) > 85 and not find_enraged):
 #            printAction("Villain has a level outside [50,85]. Moving on...", newline=True)
@@ -2569,13 +2569,13 @@ def eventKillEnemies(find_enraged=False):
       
 #            out_of_power = locateTemplate('event_out_of_power.png', threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
 #            if out_of_power:
-#               print( '' )
+#               myPrint( '' )
 #               printAction("No attack power left! Exiting.", newline=True)
 #               return False
 #            
 #            end_of_battle = locateTemplate('event_battle_results.png', reuse_last_screenshot=True)
 #            if end_of_battle:
-#               print( '' )
+#               myPrint( '' )
 #               printAction("Villain taken down. Returning.", newline=True)
 #               return True
 #            
@@ -2632,18 +2632,18 @@ def eventKillEnemies(find_enraged=False):
 #            #printResult(mission_started)
 #               
 ##            if out_of_power:
-##               print( '' )
+##               myPrint( '' )
 ##               printAction("No attack power left! Exiting.", newline=True)
 ###                  back_key()
 ##               return False
 #            
 #            if end_of_battle:
-#               print( '' )
+#               myPrint( '' )
 #               printAction("Villain taken down. Returning.", newline=True)
 #               return True
 #               
 ##            if mission_started:
-##               print( '' )
+##               myPrint( '' )
 ##               printAction("Mission started. Returning.", newline=True)
 ##               back_key()
 ##               time.sleep(int(uniform(1,2)))
@@ -2666,14 +2666,14 @@ def eventKillEnemies(find_enraged=False):
 #   badguy_level = re.sub(r'.+Lv\.', '', badguy_string)
 #   badguy_level= tuple(map(int, badguy_string))
    
-#   print( badguy_level )
+#   myPrint( badguy_level )
    
 
       
    
 def eventPlay(find_enraged=False):
       
-   print("PLAYING EVENT")
+   myPrint("PLAYING EVENT")
    
    N = 6
    Nmax = 16
@@ -2833,11 +2833,11 @@ def markCards(cards_list, alignment='all'):
    
 def sellCards(cards_list, alignment='all'):
       
-   print("SELLING")
+   myPrint("SELLING")
    printAction("Selling cards: ")
    for card in cards_list:
-      print("%s " % card, end='')
-   print('')
+      myPrint("%s " % card, end='')
+   myPrint('')
    
    stats = Stats()
       
@@ -2913,7 +2913,7 @@ def sellCards(cards_list, alignment='all'):
    
 def boostCard(card_name, cards_list, alignment='all'):
       
-   print("BOOSTING")
+   myPrint("BOOSTING")
    printAction("Boosting card: %s" % card_name, newline=True)
       
    printAction("Clicking \"boost\" button...")
@@ -3027,7 +3027,7 @@ def boostCard(card_name, cards_list, alignment='all'):
 
 def fuseCard(card_type, alignment='all'):
       
-   print("FUSION")
+   myPrint("FUSION")
    
    stats = Stats()
    
@@ -3138,11 +3138,11 @@ def fuseCard(card_type, alignment='all'):
       
 def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       
-   print("TRADING")
+   myPrint("TRADING")
    printAction("Trading the following cards to %s: " % receiver)
    for card in cards_list:
-      print("%s " % card, end='')
-   print('')
+      myPrint("%s " % card, end='')
+   myPrint('')
    
 #   stats = Stats()
       
@@ -3285,7 +3285,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
    if statistics:
       stats.silverStart("mission_%d-%d" % mission_number)
             
-   print("Playing mission %d-%d..." % mission_number)
+   myPrint("Playing mission %d-%d..." % mission_number)
 
    initial_run = True
    for i in range(repeat + 1):
@@ -3347,7 +3347,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
                printResult(mission_button_coords)
                
             if not mission_button_coords:
-               print("Unable to locate mission buttion. This shouldn't happen. Dammit!")
+               myPrint("Unable to locate mission buttion. This shouldn't happen. Dammit!")
                
                if statistics:
                   stats.silverEnd("mission_%d-%d" % mission_number)
@@ -3371,7 +3371,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
             
             
             #if repeat > 30:
-               #print( "30 mission iterations. Assuming error and exiting." )
+               #myPrint( "30 mission iterations. Assuming error and exiting." )
                #return False
          
       else:
@@ -3389,7 +3389,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
             #printResult(mission_started)
                
             if out_of_energy:
-               print('')
+               myPrint('')
                printAction("No energy left! Exiting.", newline=True)
                back_key()
                
@@ -3399,7 +3399,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
                return True
                
             if mission_started:
-               print('')
+               myPrint('')
                printAction("Mission started. Returning.", newline=True)
                time.sleep(1)
                back_key()
@@ -3423,7 +3423,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
           
 def playNewestMission(repeat=50):
 
-   print("MISSION: Newest...")
+   myPrint("MISSION: Newest...")
 
    for i in range(repeat + 1):
       printAction("Searching for newest mission button...")
@@ -3500,7 +3500,7 @@ def playNewestMission(repeat=50):
             mission_boss = locateTemplate("mission_boss_encounter.png", offset=(130, 16), click=True, print_coeff=False, reuse_last_screenshot=True)
                            
             if out_of_energy:
-               print('')
+               myPrint('')
                printAction("No energy left! Exiting.", newline=True)
                back_key()
                
@@ -3546,7 +3546,7 @@ def playNewestMission(repeat=50):
                break
                
             if mission_started:
-               print('')
+               myPrint('')
                printAction("Mission started. Returning.", newline=True)
                time.sleep(1)
                back_key()
@@ -3567,7 +3567,7 @@ def playNewestMission(repeat=50):
 def startMarvel(user, attempts=3, password=None, enable_cache=False):
    
    if YOUWAVE:
-      print( "Macro is being run in YOUWAVE MODE" )
+      myPrint( "Macro is being run in YOUWAVE MODE" )
    
    id_files = [
       "databases/requests-journal",
@@ -3615,7 +3615,7 @@ def startMarvel(user, attempts=3, password=None, enable_cache=False):
       NEW_USER = False
       if enable_cache and os.path.isdir('./users/%s' % user):
          exitMarvel(False)
-         print(
+         myPrint(
          myPopen("adb %s shell rm -r /sdcard/push_tmp;\
                 adb push ./users/%s /sdcard/push_tmp;\
                 %s \
@@ -3647,7 +3647,7 @@ def startMarvel(user, attempts=3, password=None, enable_cache=False):
                os.mkdir('./users/%s/files' % user)
                os.mkdir('./users/%s/shared_prefs' % user)
                
-               print(
+               myPrint(
                myPopen("adb %s shell \
                      \" rm -r /sdcard/pull_tmp;\
                         mkdir /sdcard/pull_tmp;\
@@ -3685,15 +3685,15 @@ def startMarvel(user, attempts=3, password=None, enable_cache=False):
       
          
    all_ok = False
-   print('')
-   print('')
-   print("  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-   print("    %s" %user)
-   print("  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+   myPrint('')
+   myPrint('')
+   myPrint("  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+   myPrint("    %s" %user)
+   myPrint("  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
    
    for i in range(attempts):
-      print('')
-      print("Login attempt %d on account %s..." % (i, user))
+      myPrint('')
+      myPrint("Login attempt %d on account %s..." % (i, user))
       login_ok = attempt_start(user)
       if login_ok:
          all_ok = True
@@ -3745,7 +3745,7 @@ def fuseAndBoost(card_type, cards_list, fuse_alignment='all', boost_alignment='a
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
 #   
-#   print(roster_count)
+#   myPrint(roster_count)
 #   if not roster_count or roster_count > 60:
 #      printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
 #      sellAllCards(['common_thing','common_blackcat','common_spiderwoman','common_sandman'])
@@ -3767,7 +3767,7 @@ def farmMission24FuseAndBoost():
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
          sellAllCards(all_feeder_cards)
    except:
-      print("ERROR: Trouble when reading MyPage status or when reading roster count")
+      myPrint("ERROR: Trouble when reading MyPage status or when reading roster count")
    
 def farmMission24FuseAndSell():
 
@@ -3784,7 +3784,7 @@ def farmMission24FuseAndSell():
       if not roster_count or roster_count > 60:
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
    except:
-      print("ERROR: Trouble when reading MyPage status or when reading roster count")
+      myPrint("ERROR: Trouble when reading MyPage status or when reading roster count")
    
    printNotify("Done processing this player!!!")
 #   info = getMyPageStatus()
@@ -3824,7 +3824,7 @@ def farmMission32():
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
          sellAllCards(['common_thing', 'common_blackcat', 'common_spiderwoman', 'common_sandman'])
    except:
-      print("ERROR: Trouble when reading MyPage status or when reading roster count")
+      myPrint("ERROR: Trouble when reading MyPage status or when reading roster count")
    
    printNotify("Done processing this player!!!")
    
@@ -3845,7 +3845,7 @@ def farmMission32FuseAndBoost():
          printAction("Roster exceeds 30 cards. Sell, sell, sell!!!", newline=True)
          sellAllCards(['common_thing', 'common_blackcat', 'common_spiderwoman', 'common_sandman'])
    except:
-      print("ERROR: Trouble when reading MyPage status or when reading roster count")
+      myPrint("ERROR: Trouble when reading MyPage status or when reading roster count")
    
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
@@ -3942,13 +3942,13 @@ def runAll43():
       
 def blockUntilQuit():
    
-   print("Waiting until game is killed.")
+   myPrint("Waiting until game is killed.")
    time.sleep(3)
    while True:
       if not re.findall('MARVEL', Popen('adb %s shell ps' % ADB_ACTIVE_DEVICE, shell=True, stdout=PIPE).stdout.read()):
          break
       time.sleep(3)
-   print("Game was killed. Moving on...")
+   myPrint("Game was killed. Moving on...")
       
 def startAndRestartWhenQuit():
    
@@ -3975,7 +3975,7 @@ def sleepToCharge(preferred=60):
    while int(output) < 50:
       if not had_to_rest:
 #         lock_phone()
-         print("BATTERY below 20\%. Need to sleep for a bit.")
+         myPrint("BATTERY below 20\%. Need to sleep for a bit.")
          had_to_rest = True
          
       output = myPopen("adb %s shell cat /sys/class/power_supply/battery/capacity" % ADB_ACTIVE_DEVICE)         
@@ -4128,7 +4128,7 @@ def checkRaid(health_limit):
 
 def eventStarkPresident():
    
-   print("TONY PRESIDENT EVENT")
+   myPrint("TONY PRESIDENT EVENT")
    
    for i in range(14):
       
@@ -4239,11 +4239,11 @@ class RunUntilTimeout( threading.Thread ):
       process.join(float(self.timeout))
            
       if process.exitcode == None:
-         print("")
-         print("*************")
-         print("** TIMEOUT **")
-         print("*************")
-         print("")
+         myPrint("")
+         myPrint("*************")
+         myPrint("** TIMEOUT **")
+         myPrint("*************")
+         myPrint("")
          process.terminate()
          
       return process
@@ -4255,9 +4255,9 @@ class RunUntilTimeout( threading.Thread ):
 def timeout(function, timeout, *args, **kwargs):
    
    while True:
-      print("")
-      print("***Starting cycle***")
-      print("")
+      myPrint("")
+      myPrint("***Starting cycle***")
+      myPrint("")
       thread = RunUntilTimeout(function,timeout,*args,**kwargs)
       thread.start()
       thread.join()
@@ -4433,8 +4433,8 @@ def custom6():
                      farmMission24FuseAndBoost()
                      exitMarvel()
                except Exception, e:
-                  print("ERROR: Some exception occured when processing %s" % i)
-                  print(e)
+                  myPrint("ERROR: Some exception occured when processing %s" % i)
+                  myPrint(e)
                sleepToCharge(60)
                
       for i in info.accounts.keys():
@@ -4444,8 +4444,8 @@ def custom6():
                      farmMission32FuseAndBoost()
                      exitMarvel()
                except Exception, e:
-                  print("ERROR: Some exception occured when processing %s" % i)
-                  print(e)
+                  myPrint("ERROR: Some exception occured when processing %s" % i)
+                  myPrint(e)
                sleepToCharge(60)
       
       
@@ -4462,8 +4462,8 @@ def custom6b():
                      blockUntilQuit()
                      exitMarvel()
                except Exception, e:
-                  print("ERROR: Some exception occured when processing %s" % i)
-                  print(e)
+                  myPrint("ERROR: Some exception occured when processing %s" % i)
+                  myPrint(e)
                sleepToCharge(60)
                
       for i in info.accounts.keys():
@@ -4476,8 +4476,8 @@ def custom6b():
 #                     blockUntilQuit()
                      exitMarvel()
                except Exception, e:
-                  print("ERROR: Some exception occured when processing %s" % i)
-                  print(e)
+                  myPrint("ERROR: Some exception occured when processing %s" % i)
+                  myPrint(e)
                sleepToCharge(60)
       
 def custom7(start_end=False):
@@ -4493,8 +4493,8 @@ def custom7(start_end=False):
                      
                      exitMarvel()
                except Exception, e:
-                  print("ERROR: Some exception occured when processing %s" % i)
-                  print(e)
+                  myPrint("ERROR: Some exception occured when processing %s" % i)
+                  myPrint(e)
                sleepToCharge(60)
       
       start_end = False
@@ -4505,8 +4505,8 @@ def custom7(start_end=False):
                   farmMission24FuseAndSell()
                   exitMarvel()
             except Exception, e:
-               print("ERROR: Some exception occured when processing %s" % i)
-               print(e)
+               myPrint("ERROR: Some exception occured when processing %s" % i)
+               myPrint(e)
             sleepToCharge(60)
 
 def custom8(start_end=False):
@@ -4521,8 +4521,8 @@ def custom8(start_end=False):
                      farmMission24FuseAndBoost()
                      exitMarvel()
                except Exception, e:
-                  print("ERROR: Some exception occured when processing %s" % i)
-                  print(e)
+                  myPrint("ERROR: Some exception occured when processing %s" % i)
+                  myPrint(e)
                sleepToCharge(60)
            
       start_end = False 
@@ -4533,8 +4533,8 @@ def custom8(start_end=False):
                   farmMission24FuseAndBoost()
                   exitMarvel()
             except Exception, e:
-               print("ERROR: Some exception occured when processing %s" % i)
-               print(e)
+               myPrint("ERROR: Some exception occured when processing %s" % i)
+               myPrint(e)
             sleepToCharge(60)
                
       
@@ -4545,8 +4545,8 @@ def custom8(start_end=False):
                   farmMission24FuseAndBoost()
                   exitMarvel()
             except Exception, e:
-               print("ERROR: Some exception occured when processing %s" % i)
-               print(e)
+               myPrint("ERROR: Some exception occured when processing %s" % i)
+               myPrint(e)
                
             sleepToCharge(60)
 
@@ -4575,8 +4575,8 @@ def custom20():
             exitMarvel()
             time.sleep(60)
          except Exception, e:
-            print("Failed to process user %s" % user)
-            print(e)
+            myPrint("Failed to process user %s" % user)
+            myPrint(e)
 
 def event20():
    
@@ -4601,13 +4601,13 @@ def event20():
             try:
                eventPlay()
             except Exception, e:
-               print(e)
+               myPrint(e)
             playNewestMission()
             exitMarvel()
             time.sleep(60)
          except Exception, e:
-            print("Failed to process user %s" % user)
-            print(e)
+            myPrint("Failed to process user %s" % user)
+            myPrint(e)
 
 
 def event1(start_end=False):
@@ -4794,12 +4794,12 @@ def event6():
                      try:
                         eventPlay(find_enraged=True)
                      except Exception, e:
-                        print(e)
+                        myPrint(e)
 #                     playNewestMission()
                      farmMission32FuseAndBoost()
                      exitMarvel()
                except Exception, e:
-                  print(e)
+                  myPrint(e)
                sleepToCharge(30)
 
 
@@ -4814,11 +4814,11 @@ def event7(find_enraged=False):
                   try:
                      eventPlay(find_enraged=find_enraged)
                   except Exception, e:
-                     print(e)
+                     myPrint(e)
                   farmMission32FuseAndBoost()
                   exitMarvel()
             except Exception, e:
-               print(e)
+               myPrint(e)
             sleepToCharge(30)
                
       for i in info.accounts.keys():
@@ -4828,12 +4828,12 @@ def event7(find_enraged=False):
                      try:
                         eventPlay(find_enraged=find_enraged)
                      except Exception, e:
-                        print(e)
+                        myPrint(e)
 #                     playNewestMission()
                      farmMission32FuseAndBoost()
                      exitMarvel()
                except Exception, e:
-                  print(e)
+                  myPrint(e)
                sleepToCharge(30)
 
 
@@ -4852,9 +4852,9 @@ def event8():
                   farmMission32FuseAndBoost()
                   exitMarvel()
                except Exception, e:
-                  print(e)
+                  myPrint(e)
          except Exception, e:
-            print(e)
+            myPrint(e)
          sleepToCharge(30)
          for i in info.accounts.keys():
             if i == 'JoInge' or i == 'JollyMa' or i == 'JoJanR':
@@ -4864,8 +4864,8 @@ def event8():
                      farmMission32FuseAndBoost()
                      exitMarvel()
                except Exception, e:
-                  print("ERROR: Some exception occured when processing %s" % i)
-                  print(e)
+                  myPrint("ERROR: Some exception occured when processing %s" % i)
+                  myPrint(e)
                sleepToCharge(60)
               
          for i in info.accounts.keys():
@@ -4876,8 +4876,8 @@ def event8():
                      farmMission32FuseAndBoost()
                      exitMarvel()
                except Exception, e:
-                  print("ERROR: Some exception occured when processing %s" % i)
-                  print(e)
+                  myPrint("ERROR: Some exception occured when processing %s" % i)
+                  myPrint(e)
                sleepToCharge(60)
                   
          
@@ -4889,8 +4889,8 @@ def event8():
                      farmMission32FuseAndBoost()
                      exitMarvel()
                except Exception, e:
-                  print("ERROR: Some exception occured when processing %s" % i)
-                  print(e)
+                  myPrint("ERROR: Some exception occured when processing %s" % i)
+                  myPrint(e)
                   
                sleepToCharge(60)
 
@@ -4958,7 +4958,7 @@ if __name__ == "__main__":
 #    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
    
 #    a = timeout(Popen,2,"sleep 5",stdout=PIPE,shell=True).stdout.read()
-#    print( "hello" )
+#    myPrint( "hello" )
    
 #    createMultipleNewFakeAccounts(44, interval=(0,0), referral="uda182123", never_abort=True, draw_ucp=False)
 #    time.sleep(10)
@@ -4973,7 +4973,7 @@ if __name__ == "__main__":
 #    run_data_tests.RunAllTests()
 #    spreadSheetExample.main()
 #    tests.
-#    print(Popen("python ./sys/gdata-2.0.17/tests/run_data_tests.py", stdout=PIPE, shell=True).stdout.read())
+#    myPrint(Popen("python ./sys/gdata-2.0.17/tests/run_data_tests.py", stdout=PIPE, shell=True).stdout.read())
 
 #    startMarvel('Account1')
 #   createNewFakeAccount()

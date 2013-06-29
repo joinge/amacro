@@ -700,6 +700,10 @@ def rebuildAPK(newid="a00deadbeef"):
    os.chdir('..')
    if os.name == "nt":
       myPopen('adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+      try:
+         myPopen('adb.exe %s shell /sdcard/macro/asroot rm -r /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+      except:
+         pass
       myPopen('adb.exe %s install woh\com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
    else:
       myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
@@ -4950,11 +4954,11 @@ if __name__ == "__main__":
    user.setCurrent("Joey")
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
-   createMultipleNewFakeAccounts(100, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
+#    createMultipleNewFakeAccounts(100, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(290, interval=(0,0), referral="npy855717", never_abort=True, draw_ucp=False)
    
 # Dented
-#    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
    
 #    a = timeout(Popen,2,"sleep 5",stdout=PIPE,shell=True).stdout.read()
 #    myPrint( "hello" )

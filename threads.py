@@ -53,12 +53,12 @@ class MyPopen(multiprocessing.Process):
            
    def run (self):
       
-      status=''
-      if self.STDOUT: status+='stdout '
-      if self.STDERR: status+='stderr '
-      if self.QUIET:   status+='quiet '
-      if self.LOGGING: status+='logging '
-      print(status)
+#       status=''
+#       if self.STDOUT: status+='stdout '
+#       if self.STDERR: status+='stderr '
+#       if self.QUIET:   status+='quiet '
+#       if self.LOGGING: status+='logging '
+#       print(status)
       
       proc = Popen(*self.args, **self.kwargs)
       

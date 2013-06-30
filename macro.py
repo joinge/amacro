@@ -701,7 +701,7 @@ def rebuildAPK(newid="a00deadbeef"):
    if os.name == "nt":
       myPopen('adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
       try:
-         myPopen('adb.exe %s shell /sdcard/macro/asroot rm -r /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
+         myPopen('adb.exe %s shell "echo rm -r /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android | su"'%ADB_ACTIVE_DEVICE)
       except:
          pass
       myPopen('adb.exe %s install woh\com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)

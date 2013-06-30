@@ -1846,7 +1846,11 @@ def takeScreenshot(filename=None):
       
       
 def readImage(image_file, xbounds=None, ybounds=None):
-   image = myRun(cv2.imread, image_file)
+   try:
+      image = myRun(cv2.imread, image_file)
+   except Exception, e:
+      myPrint(e)
+      myPrint("Unable to read image %"%image_file, type='error')
       
    if not xbounds:
       if not ybounds:
@@ -1899,7 +1903,6 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          else:
             img_path = SCREEN_PATH + '/dpi160'
             
-         
          image_screen = readImage(TEMP_PATH+"/screenshot_%s.png" %ACTIVE_DEVICE, xbounds, ybounds)
 #         image_screen   = readImage("test.png", xbounds, ybounds)
       except:
@@ -1924,8 +1927,12 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
                pl.imshow(image_template)
                pl.show()
                
-            result = myRun(cv2.matchTemplate, image_screen, image_template, cv2.TM_CCOEFF_NORMED)
-            
+            try:
+               result = myRun(cv2.matchTemplate, image_screen, image_template, cv2.TM_CCOEFF_NORMED)
+            except Exception, e:
+               print(e)
+               myPrint("Unable to match sctreenshot with template %s"%template)
+               
             if result.max() > threshold:
                match_found = True
                break

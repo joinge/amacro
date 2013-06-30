@@ -887,16 +887,15 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 #          if   not OK[0] and locateTemplate('mobage_ad.png',               offset=(85,14),  click=True, reuse_last_screenshot=True): OK[0] = 1
 #          elif not OK[1] and locateTemplate('tutorial_understood.png',     offset=(132,7),  click=True, reuse_last_screenshot=True): OK[1] = 1
 #          elif not OK[2] and locateTemplate('tutorial_skip.png',           offset=(49,11),  click=True, reuse_last_screenshot=True): OK[2] = 1
-         if   not OK[3] and locateTemplate('tutorial_another_card.png',   offset=(132,8),  click=True, reuse_last_screenshot=True): OK[3] = 1
-         elif not OK[4] and locateTemplate('tutorial_all_right.png',      offset=(127,10), click=True, reuse_last_screenshot=True): OK[4] = 1
-         elif not OK[5] and locateTemplate('tutorial_wreck_villains.png', offset=(123,10), click=True, reuse_last_screenshot=True): OK[5] = 1
-         elif not OK[6] and locateTemplate('tutorial_battle.png',         offset=(23,11),  click=True, reuse_last_screenshot=True): OK[6] = 1
-         elif not OK[7] and locateTemplate('tutorial_got_this_one.png',   offset=(123,9),  click=True, reuse_last_screenshot=True): OK[7] = 1
-         elif not OK[8] and locateTemplate('tutorial_i_will.png',         offset=(128,10), click=True, reuse_last_screenshot=True): OK[8] = 1
-         elif not OK[9] and locateTemplate('tutorial_referral.png',       offset=(124,13), click=True, reuse_last_screenshot=True):
+         if   leftClick((240,150)) or not OK[3] and locateTemplate('tutorial_another_card.png',   offset=(132,8),  click=True, reuse_last_screenshot=True): OK[3] = 1
+         elif leftClick((240,150)) or not OK[4] and locateTemplate('tutorial_all_right.png',      offset=(127,10), click=True, reuse_last_screenshot=True): OK[4] = 1
+         elif leftClick((240,150)) or not OK[5] and locateTemplate('tutorial_wreck_villains.png', offset=(123,10), click=True, reuse_last_screenshot=True): OK[5] = 1
+         elif leftClick((240,150)) or not OK[6] and locateTemplate('tutorial_battle.png',         offset=(23,11),  click=True, reuse_last_screenshot=True): OK[6] = 1
+         elif leftClick((240,150)) or not OK[7] and locateTemplate('tutorial_got_this_one.png',   offset=(123,9),  click=True, reuse_last_screenshot=True): OK[7] = 1
+         elif leftClick((240,150)) or not OK[8] and locateTemplate('tutorial_i_will.png',         offset=(128,10), click=True, reuse_last_screenshot=True): OK[8] = 1
+         elif leftClick((240,150)) or not OK[9] and locateTemplate('tutorial_referral.png',       offset=(124,13), click=True, reuse_last_screenshot=True):
             OK[9] = 1
             break
-         leftClick((240,150))
       printResult(True)
       printAction("Time for referral service BABY!!!")
       

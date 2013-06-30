@@ -11,10 +11,10 @@ devnull = open(os.devnull, 'w')
 
 logging.getLogger('')
 
-class MyPopen():#(multiprocessing.Process):
+class MyPopen(multiprocessing.Process):
    def __init__(self, queue, *args, **kwargs):
 #      super(Run,self).__init__()
-#       multiprocessing.Process.__init__(self)
+      multiprocessing.Process.__init__(self)
       self.queue = queue
       self.args = args
       self.kwargs = kwargs
@@ -52,13 +52,6 @@ class MyPopen():#(multiprocessing.Process):
          
            
    def run (self):
-      
-#       status=''
-#       if self.STDOUT: status+='stdout '
-#       if self.STDERR: status+='stderr '
-#       if self.QUIET:   status+='quiet '
-#       if self.LOGGING: status+='logging '
-#       print(status)
       
       proc = Popen(*self.args, **self.kwargs) 
       
@@ -111,9 +104,9 @@ def myPopen(*args, **kwargs):
       timeout = kwargs['timeout']
       
    process = MyPopen(queue, *args, **kwargs)
-#    process.start()
-   process.run()
-#    process.join(timeout) 
+   process.start()
+#    process.run()
+   process.join(timeout) 
    
    if not queue.empty():
       return queue.get(timeout=timeout)

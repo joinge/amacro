@@ -4,6 +4,7 @@
 
 from distutils import dir_util
 from nothreads import myRun, myPopen
+import threads
 from printing import myPrint, printAction, printResult, printNotify
 from random import uniform
 from subprocess import Popen, PIPE
@@ -1066,7 +1067,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
          myPrint("REFERRAL SERVICE: Iteration %d"%i)
          
          try:
-            retcode = myRun(createNewFakeAccount, timeout=3.5*60, referral=ref_code, draw_ucp=draw_ucp)
+            retcode = threads.myRun(createNewFakeAccount, timeout=3.5*60, referral=ref_code, draw_ucp=draw_ucp)
          except:
             retcode = 3
          

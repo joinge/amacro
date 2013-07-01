@@ -4909,7 +4909,7 @@ if __name__ == "__main__":
    
 # Dented
    import cProfile, pstats
-   cProfile.run('createMultipleNewFakeAccounts(1, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)', 'stats')
+   cProfile.run('createMultipleNewFakeAccounts(3, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)', 'stats')
    p = pstats.Stats('stats')
    p.sort_stats('cumulative')
    p.print_stats()

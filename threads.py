@@ -48,7 +48,7 @@ class MyPopen(multiprocessing.Process):
          self.QUIET = True
          
       if not 'shell' in kwargs:
-         self.kwargs['shell'] = True
+         self.kwargs['shell'] = False
          
            
    def run (self):
@@ -101,7 +101,7 @@ def myPopen(*args, **kwargs):
    if not 'timeout' in kwargs:
       timeout = 10
    else:
-      timeout = kwargs['timeout']
+      timeout = kwargs.pop('timeout')
       
    process = MyPopen(queue, *args, **kwargs)
    process.start()
@@ -121,7 +121,7 @@ def myRun(function, *args, **kwargs):
    if not 'timeout' in kwargs:
       timeout = 10
    else:
-      timeout = kwargs['timeout']
+      timeout = kwargs.pop('timeout')
    
    process = MyRun(function, queue, *args, **kwargs)
    process.start()

@@ -1066,9 +1066,15 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
          myPrint("REFERRAL SERVICE: Iteration %d"%i)
          
          try:
-            retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
+            retcode = myRun(createNewFakeAccount, timeout=3.5*60, referral=ref_code, draw_ucp=draw_ucp)
          except:
             retcode = 3
+         
+#          retcode = myRun(createNewFakeAccount, timeout=3.5*60, referral=ref_code, draw_ucp=draw_ucp)
+#          try:
+#             retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
+#          except:
+#             retcode = 3
             
          if retcode == None:
             retcode = 3

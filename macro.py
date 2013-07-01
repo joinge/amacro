@@ -2,12 +2,11 @@
 
 #cnee --record --seconds-to-record 150 --mouse --keyboard -o joinge.xns -e joinge.log -v
 
-
-from __future__ import print_function
 from distutils import dir_util
+from nothreads import myRun, myPopen
+from printing import myPrint, printAction, printResult, printNotify
 from random import uniform
 from subprocess import Popen, PIPE
-from threads import myRun, myPopen
 import ast
 import cv2
 import logging
@@ -94,7 +93,6 @@ def10 = ['trcoba3', 'trcoba4', 'jabronii', 'Athena2317', 'Lyn3tte', 'Y0liis', 'g
 timeout = 90 # minutes
 ip = "10.0.0.15"
 
-PAD = 60
 all_feeder_cards = [
 'common_spiderwoman',
 'common_sandman',
@@ -1371,61 +1369,7 @@ def exitMarvel():
    
    myPopen("adb %s shell am force-stop com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android" % ADB_ACTIVE_DEVICE)
 
-msg_queue = multiprocessing.Queue()
-def myPrint(arg, **kwargs):
-   
-   msg = ''
-   if not msg_queue.empty():
-      msg = msg_queue.get()
-   
-   if 'type' in kwargs:
-      severity = kwargs.pop('type')
-      getattr(logging, severity)(msg+arg,**kwargs)
-   else:
-      logging.debug(msg+arg,**kwargs)
-      
-   print(msg+arg, **kwargs)
 
-def printResult(res, msg_type='debug'):
-   global msg_queue
-   msg = ''
-   
-   if not msg_queue.empty():
-      msg = msg_queue.get()
-      
-#   logging.debug('Happy Hoppy')
-   if res:
-      getattr(logging, msg_type)(msg.ljust(PAD, ' ')+':)')
-      sys.stdout.write(":)")
-   else:
-      getattr(logging, msg_type)(msg.ljust(PAD, ' ')+':s')
-      sys.stdout.write(":s")
-      
-   sys.stdout.flush()
-   sys.stdout.write("\n")
-
-def printAction(str, res=None, newline=False, msg_type='debug'):
-   string = "   %s" % str
-   global msg_queue
-      
-   if newline:
-      getattr(logging, msg_type)(string)
-      sys.stdout.write(string.ljust(PAD, ' '))
-      sys.stdout.flush()
-      sys.stdout.write("\n")
-   else:
-      msg_queue.put(string.ljust(PAD, ' '), True)
-      sys.stdout.write(string.ljust(PAD, ' '))
-      sys.stdout.flush()
-   if res:
-      printResult(res, msg_type=msg_type)
-      
-def printNotify(message, timeout=30):
-   myPrint("NOTIFICATION: " + message)
-   notify()
-   myPrint("Type Enter to continue (will do so anyways in 30s)")
-   
-   select.select([sys.stdin], [], [], timeout)
 #   i, o, e = 
    
 #   if (i):
@@ -4964,8 +4908,11 @@ if __name__ == "__main__":
 #   createMultipleNewFakeAccounts(290, interval=(0,0), referral="npy855717", never_abort=True, draw_ucp=False)
    
 # Dented
-   createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
-   
+   import cProfile, pstats
+   cProfile.run('createMultipleNewFakeAccounts(1, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)', 'stats')
+   p = pstats.Stats('stats')
+   p.sort_stats('cumulative')
+   p.print_stats()
 #    a = timeout(Popen,2,"sleep 5",stdout=PIPE,shell=True).stdout.read()
 #    myPrint( "hello" )
    

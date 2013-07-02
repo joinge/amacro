@@ -47,7 +47,10 @@ class MyPopen():
          self.QUIET = True
          
       if not 'shell' in kwargs:
-         self.kwargs['shell'] = False
+         if os.name == "posix":
+            self.kwargs['shell'] = True
+         else:
+            self.kwargs['shell'] = False
          
            
    def run (self):

@@ -4912,14 +4912,16 @@ if __name__ == "__main__":
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
 #    createMultipleNewFakeAccounts(100, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
-#   createMultipleNewFakeAccounts(290, interval=(0,0), referral="npy855717", never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts([60,60,35], interval=(0,0), referral=["npy855717","ykv283442","erf164963"], never_abort=True, draw_ucp=False)
+#   createMultipleNewFakeAccounts(60, interval=(0,0), referral="ykv283442", never_abort=True, draw_ucp=False)
+#   createMultipleNewFakeAccounts(35, interval=(0,0), referral="y", never_abort=True, draw_ucp=False)
    
 # Dented
-   import cProfile, pstats
-   cProfile.run('createMultipleNewFakeAccounts(3, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)', 'stats')
-   p = pstats.Stats('stats')
-   p.sort_stats('cumulative')
-   p.print_stats()
+#   import cProfile, pstats
+#   cProfile.run('createMultipleNewFakeAccounts(3, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)', 'stats')
+#   p = pstats.Stats('stats')
+#   p.sort_stats('cumulative')
+#   p.print_stats()
 #    a = timeout(Popen,2,"sleep 5",stdout=PIPE,shell=True).stdout.read()
 #    myPrint( "hello" )
    

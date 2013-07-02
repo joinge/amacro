@@ -125,7 +125,7 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
                     filename=TEMP_PATH+'/macro.log',
-                    filemode='w')
+                    filemode='a')
 # define a Handler which writes INFO messages or higher to the sys.stderr
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
@@ -743,6 +743,9 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
       tmp = ['0123456789', ABC, abc]
       tmp2 = ''.join(i for i in tmp)
+      
+      tmp = ['0123456789', abc]
+      tmp3 = ''.join(i for i in tmp)
             
       c = np.array(login_screen)
    
@@ -768,7 +771,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       for i in range(10):
          
          if i!=0:         
-            emailbase = emailbase + tmp2[int(np.random.uniform(0, len(tmp2)-1e-9))]    
+            emailbase = emailbase + tmp3[int(np.random.uniform(0, len(tmp3)-1e-9))]    
             printAction("Wiping both fields...")
             # Wipe both fields:
             leftClick((244, 73) + c) # Email field
@@ -875,7 +878,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 #          myPrint(i)
          locateTemplate('mobage_ad.png',              offset=(85,14),  click=True)
          locateTemplate('tutorial_skip.png',          offset=(49,11),  click=True, reuse_last_screenshot=True)
-         leftClick((240,150))
+         leftClick((235, 228))
          if locateTemplate('tutorial_understood.png', offset=(132,7),  click=True, reuse_last_screenshot=True):
             break
       
@@ -1038,7 +1041,7 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
       else:
          printAction("WARNING: This return code is unknown",newline=True)
       
-      for i in range(len(iterations)):
+      for i in range(len(retcode_counts)):
          retcode_count = retcode_counts[i]
          printAction("",newline=True)
          printAction("Refcode:       %s"%referral[i], newline=True)

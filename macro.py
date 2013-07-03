@@ -4,10 +4,10 @@
 
 from distutils import dir_util
 from nothreads import myRun, myPopen
-import threads
-from printing import myPrint, printAction, printResult, printNotify
+from printing import myPrint, printAction, printResult, printNotify, printQueue, \
+   printLog
 from random import uniform
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 import ast
 import cv2
 import logging
@@ -16,8 +16,10 @@ import numpy as np
 import os
 import re
 import select
+import shutil
 import sys
 import threading
+import threads
 import time
 import urllib2
 
@@ -558,6 +560,8 @@ def getBaseName():
             printAction('Unable to parse the internet page. Internet problem?', newline=True, msg_type='error')
             return None
          
+         printResult(True)
+         
       except:
          printResult(False)
          return None    
@@ -664,18 +668,17 @@ def rebuildAPK(newid="a00deadbeef"):
    printAction("   Zip the code into an APK...", newline=True)
    # Step 5: Zip up apk
 
-   if os.name == "nt":
-      import shutil
-      shutil.make_archive("WOHU", "zip", "unpacked")
-      try:
-         os.remove('WOHU.apk')
-      except:
-         pass
-      os.rename('WOHU.zip','WOHU.apk')
-   else:   
-      os.chdir('unpacked')
-      myPopen('zip -r - . > ../WOHU.apk')
-      os.chdir('..')
+#   if os.name == "nt":
+   shutil.make_archive("WOHU", "zip", "unpacked")
+   try:
+      os.remove('WOHU.apk')
+   except:
+      pass
+   os.rename('WOHU.zip','WOHU.apk')
+#   else:   
+#      os.chdir('unpacked')
+#      myPopen('zip -r - . > ../WOHU.apk')
+#      os.chdir('..')
 
    printAction("   Sign the APK...", newline=True)
    # Step 6: generate a keystore if one doesn't already exist
@@ -706,7 +709,7 @@ def rebuildAPK(newid="a00deadbeef"):
       myPopen('adb.exe %s install woh\com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
    else:
       myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
-      myPopen('adb %s install woh/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
+      myPopen('adb %s install woh/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE, stderr=STDOUT)
          
 #   os.chdir('..')
    
@@ -772,7 +775,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          
          if i!=0:         
             emailbase = emailbase + tmp3[int(np.random.uniform(0, len(tmp3)-1e-9))]    
-            printAction("Wiping both fields...")
+            printAction("Wiping both fields...", newline=True)
             # Wipe both fields:
             leftClick((244, 73) + c) # Email field
             if i!=0:
@@ -1070,8 +1073,10 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
          myPrint("REFERRAL SERVICE: Iteration %d"%i)
          
          try:
-            retcode = threads.myRun(createNewFakeAccount, timeout=3.5*60, referral=ref_code, draw_ucp=draw_ucp)
-         except:
+#            retcode = threads.myRun(createNewFakeAccount, timeout=3.5*60, referral=ref_code, draw_ucp=draw_ucp)
+            retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
+         except Exception, e:
+            printLog(e, msg_type='error')
             retcode = 3
          
 #          retcode = myRun(createNewFakeAccount, timeout=3.5*60, referral=ref_code, draw_ucp=draw_ucp)
@@ -1094,9 +1099,9 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
          try:
             if not printSummary():
                break 
-         except Exception as e:
+         except Exception, e:
+            printLog(e, msg_type='error')
             printAction("ERROR: Unable to print summary")
-            myPrint(e)
             
          wait_time = np.random.uniform(interval[0]*60,interval[1]*60)
          
@@ -1343,7 +1348,8 @@ def setAndroidId(user=None, newid='0' * 15):
             
             info.set(user, newid, 'fakeID')
 
-      except:
+      except Exception, e:
+         printLog(e, msg_type='error')
          myPrint("ERROR: User %s does not seem to exist!" % user)
 
    else:
@@ -1839,7 +1845,7 @@ def swipeReference(template, destination=(0, 0), threshold=0.96, print_coeff=Fal
    return ref
    
 
-def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=0, print_coeff=True, xbounds=None, ybounds=None, reuse_last_screenshot=False,
+def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False,
                    recurse=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
 
    DEBUG=False
@@ -1884,7 +1890,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
                result = myRun(cv2.matchTemplate, image_screen, image_template, cv2.TM_CCOEFF_NORMED)
             except Exception, e:
                print(e)
-               myPrint("Unable to match sctreenshot with template %s"%template)
+               myPrint("Unable to match screenshot with template %s"%template)
                
             if result.max() > threshold:
                match_found = True
@@ -1904,6 +1910,10 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
       if print_coeff:
          sys.stdout.write("%.2f " % result.max())
          sys.stdout.flush()
+      else:
+         sys.stdout.write('.')
+         sys.stdout.flush()
+      printQueue("%.2f " % result.max())
 #         print( " %.2f"%result.max(), end='' )
          
       if match_found:
@@ -1916,6 +1926,10 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          if print_coeff:
             sys.stdout.write("(%d,%d) " % (object_coords[0], object_coords[1]))
             sys.stdout.flush()
+         else:
+            sys.stdout.write(' ')
+            sys.stdout.flush()
+         printQueue("(%d,%d) " % (object_coords[0], object_coords[1]))
 #         myPrint(" (%d,%d)"%(object_coords[0],object_coords[1]),end=' ')
          return object_coords
       

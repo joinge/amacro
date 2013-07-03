@@ -38,7 +38,7 @@ class MyPopen():
             self.kwargs['stderr'] = PIPE
             self.STDERR = False
          else:
-            self.kwargs['stdout'] = kwargs['stderr']   
+            self.kwargs['stderr'] = kwargs['stderr']   
       else:
          self.kwargs['stderr'] = PIPE
          
@@ -63,11 +63,16 @@ class MyPopen():
       else:
          if self.LOGGING:
             sout = proc.stdout.read()
-            serr = proc.stderr.read()
+            try:
+               serr = proc.stderr.read()
+            except:
+               self.STDERR = False
+               serr = None
+               
             if sout:
                logging.debug(sout)
             if serr:
-               logging.error(serr) 
+               logging.error(serr)
 
             if self.STDOUT and self.STDERR:
                return sout+serr
@@ -77,12 +82,19 @@ class MyPopen():
                return serr     
                
          else:
+            sout = proc.stdout.read()
+            try:
+               serr = proc.stderr.read()
+            except:
+               self.STDERR = False
+               serr = None
+               
             if self.STDOUT and self.STDERR:
-               return proc.stdout.read() + proc.stderr.read()
+               return sout + serr
             if self.STDOUT:
-               return proc.stdout.read()
+               return sout
             if self.STDERR:
-               return proc.stderr.read()
+               return serr
             
 
 def myPopen(*args, **kwargs):

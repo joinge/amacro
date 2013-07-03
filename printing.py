@@ -8,10 +8,18 @@ PAD = 60
 
 msg_queue = multiprocessing.Queue()
 def myPrint(arg, **kwargs):
-   
+
    msg = ''
-#    if not msg_queue.empty():
-#       msg = msg_queue.get()
+   max_num = 500
+   while True and max_num>0:
+      if not msg_queue.empty():
+         msg = msg + msg_queue.get()
+      else:
+         break
+      max_num = max_num - 1
+#   msg = ''
+#   if not msg_queue.empty():
+#      msg = msg_queue.get()
    
    if 'type' in kwargs:
       severity = kwargs.pop('type')
@@ -19,14 +27,17 @@ def myPrint(arg, **kwargs):
    else:
       logging.debug(msg+arg,**kwargs)
       
-   print(msg+arg, **kwargs)
+   print(arg, **kwargs)
 
 def printResult(res, msg_type='debug'):
    global msg_queue
    msg = ''
    
-   if not msg_queue.empty():
-      msg = msg_queue.get()
+   while True:
+      if not msg_queue.empty():
+         msg = msg + msg_queue.get()
+      else:
+         break
       
 #   logging.debug('Happy Hoppy')
    if res:
@@ -38,13 +49,25 @@ def printResult(res, msg_type='debug'):
       
    sys.stdout.flush()
    sys.stdout.write("\n")
+   
+def printQueue(string):
+   msg_queue.put(string, True)
+   
+def printLog(string, newline=True, msg_type='debug'):
+   string = "   %s" % str
+   global msg_queue
+      
+   if newline:
+      getattr(logging, msg_type)(string)
+   else:
+      msg_queue.put(string, True)
 
 def printAction(str, res=None, newline=False, msg_type='debug'):
    string = "   %s" % str
    global msg_queue
       
    if newline:
-      getattr(logging, msg_type)(string)
+      getattr(logging, msg_type)(string.ljust(PAD, ' '))
       sys.stdout.write(string.ljust(PAD, ' '))
       sys.stdout.flush()
       sys.stdout.write("\n")

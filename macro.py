@@ -4929,7 +4929,7 @@ if __name__ == "__main__":
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
 #    createMultipleNewFakeAccounts(100, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
-   createMultipleNewFakeAccounts([60,60,35], interval=(0,0), referral=["npy855717","ykv283442","erf164963"], never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts([40], interval=(0,0), referral=["gff531654"], never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="ykv283442", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(35, interval=(0,0), referral="y", never_abort=True, draw_ucp=False)
    

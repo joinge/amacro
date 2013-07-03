@@ -897,17 +897,18 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          elif leftClick((240,150)) or not OK[5] and locateTemplate('tutorial_wreck_villains.png', offset=(123,10), click=True, reuse_last_screenshot=True): OK[5] = 1
          elif leftClick((240,150)) or not OK[6] and locateTemplate('tutorial_battle.png',         offset=(23,11),  click=True, reuse_last_screenshot=True): OK[6] = 1
          elif leftClick((240,150)) or not OK[7] and locateTemplate('tutorial_got_this_one.png',   offset=(123,9),  click=True, reuse_last_screenshot=True): OK[7] = 1
-         elif leftClick((240,150)) or not OK[8] and locateTemplate('tutorial_i_will.png',         offset=(128,10), click=True, reuse_last_screenshot=True): OK[8] = 1
-         elif leftClick((240,150)) or not OK[9] and locateTemplate('tutorial_referral.png',       offset=(124,13), click=True, reuse_last_screenshot=True):
-            OK[9] = 1
+         elif leftClick((240,150)) or not OK[8] and locateTemplate('tutorial_promotion_codes.png',offset=(128,10), click=True, reuse_last_screenshot=True):
+            OK[8] = 1
             break
       printResult(True)
       printAction("Time for referral service BABY!!!")
       
       printAction("Entering the referral code...")
       success = False
-      for i in range(3):
-         ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=1)
+      for i in range(2):
+#         locateTemplate('tutorial_referral.png', offset=(124,13), click=True, reuse_last_screenshot=True)
+         
+         ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=.5, swipe_size=[(240, 500), (240, 295)])
 
          if ok:
             text_field = ok + np.array((30,-33))
@@ -922,16 +923,20 @@ def createNewFakeAccount(referral="", draw_ucp=False):
                backspace()
          
             leftClick(ok)
-            ok2 = locateTemplate('tutorial_almost_finished_ok.png', offset=(92,15), click=True, retries=4, interval=1)
-            if ok2:
+            back = locateTemplate('tutorial_back.png', offset=(118,16), click=True, retries=5, swipe_size=[(240, 600), (240, 100)])
+            if back:
                success = True
                break
-
+            
       printResult(success)
       if not success:
          myPrint("ERROR: Unable to process referral code")
          return 2 # If the service gets this far without working, it's probably best to call it off.
 
+      lets_do_this = locateTemplate('tutorial_lets_do_this.png', offset=(137,11), click=True, retries=3)
+      if not lets_do_this:
+         myPrint("ERROR: Unable to process referral code", msg_type='error')
+         return 2
          
       printAction("Registering device...")
       register_device = None
@@ -4929,7 +4934,7 @@ if __name__ == "__main__":
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
 #    createMultipleNewFakeAccounts(100, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
-   createMultipleNewFakeAccounts([60,60,35], interval=(0,0), referral=["npy855717","ykv283442","erf164963"], never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts([45,35], interval=(0,0), referral=["ykv283442","erf164963"], never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="ykv283442", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(35, interval=(0,0), referral="y", never_abort=True, draw_ucp=False)
    

@@ -326,12 +326,15 @@ class Device():
       myPrint("")
       myPrint("Device info updated. New parameters:")
       if YOUWAVE:
-         myPrint("youwave detected?       YES")
+         myPrint("Detected YouWave device")
          myPrint("  Device - touchscreen: /dev/input/event%d"%self.eventTablet)
          myPrint("  Device - keyboard:    /dev/input/event%d"%self.eventKeyboard)
          myPrint("  Device - mouse:       /dev/input/event%d"%self.eventMouse)
       else:
-         myPrint("youwave detected?       NO")         
+         myPrint("youwave detected?       NO")
+         
+      if self.android_vm:
+         myPrint("Detected AndroVM OS")      
       myPrint("Screen density:         %d"%self.screenDensity)
       myPrint("")
   
@@ -923,7 +926,8 @@ def createNewFakeAccount(referral="", draw_ucp=False):
                backspace()
          
             leftClick(ok)
-            back = locateTemplate('tutorial_back.png', offset=(118,16), click=True, retries=5, interval=.3, swipe_size=[(240, 600), (240, 100)])
+            time.sleep(1)
+            back = locateTemplate('tutorial_back.png', offset=(118,16), click=True, retries=15, interval=.3, swipe_size=[(240, 600), (240, 100)])
             if back:
                success = True
                break
@@ -1319,7 +1323,7 @@ def newAndroidId():
       return ''.join(np.random.uniform(0,10-1e-9, size=int(np.random.uniform(15, 18))).astype(int).astype('str'))
    
    else:
-      myPrint("Android ID creation for this device type is not supported!!!", type='error')
+      myPrint("Android ID creation for this device type is not supported!!!", msg_type='error')
       return None
 def setAndroidId(user=None, newid='0' * 15):
    
@@ -1816,7 +1820,7 @@ def readImage(image_file, xbounds=None, ybounds=None):
       image = myRun(cv2.imread, image_file)
    except Exception, e:
       myPrint(e)
-      myPrint("Unable to read image %"%image_file, type='error')
+      myPrint("Unable to read image %"%image_file, msg_type='error')
       
    if not xbounds:
       if not ybounds:

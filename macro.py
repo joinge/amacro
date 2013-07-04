@@ -923,7 +923,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
                backspace()
          
             leftClick(ok)
-            back = locateTemplate('tutorial_back.png', offset=(118,16), click=True, retries=5, swipe_size=[(240, 600), (240, 100)])
+            back = locateTemplate('tutorial_back.png', offset=(118,16), click=True, retries=5, interval=.3, swipe_size=[(240, 600), (240, 100)])
             if back:
                success = True
                break

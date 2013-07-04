@@ -21,8 +21,8 @@ def myPrint(arg, **kwargs):
 #   if not msg_queue.empty():
 #      msg = msg_queue.get()
    
-   if 'type' in kwargs:
-      severity = kwargs.pop('type')
+   if 'msg_type' in kwargs:
+      severity = kwargs.pop('msg_type')
       getattr(logging, severity)(msg+arg,**kwargs)
    else:
       logging.debug(msg+arg,**kwargs)

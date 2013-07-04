@@ -926,7 +926,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
                backspace()
          
             leftClick(ok)
-            time.sleep(1)
+            time.sleep(2)
             back = locateTemplate('tutorial_back.png', offset=(118,16), click=True, retries=15, interval=.3, swipe_size=[(240, 600), (240, 100)])
             if back:
                success = True
@@ -4940,7 +4940,7 @@ if __name__ == "__main__":
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
 #    createMultipleNewFakeAccounts(100, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
-   createMultipleNewFakeAccounts([25], interval=(0,0), referral=["bsv991976"], never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts([100], interval=(0,0), referral=["bsv991976"], never_abort=True, draw_ucp=False)
 
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="ykv283442", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(35, interval=(0,0), referral="y", never_abort=True, draw_ucp=False)

@@ -39,7 +39,7 @@ class MyPopen(multiprocessing.Process):
             self.kwargs['stderr'] = PIPE
             self.STDERR = False
          else:
-            self.kwargs['stdout'] = kwargs['stderr']   
+            self.kwargs['stderr'] = kwargs['stderr']   
       else:
          self.kwargs['stderr'] = PIPE
          
@@ -132,9 +132,6 @@ def myRun(function, *args, **kwargs):
       process.join(0.5)
       if process.is_alive():
          process.terminate()
-         
-#       if    process.join(0.5): pass
-#       else: process.terminate()
          
       return res
    else:

@@ -771,7 +771,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
 
       success = False
       c = np.array(signup_screen)
-      for i in range(10):
+      for i in range(3):
          
          if i!=0:         
             emailbase = emailbase + tmp3[int(np.random.uniform(0, len(tmp3)-1e-9))]    
@@ -1078,8 +1078,10 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
          myPrint("REFERRAL SERVICE: Iteration %d"%i)
          
          try:
-#            retcode = threads.myRun(createNewFakeAccount, timeout=3.5*60, referral=ref_code, draw_ucp=draw_ucp)
-            retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
+            if user.getCurrent() == 'Chris':
+               retcode = threads.myRun(createNewFakeAccount, timeout=10*60, referral=ref_code, draw_ucp=draw_ucp)
+            else:
+               retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
          except Exception, e:
             printLog(e, msg_type='error')
             retcode = 3
@@ -4934,7 +4936,7 @@ if __name__ == "__main__":
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
 #    createMultipleNewFakeAccounts(100, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
-   createMultipleNewFakeAccounts([45,35], interval=(0,0), referral=["ykv283442","erf164963"], never_abort=True, draw_ucp=False)
+   createMultipleNewFakeAccounts([25], interval=(0,0), referral=["bsv991976"], never_abort=True, draw_ucp=False)
 
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="ykv283442", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(35, interval=(0,0), referral="y", never_abort=True, draw_ucp=False)

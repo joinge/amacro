@@ -735,7 +735,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
    launch_marvel()
    
    printAction("Searching for login screen...")
-   login_screen = locateTemplate('login_screen.png', threshold=0.95, retries=25, interval=1)
+   login_screen = locateTemplate('login_screen.png', threshold=0.95, retries=60, interval=1)
    printResult(login_screen)
    
    if login_screen:
@@ -4939,8 +4939,8 @@ if __name__ == "__main__":
    user.setCurrent("Joey")
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
-#    createMultipleNewFakeAccounts(100, interval=(0,0), referral="prc538006", never_abort=True, draw_ucp=False)
-   createMultipleNewFakeAccounts([100], interval=(0,0), referral=["bsv991976"], never_abort=True, draw_ucp=False)
+createMultipleNewFakeAccounts([200-24-57], interval=(0,0), referral=["bfg376874"], never_abort=True, draw_ucp=False)
+   #createMultipleNewFakeAccounts([100], interval=(0,0), referral=["bsv991976"], never_abort=True, draw_ucp=False)
 
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="ykv283442", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(35, interval=(0,0), referral="y", never_abort=True, draw_ucp=False)

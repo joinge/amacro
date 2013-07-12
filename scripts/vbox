@@ -1,3 +1,5 @@
+#!/bin/bash -e
+
 ifconfig vboxnet0 192.168.1.1 netmask 255.255.255.0 up
 ifconfig vboxnet1 192.168.2.1 netmask 255.255.255.0 up
 ifconfig vboxnet2 192.168.3.1 netmask 255.255.255.0 up

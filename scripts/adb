@@ -1,21 +1,9 @@
 #!/bin/bash -e
 
-if [ "$(ifconfig | grep 192.168.1.1)" != "" ]; then
-   adb connect 192.168.1.10
-fi
-
-if [ "$(ifconfig | grep 192.168.2.1)" != "" ]; then
-adb connect 192.168.2.10
-fi
-
-if [ "$(ifconfig | grep 192.168.3.1)" != "" ]; then
-adb connect 192.168.3.10
-fi
-
-if [ "$(ifconfig | grep 192.168.4.1)" != "" ]; then
-adb connect 192.168.4.10
-fi
-
-if [ "$(ifconfig | grep 192.168.5.1)" != "" ]; then
-adb connect 192.168.5.10
-fi
+echo "hmm"
+for i in {0..9}; do
+  if [ "$(ifconfig | grep 192.168.1${i}.1)" != "" ]; then
+    echo "adb connect 192.168.1${i}.10"
+    adb connect 192.168.1${i}.10
+   fi
+done

@@ -4912,6 +4912,14 @@ def gimpScreenshot():
 if __name__ == "__main__":
 
    i = Info()
+   
+   # Abracho bfg376874
+   # Chris   ddf493943
+   # Dented  zpj296305
+   # Frankie rnj978078
+   # JoInge  bsv991976
+   # Mark    jcp405955
+   
 
 #   setActiveDevice("10.42.0.52:5558",True)
 #   custom20()
@@ -4933,14 +4941,24 @@ if __name__ == "__main__":
 #      os.chdir('dist/woh_macro')
 #   getBaseName()
 
-   setActiveDevice('192.168.1.10:5555')
+   setActiveDevice('192.168.10.10:5555')
       
 #   adbConnect("localhost:5558")
    user.setCurrent("Joey")
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
-createMultipleNewFakeAccounts([200-24-57], interval=(0,0), referral=["bfg376874"], never_abort=True, draw_ucp=False)
-   #createMultipleNewFakeAccounts([100], interval=(0,0), referral=["bsv991976"], never_abort=True, draw_ucp=False)
+   #createMultipleNewFakeAccounts([50], interval=(0,0), referral=["zjr695081"], never_abort=True, draw_ucp=False)
+#createMultipleNewFakeAccounts([200-24-57], interval=(0,0), referral=["bfg376874"], never_abort=True, draw_ucp=False)
+
+   createMultipleNewFakeAccounts([10,500], interval=(0,0), referral=["rvx470291","jcp405955"], never_abort=True, draw_ucp=False) # Mark
+   
+   #        Krzy        Sky         Ducky        Mika         Cfd          Bad Milk     Skittle      Vince        Frank
+   refs = ["jpm140046","tqr638335","gqz495105", "wek110915", "maq107823", "acs385098", "tsk990511", "rpn132038", "afs233616"]
+   for i in range(100):
+      for ref in refs:
+         createMultipleNewFakeAccounts(1, interval=(0,0), referral=ref, never_abort=True, draw_ucp=False)
+   #createMultipleNewFakeAccounts([25], interval=(0,0), referral=["mhk504529"], never_abort=True, draw_ucp=False)
+   #createMultipleNewFakeAccounts([1000], interval=(0,0), referral=["bsv991976"], never_abort=True, draw_ucp=False) # JoInge
 
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="ykv283442", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(35, interval=(0,0), referral="y", never_abort=True, draw_ucp=False)

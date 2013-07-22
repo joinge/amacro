@@ -1,7 +1,8 @@
 #!/bin/bash -e
 
-ifconfig vboxnet0 192.168.1.1 netmask 255.255.255.0 up
-ifconfig vboxnet1 192.168.2.1 netmask 255.255.255.0 up
-ifconfig vboxnet2 192.168.3.1 netmask 255.255.255.0 up
-ifconfig vboxnet3 192.168.4.1 netmask 255.255.255.0 up
-ifconfig vboxnet4 192.168.5.1 netmask 255.255.255.0 up
+for i in {0..10}; do
+  if [ "$(ifconfig -a | grep vboxnet${i})" != "" ]; then
+    echo "ifconfig vboxnet${i} 192.168.$((${i}+1)).1 netmask 255.255.255.0 up"
+    ifconfig vboxnet${i} 192.168.$((${i}+1)).1 netmask 255.255.255.0 up
+  fi
+done

@@ -5036,7 +5036,7 @@ if __name__ == "__main__":
 #      os.chdir('dist/woh_macro')
 #   getBaseName()
 
-   setActiveDevice('192.168.10.10:5555')
+   setActiveDevice('192.168.1.10:5555')
       
 #   adbConnect("localhost:5558")
    user.setCurrent("Joey")

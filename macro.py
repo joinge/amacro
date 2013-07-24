@@ -3409,21 +3409,25 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
       stats.silverEnd("mission_%d-%d" % mission_number)
           
           
-def playNewestMission(repeat=50):
+def playNewestMission(repeat=50, use_ep=None):
 
    myPrint("MISSION: Newest...")
+   ep_counter = 0
+   
+   mission_button = locateTemplate('mission_button.png', offset=(49,13), print_coeff=False)
 
    for i in range(repeat + 1):
       printAction("Searching for newest mission button...")
-      mission_newest_button  = locateTemplate("mission_newest_button.png", threshold=0.95,
-                                             offset=(193, 14))
+      mission_newest_button  = locateTemplate("mission_newest_button.png", threshold=0.95, retries=2, offset=(193, 14))
+      printResult(mission_newest_button)
                   
       if not mission_newest_button:
          
          # Double check that the return from mission actually was registered.
          mission_started = locateTemplate('mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
          mission_boss_encounter = locateTemplate("mission_boss_encounter.png", offset=(130, 16), print_coeff=False, reuse_last_screenshot=True)
-
+         mission_out_of_energy = locateTemplate("mission_out_of_energy.png", offset=(130, 16), print_coeff=False, reuse_last_screenshot=True)
+         
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
             back_key()
@@ -3458,21 +3462,51 @@ def playNewestMission(repeat=50):
             
             repeat = repeat + 1
             
+         elif mission_out_of_energy and use_ep:
+            
+            printAction("Out of energy. Using an extra energy pack...")
+            mission_use_energy_pack = locateTemplate("mission_use_energy_pack.png", offset=(43,134), retries=3, click=True, reuse_last_screenshot=True)
+            printResult(mission_use_energy_pack)
+            
+            if not mission_use_energy_pack:
+               return ep_counter
+            
+            printAction("Out of energy. Using an extra energy pack...")
+            button_green_ok = locateTemplate("button_green_ok.png", offset=(28,9), retries=3, click=True)
+            printResult(button_green_ok)
+            
+            if not button_green_ok:
+               return ep_counter
+            
+            if mission_button:
+               leftClick(mission_button)
+            else:
+               locateTemplate('mission_button.png', offset=(49, 13), print_coeff=False, click=True, reuse_last_screenshot=True)
+
          else:
 
             mission_button = locateTemplate('mission_button.png', offset=(49, 13), print_coeff=False, reuse_last_screenshot=True)
             
-            leftClick(mission_button) # mission button
-            time.sleep(3)
+            if mission_button:
+               leftClick(mission_button) # mission button
+            else:
+               if use_ep:
+                  return ep_counter
+               else:
+                  return False
+#            time.sleep(3)
          
             printAction("Searching for newest mission button...")
             mission_newest_button = locateTemplate("mission_newest_button.png", threshold=0.95,
                                                    offset=(193, 14), retries=5, swipe_size=[(240, 500), (240, 295)])
             printResult(mission_newest_button)
             if not mission_newest_button:
-               return False
+               if use_ep:
+                  return ep_counter
+               else:
+                  return False
                
-            time.sleep(1)
+#            time.sleep(1)
             
             repeat = repeat + 1
                     
@@ -3481,21 +3515,49 @@ def playNewestMission(repeat=50):
          printAction("Avaiting newest mission screen...")
          mission_success = False
          for i in range(30):
-            time.sleep(int(uniform(1, 2)))
+#            time.sleep(int(uniform(1, 2)))
             
             mission_started = locateTemplate('mission_bar.png', threshold=0.985, print_coeff=False)
-            out_of_energy = locateTemplate('out_of_energy.png', threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
+            out_of_energy = locateTemplate('mission_out_of_energy.png', threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
             mission_boss = locateTemplate("mission_boss_encounter.png", offset=(130, 16), click=True, print_coeff=False, reuse_last_screenshot=True)
                            
             if out_of_energy:
                myPrint('')
-               printAction("No energy left! Exiting.", newline=True)
-               back_key()
+               if use_ep:
+                  
+                  if ep_counter > use_ep:
+                     return ep_counter
+         
+                  printAction("Out of energy. Using energy pack %d of %d..."%(ep_counter,use_ep))
+                  mission_use_energy_pack = locateTemplate("mission_use_energy_pack.png", offset=(43,134), retries=3, click=True)
+                   
+                  if not mission_use_energy_pack:
+                     printResult(False)
+                     return ep_counter
+
+                  
+                  button_green_ok = locateTemplate("button_green_ok.png", offset=(28,9), retries=3, click=True)
+                  
+                  if not button_green_ok:
+                     printResult(False)
+                     return ep_counter
+
+                  printResult(True)
+                  ep_counter = ep_counter + 1
+                  mission_success = True
+                  locateTemplate('mission_button.png', offset=(49, 13), print_coeff=False, click=True, reuse_last_screenshot=True)
+                  
+                  repeat = repeat + 1
+                  break
+                  
+               else:
+                  printAction("No energy left! Exiting.", newline=True)
+                  back_key()
                
 #               if statistics:
 #                  stats.silverEnd("mission_%d-%d"%mission_number)
                
-               return True
+#               return True
             
             if mission_boss: #????
                
@@ -3536,9 +3598,9 @@ def playNewestMission(repeat=50):
             if mission_started:
                myPrint('')
                printAction("Mission started. Returning.", newline=True)
-               time.sleep(1)
+#               time.sleep(1)
                back_key()
-               time.sleep(int(uniform(1, 2)))
+#               time.sleep(int(uniform(1, 2)))
                mission_success = True
                
 #               if statistics:
@@ -3548,9 +3610,41 @@ def playNewestMission(repeat=50):
          
          if not mission_success:
             printAction("Timeout when waiting for mission screen", newline=True)
+            if use_ep:
+               return ep_counter
+            else:
+               return False
 #            if statistics:
 #               stats.silverEnd("mission_%d-%d"%mission_number)
-            return False
+#            return False
+
+
+def skillUpAccount(repeat=99999, use_ep=3000):
+   
+   ep_counter = 0
+   
+   while ep_counter < use_ep:
+      ep_count = playNewestMission(repeat=repeat, use_ep=use_ep-ep_counter)
+      
+      if not ep_count:
+         ep_count = 0
+         
+      ep_counter = ep_counter + ep_count
+      
+      if ep_counter < use_ep:
+         printAction("A problem occured. Restarting WoH")
+         exitMarvel()
+         time.sleep(2)
+         launch_marvel()
+         time.sleep(10)
+         started = locateTemplate('mission_button.png', offset=(49,13), print_coeff=False, retries=20)
+         printResult(started)
+
+
+def useReferrals():
+   
+   sdf
+
 
 def startMarvel(user, attempts=3, password=None, enable_cache=False):
    
@@ -4914,6 +5008,7 @@ if __name__ == "__main__":
    i = Info()
    
    # Abracho bfg376874
+   # Andre   cen228772
    # Chris   ddf493943
    # Dented  zpj296305
    # Frankie rnj978078
@@ -4945,18 +5040,22 @@ if __name__ == "__main__":
       
 #   adbConnect("localhost:5558")
    user.setCurrent("Joey")
+   
+   skillUpAccount()
+   
+#   #        Krzy        Sky         Ducky        Mika         Cfd          Bad Milk     Skittle      Vince        Frank        Neil         Ducky        Papa
+#   refs = ["jpm140046","tqr638335","gqz495105", "wek110915", "maq107823", "acs385098", "tsk990511", "rpn132038", "afs233616", "rqv405128", "ayk228815", "vrk754007"]
+#   for i in range(100):
+#      for ref in refs:
+#         createMultipleNewFakeAccounts(1, interval=(0,0), referral=ref, never_abort=True, draw_ucp=False)
+   
 #   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
 #   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
    #createMultipleNewFakeAccounts([50], interval=(0,0), referral=["zjr695081"], never_abort=True, draw_ucp=False)
 #createMultipleNewFakeAccounts([200-24-57], interval=(0,0), referral=["bfg376874"], never_abort=True, draw_ucp=False)
 
-   createMultipleNewFakeAccounts([10,500], interval=(0,0), referral=["rvx470291","jcp405955"], never_abort=True, draw_ucp=False) # Mark
+#   createMultipleNewFakeAccounts([10,500], interval=(0,0), referral=["rvx470291","jcp405955"], never_abort=True, draw_ucp=False) # Mark
    
-   #        Krzy        Sky         Ducky        Mika         Cfd          Bad Milk     Skittle      Vince        Frank
-   refs = ["jpm140046","tqr638335","gqz495105", "wek110915", "maq107823", "acs385098", "tsk990511", "rpn132038", "afs233616"]
-   for i in range(100):
-      for ref in refs:
-         createMultipleNewFakeAccounts(1, interval=(0,0), referral=ref, never_abort=True, draw_ucp=False)
    #createMultipleNewFakeAccounts([25], interval=(0,0), referral=["mhk504529"], never_abort=True, draw_ucp=False)
    #createMultipleNewFakeAccounts([1000], interval=(0,0), referral=["bsv991976"], never_abort=True, draw_ucp=False) # JoInge
 

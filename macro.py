@@ -880,38 +880,84 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       user.setFakeAccountInfo(username, password, email)
 
       printAction("Running through the tutorial like mad!!!")
-      for i in range(50):
-#          myPrint(i)
+      for i in range(40):
          locateTemplate('mobage_ad.png',              offset=(85,14),  click=True)
          locateTemplate('tutorial_skip.png',          offset=(49,11),  click=True, reuse_last_screenshot=True)
-         leftClick((235, 228))
          if locateTemplate('tutorial_understood.png', offset=(132,7),  click=True, reuse_last_screenshot=True):
             break
+         leftClick((235, 110))
       
-      OK = [0]*10
-      for i in range(50):
-         time.sleep(.5)
-         takeScreenshot()
-#          if   not OK[0] and locateTemplate('mobage_ad.png',               offset=(85,14),  click=True, reuse_last_screenshot=True): OK[0] = 1
-#          elif not OK[1] and locateTemplate('tutorial_understood.png',     offset=(132,7),  click=True, reuse_last_screenshot=True): OK[1] = 1
-#          elif not OK[2] and locateTemplate('tutorial_skip.png',           offset=(49,11),  click=True, reuse_last_screenshot=True): OK[2] = 1
-         if   leftClick((240,150)) or not OK[3] and locateTemplate('tutorial_another_card.png',   offset=(132,8),  click=True, reuse_last_screenshot=True): OK[3] = 1
-         elif leftClick((240,150)) or not OK[4] and locateTemplate('tutorial_all_right.png',      offset=(127,10), click=True, reuse_last_screenshot=True): OK[4] = 1
-         elif leftClick((240,150)) or not OK[5] and locateTemplate('tutorial_wreck_villains.png', offset=(123,10), click=True, reuse_last_screenshot=True): OK[5] = 1
-         elif leftClick((240,150)) or not OK[6] and locateTemplate('tutorial_battle.png',         offset=(23,11),  click=True, reuse_last_screenshot=True): OK[6] = 1
-         elif leftClick((240,150)) or not OK[7] and locateTemplate('tutorial_got_this_one.png',   offset=(123,9),  click=True, reuse_last_screenshot=True): OK[7] = 1
-         elif leftClick((240,150)) or not OK[8] and locateTemplate('tutorial_promotion_codes.png',offset=(128,10), click=True, reuse_last_screenshot=True):
-            OK[8] = 1
+      if not locateTemplate('tutorial_another_card.png',   offset=(132,8),  click=True, retries=20):
+         print("ERROR: Unable to find \"draw another card\" button")
+         return 1
+         
+      success = False
+      for i in range(20):
+         if locateTemplate('tutorial_all_right.png',   offset=(127,10), click=True):
+            success = True
             break
-      printResult(True)
-      printAction("Time for referral service BABY!!!")
+         leftClick((235, 110))
+      if not success:       
+         print("ERROR: Unable to find \"all right\" button")
+         return 1
+         
+      def select_and_confirm():
+         success = False
+         for i in range(20):
+            swipe((240, 500), (240, 100))
+            if locateTemplate('tutorial_wreck_villains.png', offset=(123,10), click=True):
+               success = True
+               break
+         if not success:
+            print("ERROR: Unable to find \"wreck villains\"")
+            return 1
+         
+         if not locateTemplate('tutorial_confirm_selection.png', offset=(123,10), retries=20, click=True):
+            print("ERROR: Green Goblin FIGHT button not found")
+            return 1
+      
+      select_and_confirm()
+      
+      for i in range(20):
+         if locateTemplate('tutorial_battle_auto.png', offset=(40,13), click=True):
+            if locateTemplate('tutorial_battle_end.png', offset=(61,15), click=True, retries=5):
+               break
+      
+      success = False
+      for i in range(20):
+         if locateTemplate('tutorial_battle_green_goblin.png', offset=(110,10), click=True):
+            success = True
+            break
+         leftClick((240,115))
+      if not success:
+         print("ERROR: Unable to battle Green Goblin")
+         return 1         
+      
+      success = False
+      for i in range(20):
+         leftClick((240,110))
+         if locateTemplate('tutorial_got_this_one.png',   offset=(123,9),  click=True):
+            success = True
+            break
+      if not success:
+         print("ERROR: Unable to find \"got this one\" button")
+         return 1         
+         
+      select_and_confirm()
+      
+      if locateTemplate('tutorial_promotion_codes.png',offset=(128,10), click=True):
+         printResult(True)
+         printAction("Time for referral service BABY!!!")
+      else:
+         print("ERROR: Unable to locate promotion code button")
+         return 1         
       
       printAction("Entering the referral code...")
       success = False
       for i in range(2):
 #         locateTemplate('tutorial_referral.png', offset=(124,13), click=True, reuse_last_screenshot=True)
          
-         ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=.5, swipe_size=[(240, 500), (240, 295)])
+         ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=.5, swipe_size=[(240, 600), (240, 100)])
 
          if ok:
             text_field = ok + np.array((30,-33))
@@ -4912,162 +4958,6 @@ def gimpScreenshot():
 if __name__ == "__main__":
 
    i = Info()
+   from run import *
+   run()
    
-   # Abracho bfg376874
-   # Chris   ddf493943
-   # Dented  zpj296305
-   # Frankie rnj978078
-   # JoInge  bsv991976
-   # Mark    jcp405955
-   
-
-#   setActiveDevice("10.42.0.52:5558",True)
-#   custom20()
-#   playNewestMission()
-   
-#   setAndroidId('AxelJp83','8583688437793838')
-#   custom20()
-
-#    setActiveDevice("10.42.0.52:5558")
-#    setActiveDevice("localhost:5558")
-#    setActiveDevice("76.250.209.149:5558",True)
-   
-#    startMarvel('kinemb86')
-#   setActiveDevice("10.42.0.52:5558", youwave=True)
-#    setActiveDevice("localhost:5558",True)
-#    createNewFakeAccount(referral="test")
-
-#   if os.path.exists('dist'):
-#      os.chdir('dist/woh_macro')
-#   getBaseName()
-
-   setActiveDevice('192.168.10.10:5555')
-      
-#   adbConnect("localhost:5558")
-   user.setCurrent("Joey")
-#   createMultipleNewFakeAccounts(20, interval=(0,0), referral="kpf365625", never_abort=True, draw_ucp=False)
-#   createMultipleNewFakeAccounts(60, interval=(0,0), referral="yux137264", never_abort=True, draw_ucp=False)
-   #createMultipleNewFakeAccounts([50], interval=(0,0), referral=["zjr695081"], never_abort=True, draw_ucp=False)
-#createMultipleNewFakeAccounts([200-24-57], interval=(0,0), referral=["bfg376874"], never_abort=True, draw_ucp=False)
-
-   createMultipleNewFakeAccounts([10,500], interval=(0,0), referral=["rvx470291","jcp405955"], never_abort=True, draw_ucp=False) # Mark
-   
-   #        Krzy        Sky         Ducky        Mika         Cfd          Bad Milk     Skittle      Vince        Frank
-   refs = ["jpm140046","tqr638335","gqz495105", "wek110915", "maq107823", "acs385098", "tsk990511", "rpn132038", "afs233616"]
-   for i in range(100):
-      for ref in refs:
-         createMultipleNewFakeAccounts(1, interval=(0,0), referral=ref, never_abort=True, draw_ucp=False)
-   #createMultipleNewFakeAccounts([25], interval=(0,0), referral=["mhk504529"], never_abort=True, draw_ucp=False)
-   #createMultipleNewFakeAccounts([1000], interval=(0,0), referral=["bsv991976"], never_abort=True, draw_ucp=False) # JoInge
-
-#   createMultipleNewFakeAccounts(60, interval=(0,0), referral="ykv283442", never_abort=True, draw_ucp=False)
-#   createMultipleNewFakeAccounts(35, interval=(0,0), referral="y", never_abort=True, draw_ucp=False)
-   
-# Dented
-#   import cProfile, pstats
-#   cProfile.run('createMultipleNewFakeAccounts(3, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)', 'stats')
-#   p = pstats.Stats('stats')
-#   p.sort_stats('cumulative')
-#   p.print_stats()
-#    a = timeout(Popen,2,"sleep 5",stdout=PIPE,shell=True).stdout.read()
-#    myPrint( "hello" )
-   
-#    createMultipleNewFakeAccounts(44, interval=(0,0), referral="uda182123", never_abort=True, draw_ucp=False)
-#    time.sleep(10)
-#    createMultipleNewFakeAccounts(120, interval=(0,0), referral="zpj296305", never_abort=True, draw_ucp=False)
-
-
-#    locateTemplate('card_pack_basic_tab', offset=(45,12), click=True)
-#    sys.path.append("./sys/gdata-2.0.17")
-#    from tests import run_data_tests
-#    from samples.spreadsheets import spreadSheetExample
-   
-#    run_data_tests.RunAllTests()
-#    spreadSheetExample.main()
-#    tests.
-#    myPrint(Popen("python ./sys/gdata-2.0.17/tests/run_data_tests.py", stdout=PIPE, shell=True).stdout.read())
-
-#    startMarvel('Account1')
-#   createNewFakeAccount()
-#    setActiveDevice("0123456789ABCDEF", youwave=False)
-#    event7()
-#   eventStarkPresident()
-#    setActiveDevice("10.0.0.41:5555", youwave=False)
-#    event8()
-#   getMyPageStatus()
-#    locateTemplate("mission_2_4.png")
-#   setActiveDevice("00190e8364f46e", youwave=False)
-#   event7(True)
-#   takeScreenshot()
-#   custom20()
-#   checkRaid()
-#    playNewestMission()
-#   startFakeAccounts()
-#   createAccounts()
-#   startMarvel('JoInge')
-#   import gui.gui as gui
-#   gui.main()
-#   boostCard( 'uncommon_ironman', all_feeder_cards, alignment='tactics' )
-#   fuseAndBoost('uncommon_ironman',
-#                all_feeder_cards,
-#                fuse_alignment='tactics')
-#   fuseCard('uncommon_ironman', alignment='tactics')
-#   test()
-#   tradeCards(receiver='jollyma', cards_list=['rare+_ironman'], alignment='all')
-#   tradeCards(receiver='jollyma', cards_list=['ssr+_thing_stoneskin', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife', 'sr+_spiderwoman_doublelife'], alignment='all')
-#   tradeToJollyMa()
-#   selectCard('rare+_ironman', alignment='all')
-#   event1()
-#   test()
-#   custom6()
-#   runAll32()
-#   custom4()
-#   play_mission((3,2))
-
-
-#    play_mission((2,4))
-
-#    eventPlay()
-#   eventKillEnemies()
-#   eventFindEnemy()
-#   eventPlayMission()
-#    eventPlay()
-#    locateTemplate("android_error.png", threshold=0.9, offset=(65,31))
-#   runAll()
-#   startAndRestartWhenQuit()
-#   getMyPageStatus()
-#    farmMission24FuseAndBoost()
-#   replay_all_macros()
-#   getIMEI() 
-#   replay_all_macros()
-#   find_mission()
-#   fuse_ironman()
-   #pass
-#   i = Info()
-#   s = "Gunner1972"
-##   setAndroidId(s)
-##   startMarvel(s,password=i.fakeAccounts[s])
-#   playNewestMission()
-
-   
-   #import sys
-   #import select
-   #import termios
-   #import tty
-
-   #def getkey():
-      #old_settings = termios.tcgetattr(sys.stdin)
-      #tty.setraw(sys.stdin.fileno())
-      #select.select([sys.stdin], [], [], 0)
-      #answer = sys.stdin.read(1)
-      #termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-      #return answer
-
-   #print "Menu\
-   #1) Say Foo\
-   #2) Say Bar"
-
-   #answer=getkey()
-
-   #if "1" in answer: print "foo"
-   #elif "2" in answer: print "bar"

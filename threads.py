@@ -103,13 +103,22 @@ def myPopen(*args, **kwargs):
    else:
       timeout = kwargs.pop('timeout')
       
+   if not 'blocking' in kwargs:
+      blocking = True
+   else:
+      blocking = kwargs.pop('blocking')
+      
    process = MyPopen(queue, *args, **kwargs)
    process.start()
 #    process.run()
-   process.join(timeout) 
-   
-   if not queue.empty():
-      return queue.get(timeout=timeout)
+
+   if blocking:
+      process.join(timeout) 
+      
+      if not queue.empty():
+         return queue.get(timeout=timeout)
+      else:
+         return None
    else:
       return None
    

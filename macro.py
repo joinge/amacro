@@ -962,7 +962,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          if ok:
             text_field = ok + np.array((30,-33))
             leftClick(text_field)
-            time.sleep(0.3)
+            time.sleep(1)
             
             if i!=0:         
                for i in range(10): backspace()
@@ -972,7 +972,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
                backspace()
          
             leftClick(ok)
-            time.sleep(2)
+            time.sleep(4)
             back = locateTemplate('tutorial_back.png', offset=(118,16), click=True, retries=25, interval=.5, swipe_size=[(240, 550), (240, 150)])
             if back:
                success = True

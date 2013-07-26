@@ -957,7 +957,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       for i in range(2):
 #         locateTemplate('tutorial_referral.png', offset=(124,13), click=True, reuse_last_screenshot=True)
          
-         ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=5, interval=.5, swipe_size=[(240, 600), (240, 100)])
+         ok = locateTemplate('tutorial_ok.png', offset=(29,11), retries=20, interval=.5, swipe_size=[(240, 550), (240, 150)])
 
          if ok:
             text_field = ok + np.array((30,-33))
@@ -973,7 +973,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          
             leftClick(ok)
             time.sleep(2)
-            back = locateTemplate('tutorial_back.png', offset=(118,16), click=True, retries=15, interval=.3, swipe_size=[(240, 600), (240, 100)])
+            back = locateTemplate('tutorial_back.png', offset=(118,16), click=True, retries=25, interval=.5, swipe_size=[(240, 550), (240, 150)])
             if back:
                success = True
                break

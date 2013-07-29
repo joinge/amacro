@@ -641,13 +641,13 @@ def rebuildAPK(newid="a00deadbeef"):
    # Remove old work dir
    if os.path.exists(WORK_OUTPUT):
       shutil.rmtree(WORK_OUTPUT)
-   
+
    printAction("   Copy prepatched code to work dir...", newline=True)
    # Step 1. Copy .smali ref code to work directoy
-   dir_util.copy_tree('output_ref', WORK_OUTPUT)
+   shutil.copytree('output_ref', WORK_OUTPUT)
    
    if not os.path.exists(WORK_UNPACKED):
-      dir_util.copy_tree('unpacked', WORK_UNPACKED)
+      shutil.copytree('unpacked', WORK_UNPACKED)
    
    printAction("   Find and replace Android IDs in the disassembled code...", newline=True)
    # Step 2. Replace all occurences of tag a00beadbeef with Android ID of choice 
@@ -3675,7 +3675,7 @@ def skillUpAccount(repeat=99999, use_ep=3000):
 
 def useReferrals():
    
-   sdf
+   pass
 
 
 def startMarvel(user, attempts=3, password=None, enable_cache=False):

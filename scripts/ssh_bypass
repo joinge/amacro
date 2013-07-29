@@ -1,6 +1,8 @@
-PUBLIC_IP=$1
-PUBLIC_SUBNET=${PUBLIC_IP%.*}
-NETWORK_ADAPTER=$2
+#!/bin/bash
+
+PUBLIC_IP=$1                  # Public IP is first parameter
+PUBLIC_SUBNET=${PUBLIC_IP%.*} # Sunbnet is found by deleting the last IP digits
+NETWORK_ADAPTER=$2            # Network adater is second parameter
 
 echo "Forwarding all SSH access attempts to public IP $PUBLIC_IP"
 echo "to local network adater $NETWORK_ADAPTER port 22..."
@@ -20,4 +22,3 @@ echo "iptables -A INPUT -d ${PUBLIC_IP} -p tcp --dport 22 -j ACCEPT"
 
 echo "iptables -A INPUT -d ${PUBLIC_IP} -j DROP"
 # iptables -A INPUT -d ${PUBLIC_IP} -j DROP
-

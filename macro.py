@@ -25,11 +25,12 @@ import urllib2
 
 GLOBAL_DEBUG = False # Extremely verbose output
 
-SCREEN_PATH        = './screens'
-TEMP_PATH          = './tmp'
-ANDROID_UTILS_PATH = './contents/android' 
-LOG_STDOUT         = 'log.log'
-LOG_STDERR         = 'log.log'
+SCREEN_PATH          = './screens'
+TEMP_PATH            = './tmp'
+ANDROID_UTILS_PATH   = './contents/android' 
+LOG_STDOUT           = 'log.log'
+LOG_STDERR           = 'log.log'
+WOH_NAME             = 'com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'
 
 ACTIVE_DEVICE = ''
 ADB_ACTIVE_DEVICE = ''
@@ -630,20 +631,28 @@ def rebuildAPK(newid="a00deadbeef"):
    # Got to the source folder
    os.chdir('woh')
    
+   WORK_DIR       = 'build'
+   WORK_OUTPUT    = WORK_DIR+'/output_current'
+   WORK_UNPACKED  = WORK_DIR+'/unpacked'
+   
+   if not os.path.exists(WORK_DIR):
+      os.mkdir(WORK_DIR)
+   
    # Remove old work dir
-   try:
-      os.rmdir('output_current')
-   except:
-      pass
+   if os.path.exists(WORK_OUTPUT):
+      shutil.rmtree(WORK_OUTPUT)
    
    printAction("   Copy prepatched code to work dir...", newline=True)
    # Step 1. Copy .smali ref code to work directoy
-   dir_util.copy_tree('output_ref', 'output_current')
+   dir_util.copy_tree('output_ref', WORK_OUTPUT)
+   
+   if not os.path.exists(WORK_UNPACKED):
+      dir_util.copy_tree('unpacked', WORK_UNPACKED)
    
    printAction("   Find and replace Android IDs in the disassembled code...", newline=True)
    # Step 2. Replace all occurences of tag a00beadbeef with Android ID of choice 
    fileList = []
-   for root, subFolders, files in os.walk('output_current'):
+   for root, subFolders, files in os.walk(WORK_OUTPUT):
       for file in files:
          fileParts = file.split('.')
          if len(fileParts) > 1 and fileParts[1] == "smali":
@@ -658,26 +667,22 @@ def rebuildAPK(newid="a00deadbeef"):
              
    printAction("   Reassemble code back to bytecode...", newline=True)
    # Step 3: Assemble
-   if os.name == "nt":
-      myPopen('lib\java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output_current')
-   else:
-      myPopen('java -jar ./lib/smali-2.0b2.jar -o ./unpacked/classes.dex ./output_current')
+   myPopen('java -jar ./lib/smali-2.0b2.jar -o %s/classes.dex %s'%(WORK_UNPACKED, WORK_OUTPUT))
    # Step 4: Remove signature, we will resign later (needed?)
    try:
-      os.rmdir('./unpacked/META-INF')
+      shutil.rmtree(WORK_UNPACKED+'/META-INF')
    except:
       pass
   
    printAction("   Zip the code into an APK...", newline=True)
    # Step 5: Zip up apk
 
-#   if os.name == "nt":
-   shutil.make_archive("WOHU", "zip", "unpacked")
+   shutil.make_archive(WORK_DIR+'/woh_unaligned', 'zip', WORK_UNPACKED)
    try:
-      os.remove('WOHU.apk')
+      os.remove(WORK_DIR+'/woh_unaligned.apk')
    except:
       pass
-   os.rename('WOHU.zip','WOHU.apk')
+   os.rename(WORK_DIR+'/woh_unaligned.zip', WORK_DIR+'/woh_unaligned.apk')
 #   else:   
 #      os.chdir('unpacked')
 #      myPopen('zip -r - . > ../WOHU.apk')
@@ -687,34 +692,15 @@ def rebuildAPK(newid="a00deadbeef"):
    # Step 6: generate a keystore if one doesn't already exist
 #    if not os.path.exists('./keystore'):
 #       myPopen('keytool -genkey -v -keystore ./keystore -alias patch -keyalg RSA -keysize 2048 -validity 10000 -storepass changeme -keypass changeme')
-
-   if os.name == "nt":
-      myPopen('lib\jarsigner.exe  -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore keystore -storepass changeme WOHU.apk patch')
-   else:
-      myPopen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme WOHU.apk patch')
+   myPopen('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./keystore -storepass changeme %s patch'%(WORK_DIR+'/woh_unaligned.apk'))
 
    printAction("   Zipalign the APK...", newline=True)
-   if os.name == "nt":
-      myPopen('lib\zipalign.exe -f -v 4 WOHU.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
-   else:
-      myPopen('zipalign -f -v 4 WOHU.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk')
-#   zipalign -f -v 4 com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.WOHU.apk com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED.apk
-   os.remove('WOHU.apk')
+   myPopen('zipalign -f -v 4 %s/woh_unaligned.apk %s/woh_aligned.apk'%(WORK_DIR, WORK_DIR))
 
    printAction("   Reinstall the APK...", newline=True)
    os.chdir('..')
-   if os.name == "nt":
-      myPopen('adb.exe %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
-      try:
-         myPopen('adb.exe %s shell "echo rm -r /data/data/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android | su"'%ADB_ACTIVE_DEVICE)
-      except:
-         pass
-      myPopen('adb.exe %s install woh\com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE)
-   else:
-      myPopen('adb %s uninstall com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android'%ADB_ACTIVE_DEVICE)
-      myPopen('adb %s install woh/com.mobage.ww.a956.MARVEL_Card_Battle_Heroes_Android.PATCHED_current.apk'%ADB_ACTIVE_DEVICE, stderr=STDOUT)
-         
-#   os.chdir('..')
+   myPopen('adb %s uninstall %s'%(ADB_ACTIVE_DEVICE, WOH_NAME))
+   myPopen('adb %s install woh/%s/woh_aligned.apk'%(ADB_ACTIVE_DEVICE, WORK_DIR), stderr=STDOUT)
    
    printAction("   Finished. New ID:")
    myPrint(newid)

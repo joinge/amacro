@@ -3457,7 +3457,6 @@ def playNewestMission(repeat=50, use_ep=None):
          
          # Double check that the return from mission actually was registered.
          mission_started = locateTemplate('mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
-         mission_boss_encounter = locateTemplate("mission_face_the_super_villain_button.png", offset=(130, 16), print_coeff=False, reuse_last_screenshot=True)
          mission_out_of_energy = locateTemplate("mission_out_of_energy.png", offset=(130, 16), print_coeff=False, reuse_last_screenshot=True)
          
          if mission_started:
@@ -3465,28 +3464,11 @@ def playNewestMission(repeat=50, use_ep=None):
             back_key()
             time.sleep(1)
          
-         elif mission_boss_encounter:
-            printAction("Raid boss detected. Playing the boss...", newline=True)
-            
-#            go_to_boss = locateTemplate("event_mission_go_to_boss.png",
-#                                        offset=(130,16), retries=4, click=True, ybounds=(0,600), swipe_size=[(20,400),(20,295)])
-#            if not go_to_boss:
-#               printAction("Unable to find \"go to boss\" button...", newline=True)
+#            confirm = locateTemplate("event_mission_boss_confirm_button.png", threshold=0.9,
+#                                             offset=(85, 24), retries=20, interval=1, click=True)
+#            if not confirm:
+#               printAction("Unable to find \"FIGHT\" button...", newline=True)
 #               return False
-            
-            leftClick(mission_boss_encounter)
-   
-            fight_enemy = locateTemplate("event_mission_boss_fight_button.png", threshold=0.9,
-                                             offset=(85, 24), retries=5, click=True)
-            if not fight_enemy:
-               printAction("Unable to find \"FIGHT\" button...", newline=True)
-               return False
-            
-            confirm = locateTemplate("event_mission_boss_confirm_button.png", threshold=0.9,
-                                             offset=(85, 24), retries=20, interval=1, click=True)
-            if not confirm:
-               printAction("Unable to find \"FIGHT\" button...", newline=True)
-               return False
             
             repeat = repeat + 1
             
@@ -3547,7 +3529,7 @@ def playNewestMission(repeat=50, use_ep=None):
             
             mission_started = locateTemplate('mission_bar.png', threshold=0.985, print_coeff=False)
             out_of_energy = locateTemplate('mission_out_of_energy.png', threshold=0.985, print_coeff=False, reuse_last_screenshot=True)
-            mission_boss = locateTemplate("mission_boss_encounter.png", offset=(130, 16), click=True, print_coeff=False, reuse_last_screenshot=True)
+            mission_boss_encounter = locateTemplate("mission_face_the_super_villain_button.png", offset=(130, 16), print_coeff=False, reuse_last_screenshot=True)
                            
             if out_of_energy:
                myPrint('')
@@ -3586,40 +3568,40 @@ def playNewestMission(repeat=50, use_ep=None):
 #                  stats.silverEnd("mission_%d-%d"%mission_number)
                
 #               return True
-            
-            if mission_boss: #????
+
+            elif mission_boss_encounter:
                
-               printAction('', newline=True)
-               printAction("Mission boss detected! Playing him...", newline=True)
+               printAction("Raid boss detected. Playing the boss...", newline=True)
                
-               printAction("Attempting to find and click first \"face the enemy\" button...")
-               face_the_enemy = locateTemplate("mission_face_the_super_villain_button.png",
-                                                offset=(130, 16), retries=8, click=True, ybounds=(0, 600), swipe_size=[(20, 600), (20, 295)])
-               printResult(face_the_enemy)
-               if not face_the_enemy:
-                  return False
+               leftClick(mission_boss_encounter)
                
                printAction("Attempting to find and click second \"face the enemy\" button...")
-               face_the_enemy = locateTemplate("mission_face_the_super_villain_button.png",
-                                                offset=(130, 16), retries=15, click=True, ybounds=(0, 600), swipe_size=[(20, 600), (20, 295)])
-               printResult(face_the_enemy)
-               if not face_the_enemy:
-                  return False
-      
-               printAction("Attempting to find and click \"FIGHT\" button...")
-               fight_enemy = locateTemplate("event_mission_boss_fight_button.png", threshold=0.9,
-                                                offset=(85, 24), retries=10, click=True)
-               printResult(fight_enemy)
-               if not fight_enemy:
+               face_enemy = locateTemplate("mission_face_the_super_villain_button.png", offset=(130, 16), retries=4, click=True)
+               printResult(face_enemy)
+               if not face_enemy:
+                  printAction("Unable to find \"face the enemy\" button...", newline=True)
                   return False
                
-               printAction("Attempting to find and click \"CONFIRM\" button...")
-               confirm = locateTemplate("event_mission_boss_confirm_button.png", threshold=0.9,
-                                                offset=(85, 24), retries=10, click=True)
-               printResult(confirm)
-               if not confirm:
-                  return False
+               leftClick(face_enemy)
                
+               success = False
+               for i in range(20):
+                  if locateTemplate('mission_button.png', offset=(49, 13), click=True):
+                     success = True
+                     break
+                  leftClick((240,115))
+               if not success:
+                  print("ERROR: Unable to battle raid boss")
+                  return 1  
+               
+               start_mission = locateTemplate("mission_start.png", threshold=0.9,
+                                                offset=(61, 9), retries=5, click=True)
+               if not start_mission:
+                  printAction("Unable to find \"start mission\" button...", newline=True)
+                  return False
+
+               time.sleep(5)
+               back_key()              
                repeat = repeat + 1
                break
                

@@ -3457,7 +3457,7 @@ def playNewestMission(repeat=50, use_ep=None):
          
          # Double check that the return from mission actually was registered.
          mission_started = locateTemplate('mission_bar.png', print_coeff=False, reuse_last_screenshot=True)
-         mission_boss_encounter = locateTemplate("mission_boss_encounter.png", offset=(130, 16), print_coeff=False, reuse_last_screenshot=True)
+         mission_boss_encounter = locateTemplate("mission_face_the_super_villain_button.png", offset=(130, 16), print_coeff=False, reuse_last_screenshot=True)
          mission_out_of_energy = locateTemplate("mission_out_of_energy.png", offset=(130, 16), print_coeff=False, reuse_last_screenshot=True)
          
          if mission_started:
@@ -3474,11 +3474,7 @@ def playNewestMission(repeat=50, use_ep=None):
 #               printAction("Unable to find \"go to boss\" button...", newline=True)
 #               return False
             
-            face_the_enemy = locateTemplate("mission_face_the_super_villain_button.png",
-                                             offset=(130, 16), retries=8, click=True, ybounds=(0, 600), swipe_size=[(20, 600), (20, 295)])
-            if not face_the_enemy:
-               printAction("Unable to find \"face the enemy\" button...", newline=True)
-               return False
+            leftClick(mission_boss_encounter)
    
             fight_enemy = locateTemplate("event_mission_boss_fight_button.png", threshold=0.9,
                                              offset=(85, 24), retries=5, click=True)

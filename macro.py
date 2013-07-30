@@ -3653,7 +3653,7 @@ def skillUpAccount(repeat=99999, use_ep=3000):
 
 def useReferrals():
 
-   
+   pass
 
 #   printAction("Attempting to find and click second \"face the enemy\" button...")
 #   face_enemy = locateTemplate("mission_face_the_super_villain_button.png", offset=(130, 16), retries=4, click=True)

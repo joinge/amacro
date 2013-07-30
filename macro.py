@@ -3652,9 +3652,28 @@ def skillUpAccount(repeat=99999, use_ep=3000):
 
 
 def useReferrals():
-   
-   pass
 
+   
+
+#   printAction("Attempting to find and click second \"face the enemy\" button...")
+#   face_enemy = locateTemplate("mission_face_the_super_villain_button.png", offset=(130, 16), retries=4, click=True)
+#   printResult(face_enemy)
+#   if not face_enemy:
+#      printAction("Unable to find \"face the enemy\" button...", newline=True)
+#      return False
+#   
+#   leftClick(face_enemy)
+#   
+#   success = False
+#   for i in range(20):
+#      if locateTemplate('mission_button.png', offset=(49, 13), click=True):
+#         success = True
+#         break
+#      leftClick((240,115))
+#   if not success:
+#      print("ERROR: Unable to battle raid boss")
+#      return 1  
+#   
 
 def startMarvel(user, attempts=3, password=None, enable_cache=False):
    

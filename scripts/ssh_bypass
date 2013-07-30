@@ -8,14 +8,14 @@ echo "Forwarding all SSH access attempts to public IP $PUBLIC_IP"
 echo "to local network adater $NETWORK_ADAPTER port 22..."
 echo ""
 
-echo "ip rule add from ${PUBLIC_IP} table sshbypass"
-ip rule add from ${PUBLIC_IP} table sshbypass
+echo "ip rule add from ${PUBLIC_IP} table 128"
+ip rule add from ${PUBLIC_IP} table 128
 
-echo "ip route add table sshbypass to ${PUBLIC_SUBNET}.128/25 dev ${NETWORK_ADAPTER}"
-ip route add table sshbypass to ${PUBLIC_SUBNET}.128/25 dev ${NETWORK_ADAPTER}
+echo "ip route add table 128 to ${PUBLIC_SUBNET}.128/25 dev ${NETWORK_ADAPTER}"
+ip route add table 128 to ${PUBLIC_SUBNET}.128/25 dev ${NETWORK_ADAPTER}
 
-echo "ip route add table sshbypass default via ${PUBLIC_SUBNET}.129"
-ip route add table sshbypass default via ${PUBLIC_SUBNET}.129
+echo "ip route add table 128 default via ${PUBLIC_SUBNET}.129"
+ip route add table 128 default via ${PUBLIC_SUBNET}.129
 
 echo "iptables -A INPUT -d ${PUBLIC_IP} -p tcp --dport 22 -j ACCEPT"
 iptables -A INPUT -d ${PUBLIC_IP} -p tcp --dport 22 -j ACCEPT

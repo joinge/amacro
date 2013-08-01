@@ -815,7 +815,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       success = False
       printAction("Waiting for tutorial start...")
       username = ''
-      for i in range(10):
+      for i in range(3):
          
          leftClick((232,105)+c) # Nick field         
          time.sleep(0.3)

@@ -1092,7 +1092,7 @@ def createMultipleNewFakeAccounts(iterations, referral="", description="", inter
          if description == "":
             printAction("Refcode:       %s"%referral[i], newline=True)
          else:
-            printAction("Refcode:       %s (%s)"%(referral[i],description), newline=True)
+            printAction("Refcode:       %s (%s)"%(referral[i],description[i]), newline=True)
             
          printAction("Total Summary: %d successes, %d soft errors, %d bad errors, %d crashes"%(retcode_count[0],retcode_count[1],retcode_count[2],retcode_count[3]), newline=True)
          printAction("Total Summary: %d referrals made successfully."%(retcode_count[0]+retcode_count[4]), newline=True)

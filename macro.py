@@ -1049,7 +1049,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
       return 0
       
-def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", never_abort=False, draw_ucp=False):
+def createMultipleNewFakeAccounts(iterations, referral="", description="", interval=(3,15), never_abort=False, draw_ucp=False):
    
 
    def printSummary():
@@ -1088,7 +1088,12 @@ def createMultipleNewFakeAccounts(iterations, interval=(3,15), referral="", neve
       for i in range(len(retcode_counts)):
          retcode_count = retcode_counts[i]
          printAction("",newline=True)
-         printAction("Refcode:       %s"%referral[i], newline=True)
+         
+         if description == "":
+            printAction("Refcode:       %s"%referral[i], newline=True)
+         else:
+            printAction("Refcode:       %s (%s)"%(referral[i],description), newline=True)
+            
          printAction("Total Summary: %d successes, %d soft errors, %d bad errors, %d crashes"%(retcode_count[0],retcode_count[1],retcode_count[2],retcode_count[3]), newline=True)
          printAction("Total Summary: %d referrals made successfully."%(retcode_count[0]+retcode_count[4]), newline=True)
       

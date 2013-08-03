@@ -1051,7 +1051,6 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
 def createMultipleNewFakeAccounts(iterations, referral="", description="", interval=(0,0), never_abort=False, draw_ucp=False):
    
-
    def printSummary():
       printAction("",newline=True)
       printAction("SUMMARY",newline=True)
@@ -1118,11 +1117,12 @@ def createMultipleNewFakeAccounts(iterations, referral="", description="", inter
          myPrint("")
          myPrint("REFERRAL SERVICE: Iteration %d"%i)
          
+         ensureValidIP()
          try:
-            if user.getCurrent() == 'Chris':
-               retcode = threads.myRun(createNewFakeAccount, timeout=10*60, referral=ref_code, draw_ucp=draw_ucp)
-            else:
-               retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
+#            if user.getCurrent() == 'Chris':
+#               retcode = threads.myRun(createNewFakeAccount, timeout=10*60, referral=ref_code, draw_ucp=draw_ucp)
+#            else:
+            retcode = createNewFakeAccount(referral=ref_code, draw_ucp=draw_ucp)
          except Exception, e:
             printLog(e, msg_type='error')
             retcode = 3
@@ -1157,6 +1157,27 @@ def createMultipleNewFakeAccounts(iterations, referral="", description="", inter
          
          time.sleep(wait_time)
       
+      
+def ensureValidIP():
+   
+   print('STEALTH CHECK')
+   
+   host_ip = myPopen('wget http://www.joinge.net/getmyip.php -q -O -')
+   printAction('Host IP')
+   print(host_ip)
+   
+   vm_ip = myPopen('adb %s shell "wget http://www.joinge.net/getmyip.php -q -O -"'%ADB_ACTIVE_DEVICE)
+   printAction('Android IP (%s)'%ACTIVE_DEVICE)
+   print(vm_ip)
+   
+   if host_ip == vm_ip:
+      printAction('IPs differ?', res=False)   
+      print('FATAL ERROR: IPs are identical. Aborting')
+      sys.exit()
+      
+   else:
+      printAction('IPs differ?', res=True)
+   
       
 #       for i in range(10):
 #          

@@ -1170,6 +1170,17 @@ def ensureValidIP():
    printAction('Android IP (%s)'%ACTIVE_DEVICE)
    print(vm_ip)
    
+   # This sanity check doesn't ensure valid IP range but should be sufficient
+   filtered_vm_ip = re.search('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}', vm_ip)
+   
+   if not filtered_vm_ip:
+      printAction('VM IP sanity check...', res=False)   
+      print('FATAL ERROR: VM IP does not seem to be sane. Aborting')
+      sys.exit()
+   
+   else:
+      printAction('VM IP sanity check...', res=True)
+   
    if host_ip == vm_ip:
       printAction('IPs differ?', res=False)   
       print('FATAL ERROR: IPs are identical. Aborting')

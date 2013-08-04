@@ -1049,7 +1049,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
       return 0
       
-def createMultipleNewFakeAccounts(iterations, referral="", description="", interval=(0,0), never_abort=False, draw_ucp=False):
+def createMultipleNewFakeAccounts(iterations, referral="", description="", interval=(0,0), never_abort=True, draw_ucp=False):
    
    def printSummary():
       printAction("",newline=True)

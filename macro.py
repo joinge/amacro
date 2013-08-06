@@ -1,7 +1,7 @@
 #cnee --record --events-to-record -1 --mouse --keyboard -o /tmp/xnee.xns -e /tmp/xnee.log -v
 
 #cnee --record --seconds-to-record 150 --mouse --keyboard -o joinge.xns -e joinge.log -v
-
+from __future__ import print_function
 from distutils import dir_util
 from nothreads import myRun, myPopen
 from printing import myPrint, printAction, printResult, printNotify, printQueue, \
@@ -319,6 +319,10 @@ class Device():
       except:
          self.screenDensity = 0
          myPrint("ERROR: Unable to parse screen density")
+         
+      devno = re.search('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]([0-9]{1,2})\.[0-9]{1,3}.[0-9]{1,5}', ACTIVE_DEVICE)
+      if devno:
+         self.deviceNo = int(devno.group(1))
             
       self.printInfo()
             
@@ -1117,7 +1121,7 @@ def createMultipleNewFakeAccounts(iterations, referral="", description="", inter
          myPrint("")
          myPrint("REFERRAL SERVICE: Iteration %d"%i)
          
-         ensureValidIP()
+         ensureStealth()
          try:
 #            if user.getCurrent() == 'Chris':
 #               retcode = threads.myRun(createNewFakeAccount, timeout=10*60, referral=ref_code, draw_ucp=draw_ucp)
@@ -1156,40 +1160,108 @@ def createMultipleNewFakeAccounts(iterations, referral="", description="", inter
          printAction("Waiting for roughly %d minutes and %d seconds..."%(wait_time/60,wait_time%60),newline=True)
          
          time.sleep(wait_time)
+         
+def startVPN():
+   
+   printAction('Starting VPN...')
+   
+   
       
+def ensureStealth():
+   
+   printAction('Stealth check', newline=True)
+   
+   ensureValidIP()
+   setVPNFirewall()
+   
       
 def ensureValidIP():
    
-   print('STEALTH CHECK')
-   
    host_ip = myPopen('wget http://www.joinge.net/getmyip.php -q -O -')
-   printAction('Host IP')
+   printAction('   Host IP')
    print(host_ip)
    
    vm_ip = myPopen('adb %s shell "wget http://www.joinge.net/getmyip.php -q -O -"'%ADB_ACTIVE_DEVICE)
-   printAction('Android IP (%s)'%ACTIVE_DEVICE)
+   printAction('   Android IP (%s)'%ACTIVE_DEVICE)
    print(vm_ip)
    
    # This sanity check doesn't ensure valid IP range but should be sufficient
    filtered_vm_ip = re.search('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}', vm_ip)
    
    if not filtered_vm_ip:
-      printAction('VM IP sanity check...', res=False)   
+      printAction('   VM IP sanity check...', res=False)   
       print('FATAL ERROR: VM IP does not seem to be sane. Aborting')
       sys.exit()
    
    else:
-      printAction('VM IP sanity check...', res=True)
+      printAction('   VM IP sanity check...', res=True)
    
    if host_ip == vm_ip:
-      printAction('IPs differ?', res=False)   
+      printAction('   IPs differ?', res=False)   
       print('FATAL ERROR: IPs are identical. Aborting')
       sys.exit()
       
    else:
-      printAction('IPs differ?', res=True)
+      printAction('   IPs differ?', res=True)
    
+
+def setVPNFirewall():
+   
+   printAction('   Setting up VPN firewall...')
+   device_no = device.getInfo('deviceNo')
+   
+   try:
+      os.mkdir(TEMP_PATH+'/pia%d'%device_no)
+   except:
+      pass
+
+   os.chdir(TEMP_PATH+'/pia%d'%device_no)
+   myPopen('rm *.ovpn *.crt *.vpn')
+#   myPopen('wget -q https://www.privateinternetaccess.com/openvpn/openvpn.zip')
       
+   # Fetch and extract new data (if it was changed)
+   myPopen('wget -N -q https://www.privateinternetaccess.com/openvpn/openvpn.zip')
+   myPopen('unzip -q openvpn.zip')
+   
+   # Perform DNS lookups to find each server's IPs
+   pia_servers = myPopen('grep -h "remote " *ovpn | sort')
+   pia_ip_list = []
+   for pia_server in re.findall('remote\s([a-z\.-]+)\s[0-9]+', pia_servers):
+      dns_ip_string = myPopen('dig %s A +short | sort'%pia_server)
+      dns_ips = re.split('\n',dns_ip_string)
+      dns_ips.pop(-1)
+      pia_ip_list.extend(dns_ips)
+      
+   pia_ip_list.sort()
+
+   # Start building iptables script - starts by overwriting old file
+   iptables_file = open('iptables.vpn', 'w')
+   
+   print('iptables -F',                               file=iptables_file)
+   print('iptables -A INPUT  -i tun+ -j ACCEPT',      file=iptables_file)
+   print('iptables -A OUTPUT -o tun+ -j ACCEPT',      file=iptables_file)
+   print('iptables -A INPUT  -s 127.0.0.1 -j ACCEPT', file=iptables_file)
+   print('iptables -A OUTPUT -d 127.0.0.1 -j ACCEPT', file=iptables_file)
+   
+   for ip  in pia_ip_list:
+      print('iptables -A INPUT  -s" %s "-j ACCEPT'%ip, file=iptables_file)
+      print('iptables -A OUTPUT -d" %s "-j ACCEPT'%ip, file=iptables_file)
+
+   # Add access for host-only network
+   print('iptables -A INPUT  -s 192.168.1%d.1 -j ACCEPT'%device_no, file=iptables_file)
+   print('iptables -A OUTPUT -d 192.168.1%d.1 -j ACCEPT'%device_no, file=iptables_file)
+
+   # Stop anything not from PIA or internal or localhost
+   print('iptables -A INPUT -j DROP', file=iptables_file)
+   print('iptables -A OUTPUT -j DROP', file=iptables_file)
+
+   iptables_file.close()
+   
+   myPopen('adb %s push iptables.vpn /sdcard/macro/'%ADB_ACTIVE_DEVICE)
+   myPopen('adb %s shell "cat /sdcard/macro/iptables.vpn | su"'%ADB_ACTIVE_DEVICE)
+
+   printResult(True)
+   
 #       for i in range(10):
 #          
 # 

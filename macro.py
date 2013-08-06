@@ -1161,9 +1161,20 @@ def createMultipleNewFakeAccounts(iterations, referral="", description="", inter
          
          time.sleep(wait_time)
          
-def startVPN():
+def updateVPN():
    
    printAction('Starting VPN...')
+   
+   myPopen('adb %s shell am force-stop com.privateinternetaccess.android'%ADB_ACTIVE_DEVICE)
+   
+   myPopen('adb %s shell echo "am start -n com.privateinternetaccess.android/.LauncherActivity" \| su'%ADB_ACTIVE_DEVICE)
+   
+   time.sleep(8)
+   
+   homeKey()
+   
+   print("hello")
+   
    
       # am start -n com.privateinternetaccess.com/.LauncherActivity
    # am force-close com.privateinternetaccess.com
@@ -1190,11 +1201,12 @@ def ensureStealth():
    
    printAction('Stealth check', newline=True)
    
-   ensureValidIP()
    setVPNFirewall()
+   ensureValidIP()
+   
    
       
-def ensureValidIP():
+def ensureValidIP(recursing=False):
    
    host_ip = myPopen('wget http://www.joinge.net/getmyip.php -q -O -')
    printAction('   Host IP')
@@ -1209,16 +1221,30 @@ def ensureValidIP():
    
    if not filtered_vm_ip:
       printAction('   VM IP sanity check...', res=False)   
-      print('FATAL ERROR: VM IP does not seem to be sane. Aborting')
-      sys.exit()
+      print('FATAL ERROR: VM IP does not seem to be sane.')
+      
+      if recursing:
+         print('Unable to recover. Aborting.')
+         sys.exit()
+      else:
+         setVPNFirewall()
+         updateVPN()
+         ensureValidIP(True)
    
    else:
       printAction('   VM IP sanity check...', res=True)
    
    if host_ip == vm_ip:
       printAction('   IPs differ?', res=False)   
-      print('FATAL ERROR: IPs are identical. Aborting')
-      sys.exit()
+      print('FATAL ERROR: IPs are identical.')
+      
+      if recursing:
+         print('Unable to recover. Aborting.')
+         sys.exit()
+      else:
+         setVPNFirewall()
+         updateVPN()
+         ensureValidIP(True)
       
    else:
       printAction('   IPs differ?', res=True)
@@ -1234,8 +1260,9 @@ def setVPNFirewall():
    except:
       pass
 
+   curdir = os.getcwd()
    os.chdir(TEMP_PATH+'/pia%d'%device_no)
-   myPopen('rm *.ovpn *.crt *.vpn')
+   myPopen('rm *.ovpn *.crt *.vpn', stderr='devnull')
 #   myPopen('wget -q https://www.privateinternetaccess.com/openvpn/openvpn.zip')
       
    # Fetch and extract new data (if it was changed)
@@ -1263,8 +1290,8 @@ def setVPNFirewall():
    print('iptables -A OUTPUT -d 127.0.0.1 -j ACCEPT', file=iptables_file)
    
    for ip  in pia_ip_list:
-      print('iptables -A INPUT  -s" %s "-j ACCEPT'%ip, file=iptables_file)
-      print('iptables -A OUTPUT -d" %s "-j ACCEPT'%ip, file=iptables_file)
+      print('iptables -A INPUT  -s %s -j ACCEPT'%ip, file=iptables_file)
+      print('iptables -A OUTPUT -d %s -j ACCEPT'%ip, file=iptables_file)
 
    # Add access for host-only network
    print('iptables -A INPUT  -s 192.168.1%d.1 -j ACCEPT'%device_no, file=iptables_file)
@@ -1276,8 +1303,10 @@ def setVPNFirewall():
 
    iptables_file.close()
    
-   myPopen('adb %s push iptables.vpn /sdcard/macro/'%ADB_ACTIVE_DEVICE)
-   myPopen('adb %s shell "cat /sdcard/macro/iptables.vpn | su"'%ADB_ACTIVE_DEVICE)
+   myPopen('adb %s push iptables.vpn /sdcard/macro/'%ADB_ACTIVE_DEVICE, stdout='devnull', stderr='devnull', log=False)
+   myPopen('adb %s shell echo "sh /sdcard/macro/iptables.vpn" \| su'%ADB_ACTIVE_DEVICE)
+
+   os.chdir(curdir)
 
    printResult(True)
    
@@ -1795,14 +1824,17 @@ def adb_login(login_screen_coords, user, password=None):
    else:
       leftClick((207, 157) + c) # Login button
 #   
-def home_key():
+def homeKey():
    
-   adb_event(1, 0x0001, 0x0066, 0x00000001)
-   adb_event(1, 0x0000, 0x0000, 0x00000000)
-   adb_event(1, 0x0001, 0x0066, 0x00000000)
-   adb_event(1, 0x0000, 0x0000, 0x00000000)
+   if device.isYouwave():
+      adb_event(1, 0x0001, 0x0066, 0x00000001)
+      adb_event(1, 0x0000, 0x0000, 0x00000000)
+      adb_event(1, 0x0001, 0x0066, 0x00000000)
+      adb_event(1, 0x0000, 0x0000, 0x00000000)
+   else:
+      myPopen("adb %s shell input keyevent 4" % ADB_ACTIVE_DEVICE)
 
-def power_key():
+def powerKey():
    
    adb_event(1, 0x0001, 0x0074, 0x00000001)
    adb_event(1, 0x0000, 0x0000, 0x00000000)
@@ -1810,7 +1842,7 @@ def power_key():
    adb_event(1, 0x0000, 0x0000, 0x00000000)
    
    
-def back_key():
+def backKey():
    
    myPopen("adb %s shell input keyevent 4" % ADB_ACTIVE_DEVICE)
    
@@ -1893,16 +1925,16 @@ def scroll(dx, dy):
    
 def unlock_phone():
    
-   power_key()
+   powerKey()
    time.sleep(1)
-   home_key()
+   homeKey()
    time.sleep(.5)
    linear_swipe((187, 616), (340, 616))
 
 
 def lock_phone():
    
-   power_key()
+   powerKey()
 
 
 def takeScreenshot(filename=None):
@@ -2383,7 +2415,7 @@ def eventPlayMission(repeat=1):
          go_to_boss = locateTemplate("event_mission_go_to_boss.png", offset=(130, 16), click=True, print_coeff=False, reuse_last_screenshot=True)
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
-            back_key()
+            backKey()
             time.sleep(1)
          
          elif event_mission_button:
@@ -2459,14 +2491,14 @@ def eventPlayMission(repeat=1):
             if out_of_energy:
                myPrint('')
                printAction("No energy left! Exiting.", newline=True)
-               back_key()
+               backKey()
                time.sleep(1)
                return True
                
             if mission_started:
                myPrint('')
                printAction("Mission started. Returning.", newline=True)
-               back_key()
+               backKey()
                time.sleep(1)
                mission_success = True
                break   
@@ -2782,7 +2814,7 @@ def eventKillEnemies(find_enraged=False):
 ##            if out_of_power:
 ##               myPrint( '' )
 ##               printAction("No attack power left! Exiting.", newline=True)
-###                  back_key()
+###                  backKey()
 ##               return False
 #            
 #            if end_of_battle:
@@ -2793,7 +2825,7 @@ def eventKillEnemies(find_enraged=False):
 ##            if mission_started:
 ##               myPrint( '' )
 ##               printAction("Mission started. Returning.", newline=True)
-##               back_key()
+##               backKey()
 ##               time.sleep(int(uniform(1,2)))
 ##               mission_success = True
 ##               weird_bool = True
@@ -3448,7 +3480,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
          top_mission_list = locateTemplate('mission_top_decor.png', print_coeff=False, reuse_last_screenshot=True)
          if mission_started and not initial_run:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
-            back_key()
+            backKey()
             time.sleep(1)
             repeat = repeat + 1
             
@@ -3539,7 +3571,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
             if out_of_energy:
                myPrint('')
                printAction("No energy left! Exiting.", newline=True)
-               back_key()
+               backKey()
                
                if statistics:
                   stats.silverEnd("mission_%d-%d" % mission_number)
@@ -3550,7 +3582,7 @@ def play_mission(mission_number=(3, 2), repeat=50, statistics=True):
                myPrint('')
                printAction("Mission started. Returning.", newline=True)
                time.sleep(1)
-               back_key()
+               backKey()
                time.sleep(int(uniform(1, 2)))
                mission_success = True
                
@@ -3589,7 +3621,7 @@ def playNewestMission(repeat=50, use_ep=None):
          
          if mission_started:
             printAction("Seems we failed to return from mission. Retrying.", newline=True)
-            back_key()
+            backKey()
             time.sleep(1)
          
 #            confirm = locateTemplate("event_mission_boss_confirm_button.png", threshold=0.9,
@@ -3690,7 +3722,7 @@ def playNewestMission(repeat=50, use_ep=None):
                   
                else:
                   printAction("No energy left! Exiting.", newline=True)
-                  back_key()
+                  backKey()
                
 #               if statistics:
 #                  stats.silverEnd("mission_%d-%d"%mission_number)
@@ -3729,7 +3761,7 @@ def playNewestMission(repeat=50, use_ep=None):
                   return False
 
                time.sleep(5)
-               back_key()              
+               backKey()              
                repeat = repeat + 1
                break
                
@@ -3737,7 +3769,7 @@ def playNewestMission(repeat=50, use_ep=None):
                myPrint('')
                printAction("Mission started. Returning.", newline=True)
 #               time.sleep(1)
-               back_key()
+               backKey()
 #               time.sleep(int(uniform(1, 2)))
                mission_success = True
                
@@ -4388,7 +4420,7 @@ def eventStarkPresident():
          
          printAction("Hitting \"explore\" button...", newline=True)
          time.sleep(5)
-         back_key()
+         backKey()
          
       elif explore_finished:
          
@@ -4407,7 +4439,7 @@ def eventStarkPresident():
             
             
             time.sleep(5)
-            back_key()
+            backKey()
             
       elif landed_opponent:
             
@@ -4438,7 +4470,7 @@ def eventStarkPresident():
                   printResult(start_battle)
                   
                   time.sleep(5)
-                  back_key()
+                  backKey()
                   
       else:
          

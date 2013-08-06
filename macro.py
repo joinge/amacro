@@ -1053,7 +1053,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
       
       return 0
       
-def createMultipleNewFakeAccounts(iterations, referral="", description="", interval=(0,0), never_abort=False, draw_ucp=False):
+def createMultipleNewFakeAccounts(iterations, referral="", description="", interval=(0,0), never_abort=True, draw_ucp=False):
    
    def printSummary():
       printAction("",newline=True)
@@ -1165,7 +1165,26 @@ def startVPN():
    
    printAction('Starting VPN...')
    
+      # am start -n com.privateinternetaccess.com/.LauncherActivity
+   # am force-close com.privateinternetaccess.com
    
+   # In /data/data/com.privateinternetaccess.android/shared_prefs/com.privateinternetaccess.android_preferences.xml
+      # <?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+      # <map>
+      # <string name="lport"></string>
+      # <boolean name="autoconnect" value="true" />
+      # <string name="onBootProfile">4335cfe0-4069-40cb-9e19-a4a91016634d</string>
+      # <string name="rport">auto</string>
+      # <boolean name="autostart" value="true" />
+      # <string name="selectedregion">germany</string>
+      # </map>
+      
+   # MainActivity.xml
+      # <?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+      # <map>
+      # <string name="password">spzCg2PwVy</string>
+      # <string name="login">p1526501</string>
+      # </map>
       
 def ensureStealth():
    
@@ -1230,7 +1249,7 @@ def setVPNFirewall():
       dns_ip_string = myPopen('dig %s A +short | sort'%pia_server)
       dns_ips = re.split('\n',dns_ip_string)
       dns_ips.pop(-1)
-      pia_ip_list.extend(dns_ips)
+      pia_ip_list.extend(dns_ips) 
       
    pia_ip_list.sort()
 

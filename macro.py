@@ -3806,11 +3806,11 @@ def playNewestMission(repeat=50, use_ep=None):
 
 def skillUpAccount(repeat=99999, use_ep=3000):
    
-   ensureStealth()
-   
    ep_counter = 0
    
    while ep_counter < use_ep:
+      ensureStealth()
+      
       ep_count = playNewestMission(repeat=repeat, use_ep=use_ep-ep_counter)
       
       if not ep_count:

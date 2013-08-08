@@ -1201,9 +1201,8 @@ def ensureStealth():
    
    printAction('Stealth check', newline=True)
    
-   setVPNFirewall()
    ensureValidIP()
-   
+   setVPNFirewall()
    
       
 def ensureValidIP(recursing=False):
@@ -1227,8 +1226,8 @@ def ensureValidIP(recursing=False):
          print('Unable to recover. Aborting.')
          sys.exit()
       else:
-         setVPNFirewall()
          updateVPN()
+         setVPNFirewall()
          ensureValidIP(True)
    
    else:
@@ -1242,15 +1241,15 @@ def ensureValidIP(recursing=False):
          print('Unable to recover. Aborting.')
          sys.exit()
       else:
-         setVPNFirewall()
          updateVPN()
+         setVPNFirewall()
          ensureValidIP(True)
       
    else:
       printAction('   IPs differ?', res=True)
    
 
-def setVPNFirewall():
+def setVPNFirewall(allow_only_current_vpn_server = True):
    
    printAction('   Setting up VPN firewall...')
    device_no = device.getInfo('deviceNo')
@@ -1262,23 +1261,39 @@ def setVPNFirewall():
 
    curdir = os.getcwd()
    os.chdir(TEMP_PATH+'/pia%d'%device_no)
-   myPopen('rm *.ovpn *.crt *.vpn', stderr='devnull')
+   #myPopen('rm *.ovpn *.crt *.vpn *.zip', stderr='devnull')
+   myPopen('rm *', stderr='devnull')
 #   myPopen('wget -q https://www.privateinternetaccess.com/openvpn/openvpn.zip')
-      
-   # Fetch and extract new data (if it was changed)
-   myPopen('wget -N -q https://www.privateinternetaccess.com/openvpn/openvpn.zip')
-   myPopen('unzip -q openvpn.zip')
-   
-   # Perform DNS lookups to find each server's IPs
-   pia_servers = myPopen('grep -h "remote " *ovpn | sort')
+
    pia_ip_list = []
-   for pia_server in re.findall('remote\s([a-z\.-]+)\s[0-9]+', pia_servers):
-      dns_ip_string = myPopen('dig %s A +short | sort'%pia_server)
-      dns_ips = re.split('\n',dns_ip_string)
-      dns_ips.pop(-1)
-      pia_ip_list.extend(dns_ips) 
+
+   if allow_only_current_vpn_server:
+      vm_ip = myPopen('adb %s shell "wget http://www.joinge.net/getmyip.php -q -O -"'%ADB_ACTIVE_DEVICE)
+   
+      # This sanity check doesn't ensure valid IP range but should be sufficient
+      filtered_vm_ip = re.search('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}', vm_ip)
       
-   pia_ip_list.sort()
+      if filtered_vm_ip:
+         pia_ip_list = [vm_ip]
+      else:
+         print('ERROR: Unable to read current VPN IP')
+         sys.exit()
+      
+   else:
+      # Fetch and extract new data (if it was changed)
+      myPopen('wget -q -O openvpn.zip https://www.privateinternetaccess.com/openvpn/openvpn.zip')
+      myPopen('unzip -q openvpn.zip')
+      
+      # Perform DNS lookups to find each server's IPs
+      pia_servers = myPopen('grep -h "remote " *ovpn | sort')
+      
+      for pia_server in re.findall('remote\s([a-z\.-]+)\s[0-9]+', pia_servers):
+         dns_ip_string = myPopen('dig %s A +short | sort'%pia_server)
+         dns_ips = re.split('\n',dns_ip_string)
+         dns_ips.pop(-1)
+         pia_ip_list.extend(dns_ips) 
+         
+      pia_ip_list.sort()
 
    # Start building iptables script - starts by overwriting old file
    iptables_file = open('iptables.vpn', 'w')
@@ -3790,6 +3805,8 @@ def playNewestMission(repeat=50, use_ep=None):
 
 
 def skillUpAccount(repeat=99999, use_ep=3000):
+   
+   ensureStealth()
    
    ep_counter = 0
    

@@ -280,7 +280,7 @@ class Device():
          except:
             myPrint("ERROR: Unable to parse input/output event mouse device")
          try:
-            self.eventKeyboard = int(re.search('/dev/input/event([0-9]).*\n.*AT Translated Set 2 keyboard',event_devices).group(1))
+            self.event_keyboard = int(re.search('/dev/input/event([0-9]).*\n.*AT Translated Set 2 keyboard',event_devices).group(1))
          except:
             myPrint("ERROR: Unable to parse input/output event keyboard device")
             
@@ -294,30 +294,30 @@ class Device():
 #         except:
 #            myPrint("ERROR: Unable to parse input/output event mouse device")
          try:
-            self.eventKeyboard = int(re.search('/dev/input/event([0-9]).*\n.*AT Translated Set 2 keyboard',event_devices).group(1))
+            self.event_keyboard = int(re.search('/dev/input/event([0-9]).*\n.*AT Translated Set 2 keyboard',event_devices).group(1))
          except:
             myPrint("ERROR: Unable to parse input/output event keyboard device")
             
       try:
          build_prop = myPopen('adb %s shell echo "cat /system/build.prop" %s| su'%(ADB_ACTIVE_DEVICE,ESC))
          try:
-            self.screenDensity = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
+            self.screen_density = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
          except:
             try:
                if re.search('vbox86p',build_prop):
-                  self.screenDensity = 160 # Not defined in Android VM
+                  self.screen_density = 160 # Not defined in Android VM
             except:
-               self.screenDensity = 160
+               self.screen_density = 160
          
-         if self.screenDensity != 160 and self.screenDensity != 240:
+         if self.screen_density != 160 and self.screen_density != 240:
             
             myPrint("")
             myPrint("<<<WARNING>>> ")
-            myPrint("A screen density of %d detected. This is NOT SUPPORTED!!!"%self.screenDensity)
+            myPrint("A screen density of %d detected. This is NOT SUPPORTED!!!"%self.screen_density)
             myPrint("")
                         
       except:
-         self.screenDensity = 0
+         self.screen_density = 0
          myPrint("ERROR: Unable to parse screen density")
          
       devno = re.search('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]([0-9]{1,2})\.[0-9]{1,3}.[0-9]{1,5}', ACTIVE_DEVICE)
@@ -333,14 +333,14 @@ class Device():
       if YOUWAVE:
          myPrint("Detected YouWave device")
          myPrint("  Device - touchscreen: /dev/input/event%d"%self.eventTablet)
-         myPrint("  Device - keyboard:    /dev/input/event%d"%self.eventKeyboard)
+         myPrint("  Device - keyboard:    /dev/input/event%d"%self.event_keyboard)
          myPrint("  Device - mouse:       /dev/input/event%d"%self.eventMouse)
       else:
          myPrint("youwave detected?       NO")
          
       if self.android_vm:
          myPrint("Detected AndroVM OS")      
-      myPrint("Screen density:         %d"%self.screenDensity)
+      myPrint("Screen density:         %d"%self.screen_density)
       myPrint("")
   
 #   Popen("adb %s shell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, shell=True).stdout.read()
@@ -745,7 +745,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
             
       c = np.array(login_screen)
    
-      if device.getInfo('screenDensity') != 160:
+      if device.getInfo('screen_density') != 160:
          myPrint("ERROR: Not implemented")
          return 2
          
@@ -1169,6 +1169,8 @@ def updateVPN():
    
    myPopen('adb %s shell echo "am start -n com.privateinternetaccess.android/.LauncherActivity" \| su'%ADB_ACTIVE_DEVICE)
    
+   locateTemplate('vpn_checkbox')
+   
    time.sleep(8)
    
    homeKey()
@@ -1334,7 +1336,7 @@ def setVPNFirewall(allow_only_current_vpn_server = True):
 #    if YOUWAVE:
 #       backspace()
 #       
-#    if info.getAdbInfo('screenDensity') == 240:
+#    if info.getAdbInfo('screen_density') == 240:
 #       leftClick((76, 174) + c) # Mobage password field
 #    else:
 #       leftClick((142, 114) + c) # Mobage password field
@@ -1357,7 +1359,7 @@ def setVPNFirewall(allow_only_current_vpn_server = True):
 #    if YOUWAVE:
 #       backspace()
 #       
-#    if info.getAdbInfo('screenDensity') == 240:
+#    if info.getAdbInfo('screen_density') == 240:
 #       leftClick((313, 237) + c) # Login button
 #    else:
 #       leftClick((207, 157) + c) # Login button
@@ -1753,7 +1755,7 @@ def backspace():
    
 
    if device.isYouwave() or device.isAndroidVM():
-      event_no = device.getInfo('eventKeyboard')
+      event_no = device.getInfo('event_keyboard')
       if not event_no:
          event_no = 2
       
@@ -1772,7 +1774,7 @@ def backspace():
 def right_arrow():
 
    if device.isYouwave() or device.isAndroidVM():
-      event_no = device.getInfo('eventKeyboard')
+      event_no = device.getInfo('event_keyboard')
       if not event_no:
          event_no = 2
       
@@ -1797,7 +1799,7 @@ def adb_login(login_screen_coords, user, password=None):
    
    c = np.array(login_screen_coords)
    
-   if device.getInfo('screenDensity') == 240:
+   if device.getInfo('screen_density') == 240:
       leftClick((205, 254) + c) # Login Mobage
       leftClick((106, 255) + c) # Login button
       leftClick((76, 108) + c) # Mobage name field
@@ -1811,7 +1813,7 @@ def adb_login(login_screen_coords, user, password=None):
    if YOUWAVE:
       backspace()
       
-   if device.getInfo('screenDensity') == 240:
+   if device.getInfo('screen_density') == 240:
       leftClick((76, 174) + c) # Mobage password field
    else:
       leftClick((142, 114) + c) # Mobage password field
@@ -1834,7 +1836,7 @@ def adb_login(login_screen_coords, user, password=None):
    if YOUWAVE:
       backspace()
       
-   if device.getInfo('screenDensity') == 240:
+   if device.getInfo('screen_density') == 240:
       leftClick((313, 237) + c) # Login button
    else:
       leftClick((207, 157) + c) # Login button
@@ -2063,7 +2065,7 @@ def swipeReference(template, destination=(0, 0), threshold=0.96, print_coeff=Fal
    return ref
    
 
-def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False,
+def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False,
                    recurse=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
 
    DEBUG=False
@@ -2075,7 +2077,7 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
       
       time.sleep(.1)
       try:
-         if device.getInfo('screenDensity') == 240:
+         if device.getInfo('screen_density') == 240:
             img_path = SCREEN_PATH
          else:
             img_path = SCREEN_PATH + '/dpi160'
@@ -2091,18 +2093,25 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
       template = re.sub(r'-[0-9]*\.', '.', template)
       for j in range(5):
                   
+         name, ext = os.path.splitext(template)
+         if ext == '':
+            ext = '.png'
+         
          if YOUWAVE:
-            name, ext = os.path.splitext(template)
             template_youwave = name + "_youwave" + ext
             if os.path.exists(img_path+'/'+template_youwave):
                template = template_youwave
       
-         if os.path.exists(img_path+'/'+template):
-            image_template = myRun(cv2.imread, img_path+'/'+template)
+         if os.path.exists(img_path+'/'+name+ext):
+            image_template = myRun(cv2.imread, img_path+'/'+name+ext)
 
             if DEBUG:
                pl.imshow(image_template)
                pl.show()
+               
+            if offset == 'center':
+               image_size = np.array([image_template.shape(0),image_template.shape(1)])
+               offset = tuple(int(image_size/2.0))
                
             try:
                result = myRun(cv2.matchTemplate, image_screen, image_template, cv2.TM_CCOEFF_NORMED)
@@ -2182,6 +2191,17 @@ def locateTemplate(template, threshold=0.96, offset=(0, 0), retries=1, interval=
          time.sleep(interval)
       
    return None
+      
+
+def clickTemplate():
+   
+   if locateTemplate('tutorial_promotion_codes.png', offset='center', click=True):
+      printResult(True)
+      printAction("Time for referral service BABY!!!")
+   else:
+      print("ERROR: Unable to locate promotion code button")
+      return 1     
+
       
    
 def check_if_vnc_error():
@@ -5207,7 +5227,19 @@ def tradeToJollyMa():
 
 def gimpScreenshot():
    
-   myPopen("gimp %s/screenshot_%s.png" %(TEMP_PATH, ACTIVE_DEVICE))
+   root_path = os.getcwd() 
+   
+   screenshot_tmp_path = '%s/%s'%(root_path,TEMP_PATH)
+   screenshot_path = '%s/%s'%(root_path,SCREEN_PATH)
+   if device.getInfo('screen_density') == 160:
+      screenshot_path = screenshot_path + '/dpi160'
+      
+   screenshot_tmp = screenshot_tmp_path + '/screenshot_%s.png'%ACTIVE_DEVICE
+   screenshot_new = screenshot_path     + '/screenshot_%s.png'%ACTIVE_DEVICE
+
+   myPopen("cp %s %s" %(screenshot_tmp, screenshot_new))
+   myPopen("gimp %s &"%screenshot_new )
+   myPopen("sleep 5; rm %s"%screenshot_new )
 
 if __name__ == "__main__":
 

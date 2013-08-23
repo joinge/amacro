@@ -18,9 +18,14 @@ def run():
 #                                 referral=['qwz857729'],
 #                                 description=['Dago'],
    
-   accounts = Accounts()
+   account = Accounts()
    
-   accounts.addNewAccount('testAccount', password='testPassword')
+#   account.add('testAccount', password='testPassword')
+#   account.edit('testAccount', email='something@gmail.com',
+#                 type='bot', coins=0, last_harvest='2013-08-23 17:10:00')
+
+   account.edit('testAccount', owner='Default')
+   account.getAndroidId('testAccount')
 
 if __name__ == "__main__":
 

@@ -2,6 +2,8 @@
 
 #cnee --record --seconds-to-record 150 --mouse --keyboard -o joinge.xns -e joinge.log -v
 from __future__ import print_function
+from Accounts import Accounts
+from Users import Users
 from distutils import dir_util
 from nothreads import myRun, myPopen
 from printing import myPrint, printAction, printResult, printNotify, printQueue, \
@@ -438,49 +440,12 @@ class Info():
          pprint(getattr(self, key), stream=s)
          s.close()
 
-info = Info() # Ideally, don't use this one directly (long term)
+#info = Info() # Ideally, don't use this one directly (long term)
+
 device = Device()
         
-
-# The user object deals with user info 
-class User():
-   def __init__(self):
-      self.current = 'Blayd'
-      
-   def setCurrent(self, user):
-      
-      printAction("Current user:")
-      myPrint(user)
-      
-      self.current = user
-      
-   def getCurrent(self):
-      
-      return self.current
-   
-   def setFakeAccountInfo(self, user, password=None, email=None):
-      
-      if not hasattr(info, 'fake_accounts_%s'%self.current.lower()):
-         setattr(info, 'fake_accounts_%s'%self.current.lower(), {})
-         
-      if not hasattr(info, 'fake_emails_%s'%self.current.lower()):
-         setattr(info, 'fake_emails_%s'%self.current.lower(), {})
-      
-      if password:
-         try:
-            getattr(info,'fake_accounts_%s'%self.current.lower())[user] = password
-            info.write()
-         except:
-            printAction("ERROR: Unable to record username/password/password")
-         
-      if email:   
-         try:
-            getattr(info,'fake_emails_%s'%self.current.lower())[user] = email
-            info.write()
-         except:
-            printAction("ERROR: Unable to record username/password/password")
-
-user = User() 
+user    = Users() 
+account = Accounts()
       
 # IMEI = 358150 04 524460 6
 # 35     - British Approvals Board of Telecommunications (all phones)
@@ -718,7 +683,8 @@ def createNewFakeAccount(referral="", draw_ucp=False):
    old_dir = os.getcwd()
       
    # Set new Android ID and start WoH
-   setAndroidId(name_base,newAndroidId())
+   new_android_id = newAndroidId()
+   setAndroidId(name_base,new_android_id)
 #   unlock_phone()
    if not device.isAndroidVM():
       clearMarvelCache()
@@ -867,7 +833,8 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          return 1
 
       printResult(True)
-      user.setFakeAccountInfo(username, password, email)
+      account.add(username, password=password, email=email, type='bot',
+                  android_id=new_android_id, owner='default')
 
       printAction("Running through the tutorial like mad!!!")
       for i in range(40):
@@ -1354,7 +1321,7 @@ def setVPNFirewall(allow_only_current_vpn_server = True):
 #    if password:
 #       enterText(password)
 #    else:
-#       enterText(info.accounts[user])
+#       enterText(info.account[user])
 #       
 #    if YOUWAVE:
 #       backspace()
@@ -1557,13 +1524,13 @@ def setAndroidId(user=None, newid='0' * 15):
             myPrint('WARNING: saveAndroidId() - Ids are already the same.')
          else:
             if newid == '0' * 15:
-               newid = getattr(info.get('fakeID'),user)
+               newid = account.getAndroidId(user)
                
             myPrint("Old ID: %s, New ID: %s"%(old_id,newid))
             myPopen('adb %s shell echo "echo %s > /data/youwave_id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC))
             myPopen('adb %s shell echo "echo %s > /sdcard/Id" %s| su' % (ADB_ACTIVE_DEVICE, newid, ESC))
             
-            info.set(user, newid, 'fakeID')
+            account.edit(user, android_id=newid)
 
       except Exception, e:
          printLog(e, msg_type='error')
@@ -1587,8 +1554,7 @@ def getAndroidId(user=None):
       
       if not user == None:
          
-         info.fakeAccounts[user] = id_clean
-         info.write()
+         account.edit(user, android_id=id_clean)
       else:
          myPrint(id_clean)
    else:
@@ -1831,7 +1797,7 @@ def adb_login(login_screen_coords, user, password=None):
    if password:
       enterText(password)
    else:
-      enterText(info.accounts[user])
+      enterText(account.getPassword(user))
       
    if YOUWAVE:
       backspace()
@@ -4173,8 +4139,9 @@ def farmMission32FuseAndBoost():
 recently_launched = []
 #
 def getIndex(user):
-   for i, usr in enumerate(info.accounts):
-      if info.accounts.keys()[i] == user:
+   
+   for i, name in enumerate(user.accounts):
+      if user.accounts[i] == name:
          return i
    return -1
 
@@ -4183,10 +4150,10 @@ def randomUserStart(user_list=None):
    global recently_launched
    
    if user_list == None:
-      user_list = info.accounts.keys()
+      user_list = user.accounts
    
    if recently_launched == []:
-      recently_launched = [0] * info.accounts.__len__()
+      recently_launched = [0] * user.accounts.__len__()
    
    need_reset = True
    for user in user_list:
@@ -4211,7 +4178,7 @@ def randomUserStart(user_list=None):
    
 def runAll24():
    while True:
-      for i in info.accounts.keys():
+      for i in user.accounts:
          try:
             if randomUserStart():
                farmMission24FuseAndBoost()
@@ -4222,7 +4189,7 @@ def runAll24():
       
 def runAll32():
    while True:
-      for i in info.accounts.keys():
+      for i in user.accounts:
          try:
             if randomUserStart():
                farmMission32()
@@ -4236,7 +4203,7 @@ def runAll32():
          
 def runAll43():
    while True:
-      for i in info.accounts.keys():
+      for i in user.accounts:
          try:
             if randomUserStart():
                play_mission((4, 3), 2 * 23)
@@ -4261,7 +4228,7 @@ def blockUntilQuit():
 def startAndRestartWhenQuit():
    
 
-   for i in info.accounts.keys():
+   for i in user.accounts:
       randomUserStart()
          
       while True:
@@ -4298,7 +4265,7 @@ def cyclePlayers():
 
    adjustBrightness()
    while True:
-      for i in info.accounts.keys():
+      for i in user.accounts:
          try:
             if randomUserStart():
                notify()
@@ -4720,7 +4687,7 @@ def custom5():
 
    adjustBrightness()
    while True:
-      for i in info.accounts.keys():
+      for i in user.accounts:
          try:
             if startMarvel(i):
                farmMission24FuseAndBoost()
@@ -4734,7 +4701,7 @@ def custom6():
 
    adjustBrightness()
    while True:
-      for i in info.accounts.keys():
+      for i in user.accounts:
             if i == 'JoInge' or i == 'JollyMa' or i == 'JoJanR':
                try:
                   if randomUserStart(['JoInge', 'JollyMa', 'JoJanR']):
@@ -4745,7 +4712,7 @@ def custom6():
                   myPrint(e)
                sleepToCharge(60)
                
-      for i in info.accounts.keys():
+      for i in user.accounts:
             if i == 'l33tdump' or i == 'Rolfy86' or i == 'kinemb86' or i == 'MonaBB86':
                try:
                   if randomUserStart(['l33tdump', 'Rolfy86', 'kinemb86', 'MonaBB86']):
@@ -4761,7 +4728,7 @@ def custom6b():
 
    adjustBrightness()
    while True:
-      for i in info.accounts.keys():
+      for i in user.accounts:
             if i == 'JoInge' or i == 'JollyMa' or i == 'JoJanR':
                try:
                   if randomUserStart(['JoInge', 'JollyMa', 'JoJanR']):
@@ -4774,7 +4741,7 @@ def custom6b():
                   myPrint(e)
                sleepToCharge(60)
                
-      for i in info.accounts.keys():
+      for i in user.accounts:
             if i == 'l33tdump' or i == 'Rolfy86' or i == 'kinemb86' or i == 'MonaBB86':
                try:
                   if randomUserStart(['l33tdump', 'Rolfy86', 'kinemb86', 'MonaBB86']):
@@ -4793,7 +4760,7 @@ def custom7(start_end=False):
    adjustBrightness()
    while True:
       if not start_end:
-         for i in info.accounts.keys():
+         for i in user.accounts:
             if i == 'JoInge' or i == 'JollyMa' or i == 'JoJanR':
                try:
                   if randomUserStart(['JoInge', 'JollyMa', 'JoJanR']):
@@ -4806,7 +4773,7 @@ def custom7(start_end=False):
                sleepToCharge(60)
       
       start_end = False
-      for i in info.accounts.keys():
+      for i in user.accounts:
          if i == 'l33tdump' or i == 'Rolfy86' or i == 'kinemb86' or i == 'MonaBB86':
             try:
                if randomUserStart(['l33tdump', 'Rolfy86', 'kinemb86', 'MonaBB86']):
@@ -4822,7 +4789,7 @@ def custom8(start_end=False):
    adjustBrightness()
    while True:
       if not start_end:
-         for i in info.accounts.keys():
+         for i in user.accounts:
             if i == 'JoInge' or i == 'JollyMa' or i == 'JoJanR':
                try:
                   if randomUserStart(['JoInge', 'JollyMa', 'JoJanR']):
@@ -4834,7 +4801,7 @@ def custom8(start_end=False):
                sleepToCharge(60)
            
       start_end = False 
-      for i in info.accounts.keys():
+      for i in user.accounts:
          if i == 'l33tdump' or i == 'Rolfy86':
             try:
                if randomUserStart(['l33tdump', 'Rolfy86']):
@@ -4846,7 +4813,7 @@ def custom8(start_end=False):
             sleepToCharge(60)
                
       
-      for i in info.accounts.keys():
+      for i in user.accounts:
          if i == 'kinemb86' or i == 'MonaBB86':
             try:
                if randomUserStart(['kinemb86', 'MonaBB86']):
@@ -4923,7 +4890,7 @@ def event1(start_end=False):
    adjustBrightness()
    while True:
       if not start_end:
-         for i in info.accounts.keys():
+         for i in user.accounts:
             if i == 'JoInge' or i == 'JollyMa' or i == 'JoJanR':
                try:
                   if randomUserStart(['JoInge', 'JollyMa', 'JoJanR']):
@@ -4933,7 +4900,7 @@ def event1(start_end=False):
                   pass
                sleepToCharge(60)
          
-      for i in info.accounts.keys():
+      for i in user.accounts:
          if i == 'l33tdump' or i == 'Rolfy86' or i == 'kinemb86' or i == 'MonaBB86':
             try:
                if randomUserStart(['l33tdump', 'Rolfy86', 'kinemb86', 'MonaBB86']):
@@ -5081,7 +5048,7 @@ def event6():
          exitMarvel()
       except:
          pass
-      for i in info.accounts.keys():
+      for i in user.accounts:
          if i == 'JollyMa' or i == 'JoJanR':
             try:
                if randomUserStart(['JollyMa', 'JoJanR']):
@@ -5095,7 +5062,7 @@ def event6():
                pass
             sleepToCharge(30)
                
-      for i in info.accounts.keys():
+      for i in user.accounts:
             if i == 'l33tdump' or i == 'Rolfy86' or i == 'kinemb86' or i == 'MonaBB86':
                try:
                   if randomUserStart(['l33tdump', 'Rolfy86', 'kinemb86', 'MonaBB86']):
@@ -5115,7 +5082,7 @@ def event7(find_enraged=False):
 
    adjustBrightness()
    while True:
-      for i in info.accounts.keys():
+      for i in user.accounts:
          if i == 'JoInge' or i == 'JollyMa' or i == 'JoJanR':
             try:
                if randomUserStart(['JoInge', 'JollyMa', 'JoJanR']):
@@ -5129,7 +5096,7 @@ def event7(find_enraged=False):
                myPrint(e)
             sleepToCharge(30)
                
-      for i in info.accounts.keys():
+      for i in user.accounts:
             if i == 'l33tdump' or i == 'Rolfy86' or i == 'kinemb86' or i == 'MonaBB86':
                try:
                   if randomUserStart(['l33tdump', 'Rolfy86', 'kinemb86', 'MonaBB86']):
@@ -5164,7 +5131,7 @@ def event8():
          except Exception, e:
             myPrint(e)
          sleepToCharge(30)
-         for i in info.accounts.keys():
+         for i in user.accounts:
             if i == 'JoInge' or i == 'JollyMa' or i == 'JoJanR':
                try:
                   if randomUserStart(['JoInge', 'JollyMa', 'JoJanR']):
@@ -5176,7 +5143,7 @@ def event8():
                   myPrint(e)
                sleepToCharge(60)
               
-         for i in info.accounts.keys():
+         for i in user.accounts:
             if i == 'l33tdump' or i == 'Rolfy86':
                try:
                   if randomUserStart(['l33tdump', 'Rolfy86']):
@@ -5189,7 +5156,7 @@ def event8():
                sleepToCharge(60)
                   
          
-         for i in info.accounts.keys():
+         for i in user.accounts:
             if i == 'kinemb86' or i == 'MonaBB86':
                try:
                   if randomUserStart(['kinemb86', 'MonaBB86']):
@@ -5212,7 +5179,7 @@ def tradeToJollyMa():
    trade_list = ['rare+_ironman'] * 10
    adjustBrightness()
           
-   for i in info.accounts.keys():
+   for i in user.accounts:
          if i == 'l33tdump' or i == 'Rolfy86' or i == 'kinemb86' or i == 'MonaBB86':
             try:
                if randomUserStart(['l33tdump', 'Rolfy86', 'kinemb86', 'MonaBB86']):

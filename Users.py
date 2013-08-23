@@ -12,7 +12,7 @@ class Users():
       if name:
          self.current = name
       else:
-         self.current = 'default'
+         self.current = '-'
 
       self.setCurrent(self.current)
       

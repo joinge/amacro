@@ -833,8 +833,10 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          return 1
 
       printResult(True)
-      account.add(username, password=password, email=email, type='bot',
-                  android_id=new_android_id, owner='default')
+      
+      current_time = time.strftime('%Y-%m-%d %H:%M:%S')
+      account.add(username, password=password, email=email, type='bot', coins=0, refcode=referral,
+                  android_id=new_android_id, owner='default', created=current_time, device='S3 (VM)')
 
       printAction("Running through the tutorial like mad!!!")
       for i in range(40):

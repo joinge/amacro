@@ -3,7 +3,6 @@ from Accounts import Accounts
 from printing import printAction, myPrint
 
 
-
 # The user object deals with user info 
 class Users():
    
@@ -37,6 +36,8 @@ class Users():
       return account.getAccountsFor(self.current)
    
  
+user = Users()
+      
       
 if __name__ == "__main__":
 

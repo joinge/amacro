@@ -5,7 +5,7 @@ class Accounts():
    
    def __init__(self):
       
-      self.db = MySQLdb.connect(host='localhost', user='macro', passwd='moneymakers', db='macro')
+      self.db = MySQLdb.connect(host='193.157.216.232', user='macro', passwd='moneymakers', db='macro')
       self.cur = self.db.cursor()
       self.account_fields = self.getAccountFields()
    
@@ -80,6 +80,9 @@ class Accounts():
       self.cur.execute('SELECT (%s) FROM accounts WHERE name="%s";'%(fields,name))
       
       return self.cur.fetchall()
+      
+      
+account = Accounts()
       
       
 if __name__ == "__main__":

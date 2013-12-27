@@ -14,9 +14,9 @@ def run():
    setActiveDevice('192.168.10.10:5555')
    user.setCurrent("Joey")
 
-#    createMultipleNewFakeAccounts([30],
-#                                 referral=['qwz857729'],
-#                                 description=['Dago'],
+   createMultipleNewFakeAccounts([20,30,30],
+                                referral=['mgy801163','eca712418','apr344342'],
+                                description=['Frankie','Frankie','Frankie'])
    
    account = Accounts()
    
@@ -30,3 +30,4 @@ def run():
 if __name__ == "__main__":
 
    run()
+

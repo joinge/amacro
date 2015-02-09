@@ -3,16 +3,16 @@ Created on Aug 28, 2013
 
 @author: me
 '''
-from macro import ANDROID_UTILS_PATH, ESC, TEMP_PATH
+
 from nothreads import myPopen
 from printing import myPrint, printResult
 import re
 
-class Devices():
+class Device():
    def __init__(self):
       self.active_device = None
       self.adb_active_device = None
-      self.youwave
+      self.youwave = None
 
    def getInfo(self,key):
       
@@ -264,6 +264,5 @@ class Devices():
    
       self.shell('echo "echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness" \| su' %percent)
       
-   
-device = Devices()
+
    

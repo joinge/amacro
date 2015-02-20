@@ -1,0 +1,11 @@
+*.box
+*.inttemp
+*.log
+*.normproto
+*.pffmtable
+*.pyc
+*.shapetable
+*.tif
+*.tr
+*.traineddata
+*.unicharset

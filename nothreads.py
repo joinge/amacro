@@ -5,12 +5,10 @@
 
 from printing import myPrint
 from subprocess import Popen, PIPE
-import logging
 import multiprocessing
 import os
 devnull = open(os.devnull, 'w')
 
-logging.getLogger('')
 
 class MyPopen():
    def __init__(self, *args, **kwargs):
@@ -69,10 +67,10 @@ class MyPopen():
                self.STDERR = False
                serr = None
                
-            if sout:
-               logging.debug(sout)
-            if serr:
-               logging.error(serr)
+#             if sout:
+#                log.debug(sout)
+#             if serr:
+#                log.error(serr)
 
             if self.STDOUT and self.STDERR:
                return sout+serr

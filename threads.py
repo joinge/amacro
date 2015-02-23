@@ -4,12 +4,10 @@
 
 
 from subprocess import Popen, PIPE
-import logging
 import multiprocessing
 import os
 devnull = open(os.devnull, 'w')
 
-logging.getLogger('')
 
 class MyPopen(multiprocessing.Process):
    def __init__(self, queue, *args, **kwargs):
@@ -63,9 +61,9 @@ class MyPopen(multiprocessing.Process):
             sout = proc.stdout.read()
             serr = proc.stderr.read()
             if sout:
-               logging.debug(sout)
+               log.debug(sout)
             if serr:
-               logging.error(serr) 
+               log.error(serr) 
 
             if self.STDOUT:
                self.queue.put(sout)
@@ -90,7 +88,7 @@ class MyRun(multiprocessing.Process):
       
       out = self.function(*self.args, **self.kwargs)
 #      if type(out) == str:
-#         logging.debug(out)
+#         log.debug(out)
       self.queue.put(out)
 
 

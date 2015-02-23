@@ -1,24 +1,50 @@
 from __future__ import print_function
-import logging
 import multiprocessing
 import select
 import sys
 
 PAD = 60
 
+import os
+import json
+import logging
+import logging.config
+
+def setupLogging(
+    default_path='log.json', 
+    default_level=logging.INFO
+):
+   """Setup logging configuration
+
+   """
+   
+   print("Initiating logging")
+   path = default_path
+   if os.path.exists(path):
+      with open(path, 'rt') as f:
+         config = json.load(f)
+      logging.config.dictConfig(config)
+   else:
+      logging.basicConfig(level=default_level)
+      
+   logger = logging.getLogger("")
+   logger.info("Logger initiated")
+   
+
+
 msg_queue = multiprocessing.Queue()
 def myPrint(arg, **kwargs):
 
    msg = ''
-   max_num = 500
-   while True and max_num>0:
-      if not msg_queue.empty():
-         msg = msg + msg_queue.get(block=True)
-      else:
-         break
-      max_num = max_num - 1
-#   msg = ''
-#   if not msg_queue.empty():
+#    max_num = 500
+#    while True and max_num>0:
+#       if not msg_queue.empty():
+#          msg = msg + msg_queue.get(block=True)
+#       else:
+#          break
+#       max_num = max_num - 1
+# #   msg = ''
+# #   if not msg_queue.empty():
 #      msg = msg_queue.get()
    
    if 'msg_type' in kwargs:

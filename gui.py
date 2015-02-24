@@ -38,12 +38,12 @@ class Task(QtCore.QObject):
       self.finished = QtCore.Signal()
       self.output = QtCore.Signal(list)
       
-class Processor():
+class Processor(QtCore.QObject):
    thread = QtCore.QThread()
    queue = Queue()
    
-   def __init__(self, queue):
-#       super(Processor, self).__init__(parent)
+   def __init__(self, parent, queue):
+      super(Processor, self).__init__(parent)
       
       self.queue = queue
 
@@ -79,7 +79,7 @@ class Worker(QtCore.QObject):
       
       self.queue = Queue()
       
-      self.processor = Processor(self.queue)
+      self.processor = Processor(None, self.queue)
    
 # 
 #       
@@ -155,7 +155,7 @@ class MyReceiver(QtCore.QObject):
    
    def __init__(self, *args, **kwargs):
       QtCore.QObject.__init__(self, *args, **kwargs)
-   
+ 
    def emitMessage(self, text):
       self.mysignal.emit(text)
 #       while True:
@@ -205,15 +205,6 @@ class MyConsole(QtGui.QWidget):
          sys.stdout.emitter.mysignal.connect(self.intoMessageQueue)
 
 
-      
-      # Create thread that will listen on the other end of the queue, and send the text to the textedit in our application
-#       self.thread = QtCore.QThread()
-#       self.my_receiver = MyReceiver(self.queue)
-#       self.my_receiver.mysignal.connect(self.on_myStream_message)
-#       self.my_receiver.moveToThread(self.thread)
-#       self.thread.started.connect(self.my_receiver.run)
-#       self.thread.start()
-      
    @QtCore.Slot()
    def outOfMessageQueue(self):
       message = self.queue.get()

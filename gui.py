@@ -4,6 +4,7 @@
 """
 """
 
+from __future__ import print_function
 # import macro
 import sys
 
@@ -23,7 +24,6 @@ from Settings import Settings
 from printing import setupLogging
 
 import time
-import sys
 
 DEBUG = False
 
@@ -32,7 +32,6 @@ def helloWorld(*args, **kwargs):
 #    print "Hey there."
 #    print args
 #    print kwargs
-
 
 # class InvokeEvent(QtCore.QEvent):
 #    EVENT_TYPE = QtCore.QEvent.Type(QtCore.QEvent.registerEventType())
@@ -56,137 +55,185 @@ def helloWorld(*args, **kwargs):
 # def invoke_in_main_thread(fn, *args, **kwargs):
 #    QtCore.QCoreApplication.postEvent(_invoker,
 #       InvokeEvent(fn, *args, **kwargs))
-
-
-# very testable class (hint: you can use mock.Mock for the signals)
-class Worker(QtCore.QObject):
-   
-   thread = QtCore.QThread()
-   
-   def __init__(self, parent=None):
-      super(Worker, self).__init__(parent)
-      
-      self.finished = QtCore.Signal()
-      self.output = QtCore.Signal(list)
-
-      self.queue = Queue()
-#       self.exiting = False
-      
-
-      self.moveToThread(self.thread)
-      self.thread.start()
-      
-#    def __del__(self):
-#       self.thread.wait()
-
-   def stop(self):
-      self.thread.wait()
-
-      
-   @QtCore.Slot()
-   def handler(self):
-      
-      data = self.fn()
-
-      print "self.signal_string)"
-      self.emit(QtCore.SIGNAL(self.signal_string), data)
-      self.finished.emit()
-      
-#       if data:
-#          self.output.emit(data)
-#          
-#       file = open('tmp.txt','a')
-#       file.write("7")
-#       file.close()
-#       
-      
-   def enqueueMethod(self, fn, *args, **kwargs):
-      if DEBUG:
-         self.fn = lambda: fn(*args, **kwargs)
-         
-         data = self.fn()
-
-         self.finished.emit()
-         
-         if data:
-            self.output.emit(data)
-         
-#          return self.handler()
-      else:
-         self.fn = lambda: fn(*args, **kwargs)
-      
-         QtCore.QMetaObject.invokeMethod(self, "handler", Qt.QueuedConnection)
-      
-   def whenFinishedEmit(self, fn):
-#       self.signal_string = signal_string
-      self.output.connect(fn)
-
-#    def invokeMethod(self, fn, return_type, *args, **kwargs):
-# #       from PyQt4 import QtCore
-#       
-#       if DEBUG:
-#          return (lambda: fn( *args, **kwargs))()
-#       else:
-#          
-#          retval = []
-#          QtCore.QMetaObject.invokeMethod(self, "run", Qt.QueuedConnection,
-#                QtCore.Q_RETURN_ARG(return_type, retval),
-#                QtCore.Q_ARG(list, [lambda: fn( *args, **kwargs)]))
-# #                                 QtCore.Q_ARG(tuple, (1,2,3)),
-# #                                 QtCore.Q_ARG(dict, {'abc':5, 'd':7}))
-#          self.finished.emit()
-#          self.output.emit([retval])
 # 
-#    def start(self):
+# 
+# class Task(QtCore.QObject):
+#    
+#    # Signals are owned by instances, even if they're declared here
+#    finished = QtCore.Signal()
+#    output = QtCore.Signal(object)
+# 
+#    
+#    def __init__(self, fn, *args, **kwargs):
+#       super(Task, self).__init__()
+#       
+#     
+#       self.fn = fn
+#       self.args = args
+#       self.kwargs = kwargs
+#       self.result = None
+#       
+#    def sendResultTo(self, fn):
+#       self.output.connect(fn, Qt.QueuedConnection)
+# #       self.output.connect(fn)
+#       
+# class Processor(QtCore.QObject):
+# 
+#    
+#    def __init__(self, parent, queue):
+#       super(Processor, self).__init__(parent)
+#       
+#       self.thread = QtCore.QThread()
+# #    queue = Queue()
+#       
+#       self.queue = queue
+# 
+#       self.moveToThread(self.thread)
+# #       self.thread.started.connect(self.run)
+# #       self.thread.finished.connect(self.thread.deleteLater)
 #       self.thread.start()
 #       
-#    def stop(self):
-#       self.thread.stop()
-
+#       self.exit = False
+#       
+# #    def __del__(self):
+# # #       self.exit = True
+# # #       self.thread.terminate()
+# #       self.thread.wait()
+#       
+#    @QtCore.Slot()
+#    def quit(self):
+#       logger.debug("Processor shutting down")
+#       self.thread.terminate()
+#       self.thread.wait()
+#       logger.debug("Processor shut down")
+#       
+#    @QtCore.Slot(object)
+#    def processTask(self, task):
+#       logger.info("Processor received a new task")
+#       
+#       result = task.fn(*task.args, **task.kwargs)
+#       
+#       task.output.emit(result)
+#       
+# #       while(not self.exit):
+# #          time.sleep(2)
+# #          logger.debug("Polling queue")
+# #          obj = self.queue.get()
+# #          
+# #          if obj:
+# #             logger.debug("Thread discovered new object in queue")
+# #          
+# #          if self.exit:
+# #             break
+#       
+# 
+# # very testable class (hint: you can use mock.Mock for the signals)
+# class Worker(QtCore.QObject):
+#    task = QtCore.Signal(object)
+#    finished = QtCore.Signal()
+#    
+#    
+#    def __init__(self, parent=None):
+#       super(Worker, self).__init__(parent)
+#       
+#       self.queue = Queue()
+#       
+#       self.processor = Processor(None, self.queue)
+#       
+#       self.task.connect(self.processor.processTask)
+#       self.finished.connect(self.processor.quit)
+#       
+# #       self.task_ready.connect(
+# 
+# #       self.thread.dataReady.connect(self.get_data, Qt.QueuedConnection)
+# 
+#    def __del__(self):
+#       logger.debug("Worker wants to quit.")
+#       self.emit(self.finished)
+# 
+#       self.waitForThreadToQuit()
+# 
+#    
+#    def waitForThreadToQuit(self):
+#       logger.debug("Worker waits for processor to quit.")
+#       while(True):
+#          if self.processor.thread.terminated:
+#             logger.debug("Worker is quitting.")
+#             break
+#       
+#    
+# # 
+# #       
+# #    @QtCore.Slot()
+# #    def handler(self):
+# #       
+# #       data = self.fn()
+# # 
+# #       print "self.signal_string)"
+# #       self.emit(QtCore.SIGNAL(self.signal_string), data)
+# #       self.finished.emit()
+# #       
+# # #       if data:
+# # #          self.output.emit(data)
+# # #          
+# # #       file = open('tmp.txt','a')
+# # #       file.write("7")
+# # #       file.close()
+# #       
+#    @QtCore.Slot()
+#    def enqueueTask(self, task):
+#       self.task.emit(task)
+# #       self.queue.put(task)
+#       
+# worker = Worker()
+      
 
 # A QObject (to be run in a QThread) which sits waiting for output to come through a Queue.Queue().
 # It blocks until output is available, and one it has got something from the queue, it sends
 # it to the "MainThread" by emitting a Qt Signal 
-class MyReceiver(QtCore.QObject):
-   mysignal = QtCore.Signal(str)
-   
-   def __init__(self, *args, **kwargs):
-      QtCore.QObject.__init__(self, *args, **kwargs)
-   
-   def emitMessage(self, text):
-      self.mysignal.emit(text)
-#       while True:
-#          text = self.queue.get()
-#          self.mysignal.emit(text)
+# class MyReceiver(QtCore.QObject):
+#    mysignal = QtCore.Signal(str)
+#    
+#    def __init__(self, *args, **kwargs):
+#       QtCore.QObject.__init__(self, *args, **kwargs)
+#  
+#    def emitMessage(self, text):
+#       self.mysignal.emit(text)
+# #       while True:
+# #          text = self.queue.get()
+# #          self.mysignal.emit(text)
          
 
-class WriteStream(object):
+class WriteStream(QtGui.QWidget):
+   message = QtCore.Signal(str)
+   
    def __init__(self):
-      self.emitter = MyReceiver()
-#       self.queue = queue
+      super(WriteStream, self).__init__()
+      
+#       self.emitter = MyReceiver()
    
    def write(self, text):
-      self.emitter.emitMessage(text)
-#       self.mysignal.emit(text)
-#       self.queue.put(text)
-#       QtCore.QMetaObject.invokeMethod(self, "run", Qt.QueuedConnection, QtCore.Q_ARG(str, text))
+      self.message.emit(text)
       
 
-
+      
 
 class MyConsole(QtGui.QWidget):
-   queue = Queue()
    msg_ready = QtCore.Signal()
 
-   def __init__(self, parent, worker):
-      
+   def __init__(self, parent):
       super(MyConsole, self).__init__(parent)
-      self.worker = Worker()
       
       self.textEdit = QtGui.QTextEdit(self)  
       
-      self.textEdit.setMinimumHeight(300)
-      self.setMinimumHeight(300)
+      self.textEdit.setText("Console initiated...")
+#       self.textEdit.setMinimumHeight(300)
+#       self.textEdit.setMinimumWidth(600)
+#       self.setMinimumHeight(300)
+      
+      font = QtGui.QFont("monospace")
+      font.setStyleHint(QtGui.QFont.Monospace)
+      self.textEdit.setFont(font)
       
 #       self.textEdit.resize(500,300)   
 
@@ -194,45 +241,54 @@ class MyConsole(QtGui.QWidget):
 #       self.queue = Queue()
 #       sys.stdout = WriteStream(self.queue)
 
-      self.msg_ready.connect(self.outOfMessageQueue)
+#       sys.stdout = WriteStream()
+      sys.stdout.message.connect(self.addText, Qt.QueuedConnection)
+
+#       self.msg_ready.connect(self.outOfMessageQueue)
+# 
+# 
+# #       if not DEBUG:
+#          sys.stdout = WriteStream()
+#          sys.stdout.emitter.mysignal.connect(self.intoMessageQueue)
 
 
-      if not DEBUG:
-         sys.stdout = WriteStream()
-         sys.stdout.emitter.mysignal.connect(self.intoMessageQueue)
-
-
-      
-      # Create thread that will listen on the other end of the queue, and send the text to the textedit in our application
-#       self.thread = QtCore.QThread()
-#       self.my_receiver = MyReceiver(self.queue)
-#       self.my_receiver.mysignal.connect(self.on_myStream_message)
-#       self.my_receiver.moveToThread(self.thread)
-#       self.thread.started.connect(self.my_receiver.run)
-#       self.thread.start()
-      
-   @QtCore.Slot()
-   def outOfMessageQueue(self):
-      message = self.queue.get()
+   @QtCore.Slot(str)
+   def addText(self, message):
       self.textEdit.moveCursor(QtGui.QTextCursor.End)
       self.textEdit.insertPlainText(message)
       self.textEdit.show()
-      
-   @QtCore.Slot(str)
-   def intoMessageQueue(self, message):
-      self.queue.put(message)
-      self.msg_ready.emit()
+#       
+#    @QtCore.Slot(str)
+#    def intoMessageQueue(self, message):
+#       self.queue.put(message)
+#       self.msg_ready.emit()
 
 
 class DeviceView(QtGui.QWidget):
+   get_device_list   = QtCore.Signal()
+   set_active_device = QtCore.Signal(str)
+   
+   
 
-   def __init__(self, parent, settings, worker):
+   def __init__(self, parent, settings):
 
       super(DeviceView, self).__init__(parent)
       
-      self.update_list_worker = Worker()
-      
+      self.thread = QtCore.QThread()
       self.device = Device(settings)
+      self.device.moveToThread(self.thread)
+      self.thread.start()
+      
+      self.get_device_list.connect(self.device.getDeviceList, Qt.QueuedConnection)
+      self.device.device_list.connect(self.updateDeviceList, Qt.QueuedConnection)
+      
+      self.set_active_device.connect(self.device.setActive, Qt.QueuedConnection)
+#       self.device.device_list.connect(self.updateDeviceList, Qt.QueuedConnection)
+      
+      
+      
+#       self.update_list_worker = Worker()
+      
       
       #      macro.adbConnect("localhost:5558")
 
@@ -273,31 +329,42 @@ class DeviceView(QtGui.QWidget):
 
       self.setLayout(self.full_layout)
 
-#       self.updateList()
+
+      self.get_device_list.emit()
+
 
 #       file = open('tmp.txt','a')
 #       file.write("1")
 #       file.close()
 
-      self.update_list_worker.whenFinishedEmit("deviceList(list)")
-      self.connect(self.update_list_worker,
-                   QtCore.SIGNAL("deviceList(list)"),
-                   self.updateList)
 #       
-#       self.update_list_worker.connectOutputTo(self.updateList)
-      self.update_list_worker.enqueueMethod(self.device.adbDevices)
+# 
+#       task = Task(self.device.getDeviceList)
+# #       task.output.connect(self.updateDeviceList, Qt.QueuedConnection)
+# #       task.output.connect(self.updateDeviceList)
+#       task.sendResultTo(self.updateDeviceList)
+# 
+#       worker.enqueueTask(task)
+# # 
+#       self.update_list_worker.whenFinishedEmit("deviceList(list)")
+#       self.connect(self.update_list_worker,
+#                    QtCore.SIGNAL("deviceList(list)"),
+#                    self.updateDeviceList)
+# #       
+# #       self.update_list_worker.connectOutputTo(self.updateDeviceList)
+#       self.update_list_worker.enqueueMethod(self.device.getDeviceList)
 #       
 #       file = open('tmp.txt','a')
 #       file.write("8")
 #       file.close()
       
 #       worker = Worker()
-#       worker.output.connect(self.updateList)
-#       worker.invokeMethod(self.device.adbDevices, list)
+#       worker.output.connect(self.updateDeviceList)
+#       worker.invokeMethod(self.device.getDeviceList, list)
       
       
    @QtCore.Slot(list)
-   def updateList(self, devices):
+   def updateDeviceList(self, devices):
       
 #       devices = devices
       
@@ -318,7 +385,7 @@ class DeviceView(QtGui.QWidget):
          if i == 0:
             device_item.setCheckState(QtCore.Qt.CheckState(2))
             self.deviceActiveList[str(i)] = True
-            self.device.setActive(device)
+            self.set_active_device.emit(device)
 #         device.item
          self.model.appendRow([device_item, box])
 #         model.appendColumn(box)
@@ -331,7 +398,7 @@ class DeviceView(QtGui.QWidget):
       
    def deviceConnect(self):
       self.device.adbConnect(str(self.device_name.text()) + ':' + str(self.device_port.text()))
-      self.updateList()
+      self.updateDeviceList()
       
    def deviceClicked(self):
       
@@ -569,13 +636,12 @@ class EmittingStream(QtCore.QObject):
       
       
 class CentralWidget(QtGui.QWidget):
-   def __init__(self, settings, worker):
+   def __init__(self, settings):
       super(CentralWidget, self).__init__()
       
       self.settings = settings
-      self.worker = worker
          
-      self.initUI(settings, worker)
+      self.initUI(settings)
    
    def normalOutputWritten(self, text):
       """Append text to the QTextEdit."""
@@ -586,7 +652,7 @@ class CentralWidget(QtGui.QWidget):
       self.textEdit.setTextCursor(cursor)
       self.textEdit.ensureCursorVisible()
        
-   def initUI(self, settings, worker):
+   def initUI(self, settings):
        
 
       
@@ -594,8 +660,8 @@ class CentralWidget(QtGui.QWidget):
 #       sys.exit(self.exec_())
       
       
-      self.console = MyConsole(self, worker)
-      self.device_list = DeviceView(self, settings, worker)
+      self.console = MyConsole(self)
+      self.device_list = DeviceView(self, settings)
       self.buttons = Buttons(self, self.device_list.device)
 # #       self.ref_service = ReferralService(self)
       
@@ -646,7 +712,7 @@ class MainWindow(QtGui.QMainWindow):
       QtGui.QMainWindow.__init__(self, parent=None)
       
       self.settings = settings
-      self.worker = Worker()
+#       self.worker = Worker()
       self.setupUi(settings)
       
    def setupUi(self, settings):
@@ -686,7 +752,7 @@ class MainWindow(QtGui.QMainWindow):
       file_menu = menubar.addMenu('&File')
       file_menu.addAction(exit_action)
 
-      self.central_widget = CentralWidget(settings, self.worker)
+      self.central_widget = CentralWidget(settings)
       self.setCentralWidget(self.central_widget)  # new central widget        
 #         
 # #      self.process = QtCore.QProcess(self)
@@ -739,10 +805,11 @@ class MainWindow(QtGui.QMainWindow):
       print("Worker finished")
             
 def main():
-   
+   app = QtGui.QApplication(sys.argv)
+
+   sys.stdout = WriteStream()   
    setupLogging()
     
-   app = QtGui.QApplication(sys.argv)
    app.setApplicationName('Android Macro Control GUI')
    
    settings = Settings()

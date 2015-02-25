@@ -8,6 +8,7 @@ from nothreads import myPopen
 from printing import myPrint, printResult
 import re
 from PySide import QtCore
+# from PySide import QProcess
 
 import logging
 logger = logging.getLogger(__name__)
@@ -24,9 +25,16 @@ else:
    ESC = "\\"
    
 
-class Device():
+class Device(QtCore.QObject):
+   device_list = QtCore.Signal(list)
+   active_device_is_set = QtCore.Signal()
+   
    def __init__(self, settings):
+      super(Device, self).__init__()
       
+
+      
+      self.process = QtCore.QProcess(self)
       
       self.active_device = None
       self.adb_active_device = None
@@ -39,9 +47,18 @@ class Device():
       if settings.ANDROID_UTILS_PATH:
          self.adb_cmd = settings.ANDROID_UTILS_PATH + "/adb"
          
-      self.adb_mutex = QtCore.QMutex()
+      self.device_mutex = QtCore.QMutex()
       self.adb_port = 5037
+      
 
+      
+   def __del__(self):
+      self.process.terminate()
+      self.process.waitForFinished()
+      self.thread.terminate()
+      self.thread.wait()
+
+   @QtCore.Slot(str)
    def getInfo(self,key):
       
       for i in range(2):
@@ -52,6 +69,7 @@ class Device():
       
       return None
    
+   @QtCore.Slot()
    def gimpScreenshot(self):
    
       root_path = os.getcwd() 
@@ -69,13 +87,15 @@ class Device():
       myPopen("sleep 5; rm %s"%screenshot_new )
       
    
+   @QtCore.Slot()
    def isAndroidVM(self):
       return self.getInfo('android_vm')
    
+   @QtCore.Slot()
    def isYouwave(self):
       return self.getInfo('youwave')
 
-         
+   @QtCore.Slot()
    def updateInfo(self):
       
       logger.info("Collecting info from the device...")
@@ -173,7 +193,8 @@ class Device():
          self.deviceNo = int(devno.group(1))
 
       self.printInfo()
-            
+           
+   @QtCore.Slot() 
    def printInfo(self):
       
       logger.info("")
@@ -191,6 +212,7 @@ class Device():
       
       logger.info("")
          
+   @QtCore.Slot()
    def adbConnect(self, device_name):
       
       logger.info("Connecting to: %s..."%device_name)
@@ -204,7 +226,8 @@ class Device():
          self.setActiveDevice(device_name)
          return True
    
-   def adbDevices(self):
+   @QtCore.Slot()
+   def getDeviceList(self):
    
    #    devices_string = Popen("adb devices", stdout=PIPE, adbShell=True)
       
@@ -225,12 +248,13 @@ class Device():
       device_list = []
       for dev in device_list1:
          device_list.append(re.sub("\n", '', dev))
-   #      if l != '':
+   #      if l != ''
    #         device_list.append(l)
             
+      self.device_list.emit(device_list)
       return device_list
    
-   
+   @QtCore.Slot(str)
    def setActive(self, device_id):
             
       logger.info("Setting active device "+device_id)
@@ -240,36 +264,41 @@ class Device():
          self.adb_active_device = "-s " + device_id
          
       self.updateInfo()
+      
+      self.active_device_is_set.emit()
      
    #   Popen("adb %s adbShell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, adbShell=True).stdout.read()
 
+   @QtCore.Slot(str, dict)
    def adb(self, command, **kwargs):
+      self.device_mutex.lock()
       
       if re.search("devices", command):
-         self.adb_mutex.lock()
-         ret = myPopen("%s -P %d %s" %(self.adb_cmd, self.adb_port, command), **kwargs)
-         self.adb_mutex.unlock()
+         self.process.start("%s -P %d %s" %(self.adb_cmd, self.adb_port, command))
          
       else:
          if not self.adb_active_device:
             logger.error("You must set active device before using adb.")
             exit(1)
          
-         self.adb_mutex.lock()
-         ret = myPopen("%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command), **kwargs)
-         self.adb_mutex.unlock()
+         self.process.start("%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command))
+         
+      self.process.waitForFinished()
+      output = str(self.process.readAll())
+      self.device_mutex.unlock()
       
-      if ret and re.search('device not found', ret):
+      if output and re.search('device not found', output):
          logger.info("Adb lost connection to target.")
          exit()
          
-      return ret
+      return output
 
-
+   @QtCore.Slot(str, dict)
    def adbShell(self, command, **kwargs):
       
       return self.adb("shell %s"%command, **kwargs)
               
+   @QtCore.Slot(str)
    def takeScreenshot(self, filename=None):
    
    #   Popen("adb adbShell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
@@ -338,6 +367,7 @@ class Device():
    #      print( "Unable to get the screenshot." )
    
    
+   @QtCore.Slot(int)
    def adjustBrightness(self, percent=10):
    
       self.adbShell('echo "echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness" \| su' %percent)

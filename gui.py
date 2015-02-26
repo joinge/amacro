@@ -33,200 +33,30 @@ def helloWorld(*args, **kwargs):
 #    print args
 #    print kwargs
 
-# class InvokeEvent(QtCore.QEvent):
-#    EVENT_TYPE = QtCore.QEvent.Type(QtCore.QEvent.registerEventType())
-# 
-#    def __init__(self, fn, *args, **kwargs):
-#       QtCore.QEvent.__init__(self, InvokeEvent.EVENT_TYPE)
-#       self.fn = fn
-#       self.args = args
-#       self.kwargs = kwargs
-# 
-# 
-# class Invoker(QtCore.QObject):
-#    def event(self, event):
-#       event.fn(*event.args, **event.kwargs)
-# 
-#       return True
-# 
-# _invoker = Invoker()
-# 
-# 
-# def invoke_in_main_thread(fn, *args, **kwargs):
-#    QtCore.QCoreApplication.postEvent(_invoker,
-#       InvokeEvent(fn, *args, **kwargs))
-# 
-# 
-# class Task(QtCore.QObject):
-#    
-#    # Signals are owned by instances, even if they're declared here
-#    finished = QtCore.Signal()
-#    output = QtCore.Signal(object)
-# 
-#    
-#    def __init__(self, fn, *args, **kwargs):
-#       super(Task, self).__init__()
-#       
-#     
-#       self.fn = fn
-#       self.args = args
-#       self.kwargs = kwargs
-#       self.result = None
-#       
-#    def sendResultTo(self, fn):
-#       self.output.connect(fn, Qt.QueuedConnection)
-# #       self.output.connect(fn)
-#       
-# class Processor(QtCore.QObject):
-# 
-#    
-#    def __init__(self, parent, queue):
-#       super(Processor, self).__init__(parent)
-#       
-#       self.thread = QtCore.QThread()
-# #    queue = Queue()
-#       
-#       self.queue = queue
-# 
-#       self.moveToThread(self.thread)
-# #       self.thread.started.connect(self.run)
-# #       self.thread.finished.connect(self.thread.deleteLater)
-#       self.thread.start()
-#       
-#       self.exit = False
-#       
-# #    def __del__(self):
-# # #       self.exit = True
-# # #       self.thread.terminate()
-# #       self.thread.wait()
-#       
-#    @QtCore.Slot()
-#    def quit(self):
-#       logger.debug("Processor shutting down")
-#       self.thread.terminate()
-#       self.thread.wait()
-#       logger.debug("Processor shut down")
-#       
-#    @QtCore.Slot(object)
-#    def processTask(self, task):
-#       logger.info("Processor received a new task")
-#       
-#       result = task.fn(*task.args, **task.kwargs)
-#       
-#       task.output.emit(result)
-#       
-# #       while(not self.exit):
-# #          time.sleep(2)
-# #          logger.debug("Polling queue")
-# #          obj = self.queue.get()
-# #          
-# #          if obj:
-# #             logger.debug("Thread discovered new object in queue")
-# #          
-# #          if self.exit:
-# #             break
-#       
-# 
-# # very testable class (hint: you can use mock.Mock for the signals)
-# class Worker(QtCore.QObject):
-#    task = QtCore.Signal(object)
-#    finished = QtCore.Signal()
-#    
-#    
-#    def __init__(self, parent=None):
-#       super(Worker, self).__init__(parent)
-#       
-#       self.queue = Queue()
-#       
-#       self.processor = Processor(None, self.queue)
-#       
-#       self.task.connect(self.processor.processTask)
-#       self.finished.connect(self.processor.quit)
-#       
-# #       self.task_ready.connect(
-# 
-# #       self.thread.dataReady.connect(self.get_data, Qt.QueuedConnection)
-# 
-#    def __del__(self):
-#       logger.debug("Worker wants to quit.")
-#       self.emit(self.finished)
-# 
-#       self.waitForThreadToQuit()
-# 
-#    
-#    def waitForThreadToQuit(self):
-#       logger.debug("Worker waits for processor to quit.")
-#       while(True):
-#          if self.processor.thread.terminated:
-#             logger.debug("Worker is quitting.")
-#             break
-#       
-#    
-# # 
-# #       
-# #    @QtCore.Slot()
-# #    def handler(self):
-# #       
-# #       data = self.fn()
-# # 
-# #       print "self.signal_string)"
-# #       self.emit(QtCore.SIGNAL(self.signal_string), data)
-# #       self.finished.emit()
-# #       
-# # #       if data:
-# # #          self.output.emit(data)
-# # #          
-# # #       file = open('tmp.txt','a')
-# # #       file.write("7")
-# # #       file.close()
-# #       
-#    @QtCore.Slot()
-#    def enqueueTask(self, task):
-#       self.task.emit(task)
-# #       self.queue.put(task)
-#       
-# worker = Worker()
-      
-
-# A QObject (to be run in a QThread) which sits waiting for output to come through a Queue.Queue().
-# It blocks until output is available, and one it has got something from the queue, it sends
-# it to the "MainThread" by emitting a Qt Signal 
-# class MyReceiver(QtCore.QObject):
-#    mysignal = QtCore.Signal(str)
-#    
-#    def __init__(self, *args, **kwargs):
-#       QtCore.QObject.__init__(self, *args, **kwargs)
-#  
-#    def emitMessage(self, text):
-#       self.mysignal.emit(text)
-# #       while True:
-# #          text = self.queue.get()
-# #          self.mysignal.emit(text)
          
 
-class WriteStream(QtGui.QWidget):
+class StreamRedirect(QtGui.QWidget):
    message = QtCore.Signal(str)
    
    def __init__(self):
-      super(WriteStream, self).__init__()
+      super(StreamRedirect, self).__init__()
       
-#       self.emitter = MyReceiver()
-   
+      
    def write(self, text):
       self.message.emit(text)
       
 
-      
-
-class MyConsole(QtGui.QWidget):
+class ConsoleView(QtGui.QGroupBox):
    msg_ready = QtCore.Signal()
 
    def __init__(self, parent):
-      super(MyConsole, self).__init__(parent)
+      super(ConsoleView, self).__init__("Console")
+      
+      self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+      
       
       self.textEdit = QtGui.QTextEdit(self)  
       
-      self.textEdit.setText("Console initiated...")
 #       self.textEdit.setMinimumHeight(300)
 #       self.textEdit.setMinimumWidth(600)
 #       self.setMinimumHeight(300)
@@ -235,21 +65,20 @@ class MyConsole(QtGui.QWidget):
       font.setStyleHint(QtGui.QFont.Monospace)
       self.textEdit.setFont(font)
       
-#       self.textEdit.resize(500,300)   
+#       policy = self.textEdit.sizePolicy()
+#       policy.setVerticalStretch(1)
+#       policy.setHorizontalStretch(1)
+#       self.textEdit.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 
       # Create Queue and redirect sys.stdout to this queue
-#       self.queue = Queue()
-#       sys.stdout = WriteStream(self.queue)
-
-#       sys.stdout = WriteStream()
       sys.stdout.message.connect(self.addText, Qt.QueuedConnection)
 
-#       self.msg_ready.connect(self.outOfMessageQueue)
-# 
-# 
-# #       if not DEBUG:
-#          sys.stdout = WriteStream()
-#          sys.stdout.emitter.mysignal.connect(self.intoMessageQueue)
+
+      logger.info("Console initiated...")
+
+   @QtCore.Slot(int, int)
+   def adaptSize(self, width, height):
+      self.textEdit.resize(width, height)   
 
 
    @QtCore.Slot(str)
@@ -257,27 +86,22 @@ class MyConsole(QtGui.QWidget):
       self.textEdit.moveCursor(QtGui.QTextCursor.End)
       self.textEdit.insertPlainText(message)
       self.textEdit.show()
-#       
-#    @QtCore.Slot(str)
-#    def intoMessageQueue(self, message):
-#       self.queue.put(message)
-#       self.msg_ready.emit()
 
 
-class DeviceView(QtGui.QWidget):
+
+class DeviceView(QtGui.QGroupBox):
    get_device_list   = QtCore.Signal()
    set_active_device = QtCore.Signal(str)
-   
-   
 
-   def __init__(self, parent, settings):
+   def __init__(self, parent, device, settings):
 
-      super(DeviceView, self).__init__(parent)
+      super(DeviceView, self).__init__("Devices")
       
-      self.thread = QtCore.QThread()
-      self.device = Device(settings)
-      self.device.moveToThread(self.thread)
-      self.thread.start()
+      self.device = device
+      
+      self.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Expanding)
+      
+
       
       self.get_device_list.connect(self.device.getDeviceList, Qt.QueuedConnection)
       self.device.device_list.connect(self.updateDeviceList, Qt.QueuedConnection)
@@ -300,7 +124,9 @@ class DeviceView(QtGui.QWidget):
       self.tree.setModel(self.model)
       self.tree.setRootIsDecorated(False)
 
-#       self.tree.setColumnWidth(0,170)
+      
+
+      self.tree.setColumnWidth(0,170)
 #       self.tree.setColumnWidth(1,30)
 
 
@@ -323,44 +149,24 @@ class DeviceView(QtGui.QWidget):
       self.add_device_layout.addWidget(self.device_port)
       self.add_device_layout.addWidget(self.device_add)
       
-      self.full_layout = QtGui.QVBoxLayout()
-      self.full_layout.addWidget(self.tree)
-      self.full_layout.addLayout(self.add_device_layout)
+      self.group_layout = QtGui.QVBoxLayout()
+      self.group_layout.addWidget(self.tree)
+      self.group_layout.addLayout(self.add_device_layout)
 
-      self.setLayout(self.full_layout)
+#       self.group_box = QtGui.QGroupBox(self, "Devices")
+#       self.group_box.setLayout(self.group_layout)
+#       self.final_layout = QtGui.QLayout()
+#       self.final_layout.addWidget(self.group_box)
+
+      self.setLayout(self.group_layout)
 
 
       self.get_device_list.emit()
-
-
-#       file = open('tmp.txt','a')
-#       file.write("1")
-#       file.close()
-
-#       
-# 
-#       task = Task(self.device.getDeviceList)
-# #       task.output.connect(self.updateDeviceList, Qt.QueuedConnection)
-# #       task.output.connect(self.updateDeviceList)
-#       task.sendResultTo(self.updateDeviceList)
-# 
-#       worker.enqueueTask(task)
-# # 
-#       self.update_list_worker.whenFinishedEmit("deviceList(list)")
-#       self.connect(self.update_list_worker,
-#                    QtCore.SIGNAL("deviceList(list)"),
-#                    self.updateDeviceList)
-# #       
-# #       self.update_list_worker.connectOutputTo(self.updateDeviceList)
-#       self.update_list_worker.enqueueMethod(self.device.getDeviceList)
-#       
-#       file = open('tmp.txt','a')
-#       file.write("8")
-#       file.close()
       
-#       worker = Worker()
-#       worker.output.connect(self.updateDeviceList)
-#       worker.invokeMethod(self.device.getDeviceList, list)
+   @QtCore.Slot(int, int)
+   def adaptSize(self, width, height):
+      
+      self.tree.resize(width, height)
       
       
    @QtCore.Slot(list)
@@ -377,7 +183,7 @@ class DeviceView(QtGui.QWidget):
          device_item = QtGui.QStandardItem(device)
          self.deviceActiveList[str(i)] = False
          self.deviceYouwaveList[str(i)] = False
-         box = QtGui.QStandardItem("")
+         box = QtGui.QStandardItem("      ")
 #         box.setTextAlignment(QtCore.Qt.AlignRight)
 #         box = QtGui.QCheckBox("Youwave?", self) #QtGui.QStandardItem("xxx")
          device_item.setCheckable(True)
@@ -390,6 +196,7 @@ class DeviceView(QtGui.QWidget):
          self.model.appendRow([device_item, box])
 #         model.appendColumn(box)
 
+#       self.tree.resizeColumnToContents()
       self.model.itemChanged.connect(self.deviceClicked)
       self.device_name.setText('')
       
@@ -583,10 +390,35 @@ class DeviceView(QtGui.QWidget):
 #       user = str(self.nick.currentText())
 #       
 #       macro.user.setCurrent(user)
+
       
 class Buttons(QtGui.QWidget):
+   take_screenshot   = QtCore.Signal()
+   
    def __init__(self, parent, device):
       super(Buttons, self).__init__(parent)
+      
+      self.device = device
+      
+      self.imageLabel = QtGui.QLabel()
+      self.imageLabel.setBackgroundRole(QtGui.QPalette.Base)
+#       self.imageLabel.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+      self.imageLabel.setSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
+#       self.imageLabel.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+      self.imageLabel.setScaledContents(True)
+      self.imageLabel.resize(16*10,9*10)
+      
+      self.rotate = QtGui.QCheckBox(self)
+      self.rotate.setText('Rotate')
+      self.rotate.setToolTip("Huh? Don't ask... <BR> Joey ")
+      self.rotate.setChecked(False)
+      self.rotate.released.connect(self.updateScreenshot)
+      
+      self.refresh_timer = QtCore.QTimer()
+      self.refresh = QtGui.QCheckBox(self)
+      self.refresh.setText('Refresh')
+      self.refresh.setChecked(False)
+      self.refresh.released.connect(self.autoRefreshScreenshot)
       
 #       self.btn = []
 #       for i,user in enumerate(macro.info.get('accounts')):
@@ -602,11 +434,11 @@ class Buttons(QtGui.QWidget):
 #       self.btn1.move(100,50)
 #       
       self.btn2 = QtGui.QPushButton('GIMP', self)
-      self.btn2.clicked.connect(device.gimpScreenshot)
+      self.btn2.clicked.connect(lambda: self.device.gimpScreenshot(self.current_image_filename), Qt.QueuedConnection)
       self.btn2.resize(self.btn2.sizeHint())
 #       self.btn2.move(100,75)
 
-      self.setMinimumWidth(75)
+      self.setMinimumWidth(500)
 #       
 #       self.btn3 = QtGui.QPushButton('Clear cache', self)
 #       self.btn3.clicked.connect(macro.clearMarvelCache)
@@ -618,74 +450,151 @@ class Buttons(QtGui.QWidget):
       self.btn4.resize(self.btn4.sizeHint())
 #       self.btn4.move(100,125)
       
-      self.full_layout = QtGui.QVBoxLayout()
-      self.full_layout.addWidget(self.btn2)
-      self.full_layout.addWidget(self.btn4)
-      self.setLayout(self.full_layout)
-#       
-#       self.custom8_btn = QtGui.QPushButton('Custom 8', self)
-#       self.custom8_btn.clicked.connect(macro.custom8)
-#       self.custom8_btn.resize(self.custom8_btn.sizeHint())
 
-class EmittingStream(QtCore.QObject):
-
-   textWritten = QtCore.Signal(str)
-   
-   def write(self, text):
-      self.textWritten.emit(str(text))
+      self.screenshot_btn = QtGui.QPushButton('Take Screenshot', self)
+      self.screenshot_btn.resize(self.screenshot_btn.sizeHint())
+#       self.take_screenshot.connect(device.takeScreenshot, Qt.QueuedConnection)
+      self.screenshot_btn.clicked.connect(device.takeScreenshot, Qt.QueuedConnection)
+      self.device.screenshot_ready.connect(self.updateScreenshot, Qt.QueuedConnection)
       
+      self.hlayout = QtGui.QHBoxLayout()
+      self.hlayout.addWidget(self.screenshot_btn)
+      self.hlayout.addWidget(self.rotate)
+      self.hlayout.addWidget(self.refresh)
+      self.hlayout.addWidget(self.btn2)
+      self.hlayout.addWidget(self.btn4)
+      
+      self.vlayout = QtGui.QVBoxLayout()
+      self.vlayout.addWidget(self.imageLabel)
+      self.vlayout.addLayout(self.hlayout)
+      
+#       self.vlayout = QtGui.QHBoxLayout()
+#       self.vlayout.addLayout(self.group_layout)
+#       self.vlayout.addWidget(self.imageLabel)
+      
+      self.setLayout(self.vlayout)
+       
+      
+
+   @QtCore.Slot(str)
+   def updateScreenshot(self, filename=None):
+#       fileName = QtGui.QFileDialog.getOpenFileName(self, "Open File", QtCore.QDir.currentPath())
+      
+      if filename:
+         self.current_image_filename = filename
+      else:
+         filename = self.current_image_filename
+         
+      image = QtGui.QImage(filename)
+      if image.isNull():
+         QtGui.QMessageBox.information(self, "Image Viewer", "Cannot load %s." % filename)
+         return
+      
+      pixmap = QtGui.QPixmap.fromImage(image)
+      
+      if self.rotate.isChecked():
+         rm = QtGui.QMatrix()
+         rm.rotate(90)
+         pixmap = pixmap.transformed(rm)
+      
+   
+      self.imageLabel.setPixmap(pixmap)
+#       self.scaleFactor = 1.0
+#    
+#       self.printAct.setEnabled(True)
+#       self.fitToWindowAct.setEnabled(True)
+#       self.updateActions()
+#    
+#       if not self.fitToWindowAct.isChecked():
+#          self.imageLabel.adjustSize()
+
+   @QtCore.Slot()
+   def autoRefreshScreenshot(self):
+      
+      if self.refresh.isChecked():
+      
+         self.refresh_timer.setInterval(10000)
+         self.refresh_timer.timeout.connect(self.device.takeScreenshot, Qt.QueuedConnection)
+         self.refresh_timer.start()
+         
+      else:
+         self.refresh_timer.stop()
+      
+         
+            
+            
+         
+         
       
 class CentralWidget(QtGui.QWidget):
-   def __init__(self, settings):
-      super(CentralWidget, self).__init__()
+   def __init__(self, parent, settings):
+      super(CentralWidget, self).__init__(parent)
       
       self.settings = settings
          
       self.initUI(settings)
    
-   def normalOutputWritten(self, text):
-      """Append text to the QTextEdit."""
-      # Maybe QTextEdit.append() works as well, but this is how I do it:
-      cursor = self.textEdit.textCursor()
-      cursor.movePosition(QtGui.QTextCursor.End)
-      cursor.insertText(text)
-      self.textEdit.setTextCursor(cursor)
-      self.textEdit.ensureCursorVisible()
-       
-   def initUI(self, settings):
-       
 
+   def initUI(self, settings):
       
+      self.device_thread = QtCore.QThread()
+      self.device = Device(settings)
+      self.device.moveToThread(self.device_thread)
+      self.device_thread.start()
+       
+      self.device_list = DeviceView(self, self.device, settings)
       
-#       sys.exit(self.exec_())
+      self.console = ConsoleView(self)
       
+      self.buttons = Buttons(self, self.device)
       
-      self.console = MyConsole(self)
-      self.device_list = DeviceView(self, settings)
-      self.buttons = Buttons(self, self.device_list.device)
 # #       self.ref_service = ReferralService(self)
+
+      frame = QtGui.QFrame()
+      frame.setFrameShape(frame.Box)
       
+      frame2 = QtGui.QFrame()
+      frame2.setFrameShape(frame2.Box)
+      
+      frame3 = QtGui.QFrame()
+      frame3.setFrameShape(frame3.Box)
   
      
-#       self.horizontal_layout = QtGui.QHBoxLayout()
-#       self.horizontal_layout.addWidget(self.device_list)
-#       self.horizontal_layout.addWidget(self.buttons)
+      self.horizontal_layout = QtGui.QHBoxLayout()
+      self.horizontal_layout.addWidget(self.device_list)
+      self.horizontal_layout.addWidget(self.buttons)
       
-      self.grid_layout = QtGui.QGridLayout()
-      self.grid_layout.setSpacing(10)
+#       self.grid_layout = QtGui.QGridLayout(self)
+# #       self.grid_layout.setSpacing(10)
+#       
+#       self.grid_layout.addWidget(self.device_list, 0, 0)
+# # #       self.grid_layout.a
+# #       self.grid_layout.addWidget(self.buttons, 0, 1)
+# #       self.grid_layout.addWidget(self.console, 1, 0)
+#       
+# #       self.grid_layout.addWidget(frame, 1, 1)
+# #       self.grid_layout.a
+#       self.grid_layout.addWidget(self.buttons, 0, 1)
+#       self.grid_layout.addWidget(self.console, 1, 0, 2, 2)
       
-      self.grid_layout.addWidget(self.device_list, 1, 0)
-#       self.grid_layout.a
-      self.grid_layout.addWidget(self.buttons, 1, 1)
-      self.grid_layout.addWidget(self.console, 2, 0)
+#       
+#       self.hsplit = QtGui.QSplitter(self)
+#       self.hsplit.add
+      
+      self.vlayout = QtGui.QVBoxLayout()
+      self.vlayout.addLayout(self.horizontal_layout)
+      self.vlayout.addWidget(self.console)
+      
+#       self.resizeEvent().connect(self.console.adaptSize)
+#       self.resize(self.geometry().width(), self.geometry().height())     
       
       
-#       self.full_layout = QtGui.QVBoxLayout()
-#       self.full_layout.addLayout(self.horizontal_layout)
-#       self.full_layout.addWidget(self.console)
-#       self.full_layout.addWidget(self.status_bar)
+#       self.group_layout = QtGui.QVBoxLayout()
+#       self.group_layout.addLayout(self.horizontal_layout)
+#       self.group_layout.addWidget(self.console)
+#       self.group_layout.addWidget(self.status_bar)
 
-      self.setLayout(self.grid_layout)
+      self.setLayout(self.vlayout)
       
       
       
@@ -694,7 +603,7 @@ class CentralWidget(QtGui.QWidget):
 # #       self.ref_service.move(0,250)
 #       self.console.move(0,450)
 #       
-#       self.setGeometry(300, 300, 600, 800)
+      self.setGeometry(300, 300, 600, 800)
       self.setWindowTitle('Android Macro Control')  
       self.show()
       
@@ -705,6 +614,13 @@ class CentralWidget(QtGui.QWidget):
 #       
 #    def workerFinished(self):
 #       print("Worker finished")
+
+
+   def resizeEvent(self, resizeEvent):
+      left,top,right,bottom = self.vlayout.getContentsMargins()
+      width,height = (self.geometry().width(), self.geometry().height())
+      self.console.adaptSize(width-left-right, 0.5*(height-top-bottom))
+#       self.device_list.adaptSize(0.5*self.geometry().width(), 0.5*self.geometry().height())
       
 class MainWindow(QtGui.QMainWindow):
     
@@ -752,7 +668,7 @@ class MainWindow(QtGui.QMainWindow):
       file_menu = menubar.addMenu('&File')
       file_menu.addAction(exit_action)
 
-      self.central_widget = CentralWidget(settings)
+      self.central_widget = CentralWidget(self, settings)
       self.setCentralWidget(self.central_widget)  # new central widget        
 #         
 # #      self.process = QtCore.QProcess(self)
@@ -769,45 +685,19 @@ class MainWindow(QtGui.QMainWindow):
       
 
       self.statusBar().showMessage("Ready")
-      
-      
-#       self.worker.start()
+
       
       self.setWindowTitle('Android Macro Control')  
       self.setGeometry(300, 300, 600, 800)
       self.show()
-      
-      
-   def __del__(self):
-      # Restore sys.stdout
-      sys.stdout = sys.__stdout__
-      
-#    @QtCore.pyqtSlot(str)
-#    def append_text(self,text):
-#       text_editor = self.central_widget.console.textEdit
-#       text_editor.moveCursor(QtGui.QTextCursor.End)
-#       text_editor.insertPlainText( text )
-      
-#    def normalOutputWritten(self, text):
-#       """Append text to the QTextEdit."""
-#       # Maybe QTextEdit.append() works as well, but this is how I do it:
-#       cursor = self.textEdit.textCursor()
-#       cursor.movePosition(QtGui.QTextCursor.End)
-#       cursor.insertText(text)
-#       self.textEdit.setTextCursor(cursor)
-#       self.textEdit.ensureCursorVisible()
-       
-      
-   def queueWork(self, fn, *args, **kwargs):
-      pass
-      
-   def workerFinished(self):
-      print("Worker finished")
+
+
             
 def main():
    app = QtGui.QApplication(sys.argv)
 
-   sys.stdout = WriteStream()   
+   sys.stdout = StreamRedirect()
+   sys.stderr = StreamRedirect()   
    setupLogging()
     
    app.setApplicationName('Android Macro Control GUI')
@@ -816,11 +706,10 @@ def main():
    
    ex = MainWindow(settings)
    
-#    myStream.message.connect(ex.console.on_myStream_message)
-   
-#    macro.STDOUT_ALTERNATIVE = myStream
-#    sys.stdout = myStream
    sys.exit(app.exec_())
+   
+   # Restore sys.stdout
+   sys.stdout = sys.__stdout__
 
 
 if __name__ == '__main__':

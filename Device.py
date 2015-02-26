@@ -28,13 +28,15 @@ else:
 class Device(QtCore.QObject):
    device_list = QtCore.Signal(list)
    active_device_is_set = QtCore.Signal()
+   screenshot_ready = QtCore.Signal(str)
    
    def __init__(self, settings):
       super(Device, self).__init__()
       
 
-      
       self.process = QtCore.QProcess(self)
+      self.process_gimp = QtCore.QProcess(self)
+#       self.process.waitForStarted()
       
       self.active_device = None
       self.adb_active_device = None
@@ -69,22 +71,24 @@ class Device(QtCore.QObject):
       
       return None
    
-   @QtCore.Slot()
-   def gimpScreenshot(self):
+   @QtCore.Slot(str)
+   def gimpScreenshot(self, filename=None):
    
       root_path = os.getcwd() 
       
-      screenshot_tmp_path = '%s/%s'%(root_path, settings.TEMP_PATH)
-      screenshot_path = '%s/%s'%(root_path, settings.SCREEN_PATH)
-      if device.getInfo('screen_density') == 160:
-         screenshot_path = screenshot_path + '/dpi160'
-         
-      screenshot_tmp = screenshot_tmp_path + '/screenshot_%s.png'%device.active_device
-      screenshot_new = screenshot_path     + '/screenshot_%s.png'%device.active_device
-   
-      myPopen("cp %s %s" %(screenshot_tmp, screenshot_new))
-      myPopen("gimp %s &"%screenshot_new )
-      myPopen("sleep 5; rm %s"%screenshot_new )
+#       if not filename:
+#          
+#       screenshot_tmp_path = '%s/%s'%(root_path, settings.TEMP_PATH)
+#       screenshot_path = '%s/%s'%(root_path, settings.SCREEN_PATH)
+#       if device.getInfo('screen_density') == 160:
+#          screenshot_path = screenshot_path + '/dpi160'
+#          
+#       screenshot_tmp = screenshot_tmp_path + '/screenshot_%s.png'%device.active_device
+#       screenshot_new = screenshot_path     + '/screenshot_%s.png'%device.active_device
+#    
+#       myPopen("cp %s %s" %(screenshot_tmp, screenshot_new))
+      self.process_gimp.start("gimp", ["%s"%filename] )
+#       myPopen("sleep 5; rm %s"%screenshot_new )
       
    
    @QtCore.Slot()
@@ -281,8 +285,10 @@ class Device(QtCore.QObject):
             logger.error("You must set active device before using adb.")
             exit(1)
          
-         self.process.start("%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command))
+         cmd = "-P %d %s %s" %(self.adb_port, self.adb_active_device, command)
+         self.process.start(self.adb_cmd + ' ' + cmd)
          
+#       self.process.waitForReadyRead()
       self.process.waitForFinished()
       output = str(self.process.readAll())
       self.device_mutex.unlock()
@@ -301,6 +307,7 @@ class Device(QtCore.QObject):
    @QtCore.Slot(str)
    def takeScreenshot(self, filename=None):
    
+      logger.info("Pulling a fresh screenshot from the device...")
    #   Popen("adb adbShell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
    #          adb pull  /sdcard/screenshot.png screenshot.png >error.log 2>&1", stdout=PIPE, adbShell=True).stdout.read()
              
@@ -336,10 +343,12 @@ class Device(QtCore.QObject):
       else:
    #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, adbShell=True).stdout.read()
                
-         self.adbShell("/system/bin/screencap -p /sdcard/screenshot.png", stdout='devnull', stderr='devnull', log=False)
-         self.adb("pull /sdcard/screenshot.png '%s'" %output, stdout='devnull', stderr='devnull', log=False)
+         res = self.adbShell("/system/bin/screencap -p /sdcard/screenshot.png", stdout='devnull', stderr='devnull', log=False)
+         logger.debug(res)
+         res = self.adb("pull /sdcard/screenshot.png %s" %output, stdout='devnull', stderr='devnull', log=False)
+         logger.debug(res)
        
-
+      self.screenshot_ready.emit(output)
          
       
       # adb pull /dev/graphics/fb0 img.raw

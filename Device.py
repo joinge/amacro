@@ -281,7 +281,10 @@ class Device(QtCore.QObject):
             logger.error("You must set active device before using adb.")
             exit(1)
          
-         self.process.start("%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command))
+         if os.name == "posix":
+            self.process.start("sh %s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command))
+         else:
+            self.process.start("%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command))
          
       self.process.waitForFinished()
       output = str(self.process.readAll())
@@ -335,9 +338,15 @@ class Device(QtCore.QObject):
                %(self.settings.TEMP_PATH,self.active_device,output))
       else:
    #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, adbShell=True).stdout.read()
+         if os.name == "posix":
+            self.adbShell("/system/bin/screencap -p | sed 's/\r$//' > %s"%output)
+         elif os.name == "nt":
+            self.adbShell("/system/bin/screencap -p /sdcard/screenshot.png", stdout='devnull', stderr='devnull', log=False)
+            self.adb("pull /sdcard/screenshot.png %s" %output, stdout='devnull', stderr='devnull', log=False)
+         else:
+            logger.error("Unsupported OS")
+            exit(1)
                
-         self.adbShell("/system/bin/screencap -p /sdcard/screenshot.png", stdout='devnull', stderr='devnull', log=False)
-         self.adb("pull /sdcard/screenshot.png '%s'" %output, stdout='devnull', stderr='devnull', log=False)
        
 
          

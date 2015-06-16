@@ -20,8 +20,11 @@ from functools import partial
 import functools
 
 from Device import Device
-from Settings import Settings
+# from Settings import Settings
 from printing import setupLogging
+
+from GuiSettings import GuiSettings
+
 
 import time
 
@@ -100,8 +103,6 @@ class DeviceView(QtGui.QGroupBox):
       self.device = device
       
       self.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Expanding)
-      
-
       
       self.get_device_list.connect(self.device.getDeviceList, Qt.QueuedConnection)
       self.device.device_list.connect(self.updateDeviceList, Qt.QueuedConnection)
@@ -242,6 +243,21 @@ class DeviceView(QtGui.QGroupBox):
    
 #      .connect(partial(macro.startMarvel, user, 1))
    
+   
+   
+
+class Macro(QtGui.QFrame):
+ 
+   def __init__(self, parent):
+          
+      super(Macro,self).__init__(parent)
+      self.setStyleSheet("#Macro{ margin:0px; border:1px solid rgb(128, 128, 128); padding: 10px; border-radius: 5px }")
+      margin = (10,10)
+             
+      self.setObjectName("Macro")
+    
+
+
 # class ReferralService(QtGui.QFrame):
 # 
 #    def __init__(self, parent):
@@ -662,10 +678,16 @@ class MainWindow(QtGui.QMainWindow):
       exit_action.setStatusTip('Exit application')
       exit_action.triggered.connect(QtGui.qApp.quit)
       
+      settings_action = QtGui.QAction(QtGui.QIcon('settings.png'), '&Settings', self)        
+#       settings_action.setShortcut('Ctrl+')
+      settings_action.setStatusTip('Application settings')
+      settings_action.triggered.connect(self.openSettings)
+      
       self.statusBar()
       
       menubar = self.menuBar()
       file_menu = menubar.addMenu('&File')
+      file_menu.addAction(settings_action)
       file_menu.addAction(exit_action)
 
       self.central_widget = CentralWidget(self, settings)
@@ -691,6 +713,10 @@ class MainWindow(QtGui.QMainWindow):
       self.setGeometry(300, 300, 600, 800)
       self.show()
 
+   def openSettings(self):
+      
+      self.settings = GuiSettings()
+      self.settings.show()
 
             
 def main():
@@ -702,7 +728,7 @@ def main():
     
    app.setApplicationName('Android Macro Control GUI')
    
-   settings = Settings()
+   settings = GuiSettings()
    
    ex = MainWindow(settings)
    

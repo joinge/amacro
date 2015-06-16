@@ -33,11 +33,7 @@ class Device(QtCore.QObject):
    def __init__(self, settings):
       super(Device, self).__init__()
       
-
-      self.process = QtCore.QProcess(self)
-      
-      self.post_process = QtCore.QProcess(self)
-      self.post_process.setProcessChannelMode(QtCore.QProcess.ForwardedChannels)
+#       self.active_device_is_set.connect(self.takeScreenshot)
       
       self.process_gimp = QtCore.QProcess(self)
 #       self.process.waitForStarted()
@@ -114,7 +110,7 @@ class Device(QtCore.QObject):
       
       # Copy some scripts to the device we will use later on
       self.adbShell('mkdir /sdcard/macro')
-      self.adb('push %s/device /sdcard/macro'%self.settings.MACRO_SCRIPTS, stderr='devnull', stdout='devnull')
+      self.adb('push %s/device /sdcard/macro'%self.settings.MACRO_SCRIPTS, stdout='devnull')
       
       # Query on arch. But really, Android version would be better.
       self.youwave = False
@@ -273,13 +269,20 @@ class Device(QtCore.QObject):
          
       self.updateInfo()
       
+      self.takeScreenshot()
+      
       self.active_device_is_set.emit()
      
    #   Popen("adb %s adbShell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, adbShell=True).stdout.read()
 
    @QtCore.Slot(str, dict)
-   def adb(self, command, custom_stdout=False):
-      self.device_mutex.lock()  
+   def adb(self, command, stdout=False, process=None):
+      
+      # Make sure only one adb command is executed at a time
+      self.device_mutex.lock()
+      
+      if not process:
+         process = QtCore.QProcess(self)      
       
       cmd = ''
       if re.search("devices", command):
@@ -296,27 +299,27 @@ class Device(QtCore.QObject):
             cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
 
       
-      self.process.start(cmd)
+#       process.start(cmd)
 
-      if not custom_stdout:
+      if not stdout:
          logger.debug(cmd)
-   
-         for i in range(5):
-            self.process.start(cmd)
-            
-            if not self.process.waitForFinished():
-               logger.warning("ADB timeout/crash. Command: %s"%cmd) 
-               self.process.kill()
-               logger.debug("Retry attempt %d/5"%i)
-            else:
-               break
-            
-         output = str(self.process.readAll())
 
+      for i in range(5):
+         process.start(cmd)
          
-         if output and re.search('device not found', output):
-            logger.info("Adb lost connection to target.")
-            exit()
+         if not process.waitForFinished():
+            logger.warning("ADB timeout/crash. Command: %s"%cmd) 
+            process.kill()
+            logger.debug("Retry attempt %d/5"%i)
+         else:
+            break
+         
+      output = str(process.readAll())
+
+      
+      if output and re.search('device not found', output):
+         logger.info("Adb lost connection to target.")
+         exit()
 
 
       self.device_mutex.unlock()
@@ -325,13 +328,15 @@ class Device(QtCore.QObject):
    
    @QtCore.Slot(str, dict)
    def adbPipe(self, cmd1, cmd2, **kwargs):
+            
+      post_process = QtCore.QProcess(self)
+      post_process.setProcessChannelMode(QtCore.QProcess.ForwardedChannels)
       
-      self.process.setStandardOutputProcess(self.post_process)
+      process = QtCore.QProcess(self)
+      process.setStandardOutputProcess(post_process)
       
-      self.adb(cmd1)
-      self.post_process.start(cmd2)
-      
-      self.process.setStandardOutputProcess()
+      self.adb(cmd1, process=process)
+      post_process.start(cmd2)
 
       if not self.adb_active_device:
          logger.error("You must set active device before using adb.")
@@ -339,19 +344,19 @@ class Device(QtCore.QObject):
       
       if os.name == "posix":
          cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, cmd1)
-         self.process.start(cmd)
+         process.start(cmd)
       else:
-         cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
-         self.process.start(cmd)
+         cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, cmd1)
+         process.start(cmd)
          
 
       logger.debug(cmd)
 #       self.process.waitForReadyRead()
-      if not self.process.waitForFinished():
+      if not process.waitForFinished():
          logger.warning("ADB timeout/crash. Command: %s"%cmd) 
-         self.process.kill()
+         process.kill()
          
-      output = str(self.process.readAll())
+      output = str(process.readAll())
       
       if output and re.search('device not found', output):
          logger.info("Adb lost connection to target.")

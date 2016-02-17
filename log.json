@@ -1,0 +1,51 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    
+    "formatters": {
+    
+        "stream_formatter": {
+            "format": "%(name)-12s %(levelname)-8s %(message)s"
+        },
+        
+        "file_formatter": {
+            "format": "%(asctime)-26s %(name)-12s %(levelname)-8s %(message)s"
+        }
+    },
+
+    "handlers": {
+    
+        "stream_handler": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "stream_formatter",
+            "stream": "ext://sys.stdout"
+        },
+
+        "file_handler": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "file_formatter",
+            "filename": "macro2.log",
+            "maxBytes": 10485760,
+            "backupCount": 20,
+            "encoding": "utf8"
+        }
+
+    },
+
+    "loggers": {
+    
+        "my_module": {
+            "level": "ERROR",
+            "handlers": ["stream_handler", "file_handler"],
+            "propagate": "no"
+        }
+        
+    },
+
+    "root": {
+        "level": "DEBUG",
+        "handlers": ["stream_handler", "file_handler"]
+    }
+}

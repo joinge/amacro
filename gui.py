@@ -24,6 +24,7 @@ from Device import Device
 from printing import setupLogging
 
 from GuiSettings import GuiSettings
+from Settings import Settings
 
 
 import time
@@ -560,7 +561,7 @@ class CentralWidget(QtGui.QWidget):
        
       self.device_list = DeviceView(self, self.device, settings)
       
-      self.console = ConsoleView(self)
+#       self.console = ConsoleView(self)
       
       self.buttons = Buttons(self, self.device)
       
@@ -599,7 +600,7 @@ class CentralWidget(QtGui.QWidget):
       
       self.vlayout = QtGui.QVBoxLayout()
       self.vlayout.addLayout(self.horizontal_layout)
-      self.vlayout.addWidget(self.console)
+#       self.vlayout.addWidget(self.console)
       
 #       self.resizeEvent().connect(self.console.adaptSize)
 #       self.resize(self.geometry().width(), self.geometry().height())     
@@ -678,16 +679,16 @@ class MainWindow(QtGui.QMainWindow):
       exit_action.setStatusTip('Exit application')
       exit_action.triggered.connect(QtGui.qApp.quit)
       
-      settings_action = QtGui.QAction(QtGui.QIcon('settings.png'), '&Settings', self)        
+#       settings_action = QtGui.QAction(QtGui.QIcon('settings.png'), '&Settings', self)        
 #       settings_action.setShortcut('Ctrl+')
-      settings_action.setStatusTip('Application settings')
-      settings_action.triggered.connect(self.openSettings)
+#       settings_action.setStatusTip('Application settings')
+#       settings_action.triggered.connect(self.openSettings)
       
       self.statusBar()
       
       menubar = self.menuBar()
       file_menu = menubar.addMenu('&File')
-      file_menu.addAction(settings_action)
+#       file_menu.addAction(settings_action)
       file_menu.addAction(exit_action)
 
       self.central_widget = CentralWidget(self, settings)
@@ -713,22 +714,22 @@ class MainWindow(QtGui.QMainWindow):
       self.setGeometry(300, 300, 600, 800)
       self.show()
 
-   def openSettings(self):
-      
-      self.settings = GuiSettings()
-      self.settings.show()
+#    def openSettings(self):
+#       
+#       self.settings = GuiSettings()
+#       self.settings.show()
 
             
 def main():
    app = QtGui.QApplication(sys.argv)
 
-   sys.stdout = StreamRedirect()
-   sys.stderr = StreamRedirect()   
+#    sys.stdout = StreamRedirect()
+#    sys.stderr = StreamRedirect()   
    setupLogging()
     
    app.setApplicationName('Android Macro Control GUI')
    
-   settings = GuiSettings()
+   settings = Settings()
    
    ex = MainWindow(settings)
    

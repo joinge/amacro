@@ -2,7 +2,7 @@
 import os
 
 from PySide import QtGui, QtCore
-from PySide.QtCore import Qt
+from PySide.QtCore import Qt, QSettings
 
 import logging
 logger = logging.getLogger(__name__)
@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 
 class GuiSettings(QtGui.QWidget):
    def __init__(self):
-      super(GuiSettings).__init__(self)
+      super(GuiSettings, self).__init__()
+      
+      settings = QSettings("Joey", "AMacro")
       
     
       exit_action = QtGui.QAction(QtGui.QIcon('exit.png'), '&Exit', self)        
@@ -18,16 +20,9 @@ class GuiSettings(QtGui.QWidget):
       exit_action.setStatusTip('Exit application')
       exit_action.triggered.connect(QtGui.qApp.quit)
             
-      menubar = self.menuBar()
-      file_menu = menubar.addMenu('&File')
-      file_menu.addAction(exit_action)
-
-#       self.central_widget = CentralWidget(self, settings)
-#       self.setCentralWidget(self.central_widget)  # new central widget        
-#         
-# #      self.process = QtCore.QProcess(self)
-# #      self.terminal = QtGui.QWidget(self)
-# #      sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+#       menubar = self.menuBar()
+#       file_menu = menubar.addMenu('&File')
+#       file_menu.addAction(exit_action)
 # 
 #       self.status_bar = QtGui.QStatusBar(self)
 #       self.status_bar.setObjectName(_fromUtf8("statusbar"))

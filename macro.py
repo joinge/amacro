@@ -1698,62 +1698,7 @@ def scroll(dx, dy):
             linear_swipe((5, 200), (5, 200 + yint), steps=5)
          
    
-def unlock_phone():
-   
-   powerKey()
-   time.sleep(1)
-   homeKey()
-   time.sleep(.5)
-   linear_swipe((187, 616), (340, 616))
 
-
-def lock_phone():
-   
-   powerKey()
-
-
-
-      
-      
-def readImage(image_file, xbounds=None, ybounds=None):
-   try:
-      image = myRun(cv2.imread, image_file)
-   except Exception, e:
-      myPrint(e)
-      myPrint("Unable to read image %"%image_file, msg_type='error')
-      
-   if not xbounds:
-      if not ybounds:
-         return image
-      else:
-         return image[ybounds[0]:ybounds[1], :]
-   else:
-      if not ybounds:
-         return image[:, xbounds[0]:xbounds[1]].copy()
-      else:
-         return image[ybounds[0]:ybounds[1], xbounds[0]:xbounds[1]].copy()
-      
-      
-def swipeReference(template, destination=(0, 0), threshold=0.96, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False):
-   
-   ref = locateTemplate(template, threshold=threshold, retries=2, print_coeff=print_coeff, xbounds=xbounds, ybounds=ybounds, reuse_last_screenshot=reuse_last_screenshot)
-   
-   if not ref:
-      printAction("Unable to navigate to swipe reference...", newline=True)
-      return None
-   
-   if not xbounds:
-      xbounds = (0, 480)
-   if not ybounds:
-      ybounds = (0, 800)
-      
-   diff = np.array(destination) - (ref + np.array([xbounds[0], ybounds[0]]))
-   
-   swipe(ref, map(int, ref + 0.613 * diff))
-   time.sleep(.3)
-   swipe(ref, map(int, ref + 0.613 * diff))
-   time.sleep(.5)
-   return ref
    
 
 def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False,

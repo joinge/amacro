@@ -4,16 +4,20 @@ Created on Aug 28, 2013
 @author: me
 '''
 
+import numpy as np
+import pylab as pl
+import time
 from nothreads import myPopen
-from printing import myPrint, printResult
+from printing import myPrint, printAction, printResult, printQueue
+from nothreads import myRun
+import cv2
 import re
+import sys
 from PySide import QtCore
 # from PySide import QProcess
 
 import logging
 logger = logging.getLogger(__name__)
-
-from Settings import Settings
 
 import os
 if os.name == "posix":
@@ -30,8 +34,8 @@ class Device(QtCore.QObject):
    active_device_is_set = QtCore.Signal()
    screenshot_ready = QtCore.Signal(str)
    
-   def __init__(self, settings):
-      super(Device, self).__init__()
+   def __init__(self, settings, parent):
+      super(Device, self).__init__(parent)
       
 #       self.active_device_is_set.connect(self.takeScreenshot)
       
@@ -49,9 +53,28 @@ class Device(QtCore.QObject):
       if settings.ANDROID_UTILS_PATH:
          self.adb_cmd = settings.ANDROID_UTILS_PATH + "/adb"
          
+      self.android_vm = None
+      self.is_phone = None
+      self.youwave = None
+      self.eventTablet = None
+      self.eventMouse = None
+      self.event_keyboard = None
+         
       self.device_mutex = QtCore.QMutex()
       self.adb_port = 5037
       
+      self.processes = []
+      
+      class DoubleThread():
+         def __int__(self):
+            pass
+      
+      self.vm_process = QtCore.QProcess(self)
+      self.vm_process.error.connect(self.checkIfValidExit)
+      self.vm_process.finished.connect(self.checkIfValidExit)
+      self.player_process = QtCore.QProcess(self)
+      self.player_process.error.connect(self.checkIfValidExit)
+      self.player_process.finished.connect(self.checkIfValidExit)
 
       
    def __del__(self):
@@ -59,18 +82,81 @@ class Device(QtCore.QObject):
       self.process.waitForFinished()
       self.thread.terminate()
       self.thread.wait()
+      
+   def start(self):
+      printAction("Starting VirtualBox...", newline=True)
+      self.running = True
+      self.vm_process.startDetached("VBoxManage startvm %s --type headless"%self.settings.DEVICE_NAME)
+      time.sleep(10)
+      
+      printAction("Starting Player...", newline=True)
+      self.player_process.startDetached("%s/player --vm-name %s --no-popup"%(self.settings.EMULATOR_PATH, self.settings.DEVICE_NAME))
+      time.sleep(60)
+      
+   def stop(self):
+      printAction("Stopping processes...", newline=True)
+      self.running = False
+      self.player_process.terminate()
+      self.vm_process.terminate()
+      self.player_process.waitForFinished()
+      self.vm_process.waitForFinished()
+#       timer = QtCore.QTimer()
+#       timer.timeout.connect(self.player_process.kill)
+#       timer.timeout.connect(self.vm_process.kill)
+#       timer.start(5000)
+#       time.sleep(6)
+      
+      cmds = ["sh -c \"killall %s/player\""%self.settings.EMULATOR_PATH,
+              "sh -c \"killall %s/tools/adb\""%self.settings.EMULATOR_PATH,
+              "sh -c \"ps -ef | grep VBox | awk '{print $2}' | xargs kill\""]
+      for i in range(1):
+         for cmd in cmds:
+            killproc = QtCore.QProcess()
+            try:
+               killproc.startDetached(cmd)
+               killproc.waitForFinished(5)
+            except Exception as e:
+               print("Failed to run command: %s"%cmd)
+            killproc.terminate()
+            killproc.waitForFinished()
+#          time.sleep(5)
 
-   @QtCore.Slot(str)
-   def getInfo(self,key):
       
-      for i in range(2):
-         try:
-            return getattr(self,key)
-         except:
-            self.updateInfo()
+   def restart(self):
+      self.stop()
+      self.start()
       
-      return None
+   def checkIfValidExit(self):
+      printAction("Process quitting. Checking if OK...")
+      if self.running:
+         printResult(False)
+         raise Exception("VM related process quit unexpectedly")
+         
+      printResult(True)
+      
+      
+#    def isHealthy(self):
+#       
+#       process = QtCore.QProcess()
+#       process.start("sh -c \"ps -ef | grep %s/player2\""%self.settings.EMULATOR_PATH)
+#       process.waitForFinished()
+#       print process.exitStatus()
+#       process.
+#       return True
+#    
    
+
+#    @QtCore.Slot(str)
+#    def getInfo(self,key):
+#       
+#       for i in range(2):
+#          try:
+#             return getattr(self,key)
+#          except:
+#             self.updateInfo()
+#       
+#       return None
+#    
    @QtCore.Slot(str)
    def gimpScreenshot(self, filename=None):
    
@@ -80,11 +166,11 @@ class Device(QtCore.QObject):
 #          
 #       screenshot_tmp_path = '%s/%s'%(root_path, settings.TEMP_PATH)
 #       screenshot_path = '%s/%s'%(root_path, settings.SCREEN_PATH)
-#       if device.getInfo('screen_density') == 160:
+#       if self.getInfo('screen_density') == 160:
 #          screenshot_path = screenshot_path + '/dpi160'
 #          
-#       screenshot_tmp = screenshot_tmp_path + '/screenshot_%s.png'%device.active_device
-#       screenshot_new = screenshot_path     + '/screenshot_%s.png'%device.active_device
+#       screenshot_tmp = screenshot_tmp_path + '/screenshot_%s.png'%self.active_device
+#       screenshot_new = screenshot_path     + '/screeself.s.png'%self.active_device
 #    
 #       myPopen("cp %s %s" %(screenshot_tmp, screenshot_new))
       self.process_gimp.start("gimp", ["%s"%filename] )
@@ -93,11 +179,15 @@ class Device(QtCore.QObject):
    
    @QtCore.Slot()
    def isAndroidVM(self):
-      return self.getInfo('android_vm')
+      return self.android_vm
    
    @QtCore.Slot()
    def isYouwave(self):
-      return self.getInfo('youwave')
+      return self.youwave
+   
+   @QtCore.Slot()
+   def isPhone(self):
+      return self.is_phone
 
    @QtCore.Slot()
    def updateInfo(self):
@@ -115,8 +205,11 @@ class Device(QtCore.QObject):
       # Query on arch. But really, Android version would be better.
       self.youwave = False
       self.android_vm = False
+      if re.search('arm',uname_machine):
+         self.is_phone = True
+      
       if re.search('i686',uname_machine):
-         if re.search('qemu',uname_all):
+         if re.search('qemu',uname_all) or re.search('genymotion',uname_all):
             self.android_vm = True
          else:
             self.youwave = True
@@ -146,7 +239,7 @@ class Device(QtCore.QObject):
          except:
             myPrint("ERROR: Unable to parse input/output event keyboard device")
             
-      if self.android_vm:
+      if self.isAndroidVM() or self.isPhone():
 #         try:
 #            self.eventTablet = int(re.search('/dev/input/event([0-9]).*\n.*VirtualBox USB Tablet',event_devices).group(1))
 #         except:
@@ -161,7 +254,27 @@ class Device(QtCore.QObject):
             myPrint("ERROR: Unable to parse input/output event keyboard device")
             
       try:
+         self.device_model = self.adbShell('getprop ro.product.model')
+      except:
+         printAction("ERROR: Unable to find device ID string")
+         
+      try:
+         dumpsys_inputs = self.adbShell("dumpsys input")
+         surface_orientation = re.search('SurfaceOrientation:\s*([0-9])', dumpsys_inputs)
+         if surface_orientation:
+            if surface_orientation.group(0) == "1":
+               self.orientation = "landscape"
+            else:
+               self.orientation = "portrait"
+      except:
+         logger.error("ERROR: Unable to parse screen orientation")
+         
+      try:
+#          try:
          self.screen_density = int(self.adbShell('getprop ro.sf.lcd_density'))
+#          except:
+#             dumpsys_display = self.adbShell("dumpsys display")
+#             devno = re.search('Built-in\sScreen', dumpsys_display)
          
          # OLD METHOD:
 #          build_prop = self.adb('adbShell echo "cat /system/build.prop" %s| su'%ESC)
@@ -185,7 +298,7 @@ class Device(QtCore.QObject):
          self.screen_density = 0
          logger.error("ERROR: Unable to parse screen density")
          
-      dumpsys_log = self.adbShell("dumpsys")
+      dumpsys_log = self.adbShell("dumpsys window policy")
       screen_size = re.search('mUnrestrictedScreen=.+ ([0-9]+)x([0-9]+)', dumpsys_log)
       if screen_size:
          self.screen_width  = int(screen_size.group(1))
@@ -203,13 +316,13 @@ class Device(QtCore.QObject):
       
       logger.info("")
       logger.info("Device info updated. New parameters:")
-      if self.youwave:
+      if self.isYouwave():
          logger.info("   Device type:           YouWave emulator")
          logger.info("   Device - touchscreen: /dev/input/event%d"%self.eventTablet)
          logger.info("   Device - keyboard:    /dev/input/event%d"%self.event_keyboard)
          logger.info("   Device - mouse:       /dev/input/event%d"%self.eventMouse)
          
-      if self.android_vm:
+      if self.isAndroidVM():
          logger.info("   Device type:          AndroVM/Genymotion emulator")
          logger.info("   Device - keyboard:    /dev/input/event%d"%self.event_keyboard)
          logger.info("   Screen:               %dx%d  (%d DPI)"%(self.screen_width, self.screen_height, self.screen_density))
@@ -281,8 +394,9 @@ class Device(QtCore.QObject):
       # Make sure only one adb command is executed at a time
       self.device_mutex.lock()
       
-      if not process:
-         process = QtCore.QProcess(self)      
+#       if not process:
+      process = QtCore.QProcess(self)      
+      self.processes.append(process)
       
       cmd = ''
       if re.search("devices", command):
@@ -293,34 +407,39 @@ class Device(QtCore.QObject):
             logger.error("You must set active device before using adb.")
             exit(1)
          
+         # May seem odd but it allows piping in the shell
          if os.name == "posix":
             cmd = "sh -c \"%s -P %d %s %s\"" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
          else:
             cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
 
-      
-#       process.start(cmd)
+#       
+      logger.debug(process.start(cmd))
+      process.waitForFinished()
 
-      if not stdout:
-         logger.debug(cmd)
+#       if not stdout:
+#          logger.debug(cmd)
 
-      for i in range(5):
-         process.start(cmd)
-         
-         if not process.waitForFinished():
-            logger.warning("ADB timeout/crash. Command: %s"%cmd) 
-            process.kill()
-            logger.debug("Retry attempt %d/5"%i)
-         else:
-            break
+#       for i in range(5):
+#          process.start(cmd)
+#          
+#          if not process.waitForFinished():
+#             logger.warning("ADB timeout/crash. Command: %s"%cmd) 
+#             process.kill()
+#             logger.debug("Retry attempt %d/5"%i)
+#          else:
+#             break
          
       output = str(process.readAll())
+      logger.debug(output)
 
       
       if output and re.search('device not found', output):
          logger.info("Adb lost connection to target.")
          exit()
-
+         
+      process.terminate()
+      process.waitForFinished()
 
       self.device_mutex.unlock()
          
@@ -373,7 +492,7 @@ class Device(QtCore.QObject):
    @QtCore.Slot(str)
    def takeScreenshot(self, filename=None):
    
-      logger.info("Pulling a fresh screenshot from the device...")
+      logger.debug("Pulling a fresh screenshot from the device...")
    #   Popen("adb adbShell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
    #          adb pull  /sdcard/screenshot.png screenshot.png >error.log 2>&1", stdout=PIPE, adbShell=True).stdout.read()
              
@@ -394,7 +513,7 @@ class Device(QtCore.QObject):
       ################
           
    #   Popen("adb %s adbShell screencap | sed 's/\r$//' > img.raw"%ADB_ACTIVE_DEVICE, stdout=PIPE, adbShell=True).stdout.read()
-      if not self.isYouwave() and not self.isAndroidVM():
+      if not self.isYouwave() and not self.isAndroidVM() and not self.isPhone():
          self.adb('"shell/system/bin/screencap /sdcard/img.raw;\
                     pull /sdcard/img.raw %s/img_%s.raw"'% (self.settings.TEMP_PATH, self.active_device))
              
@@ -409,13 +528,20 @@ class Device(QtCore.QObject):
       else:
    #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, adbShell=True).stdout.read()
          if os.name == "posix":
-            logger.debug(self.adbShell("/system/bin/screencap -p | sed 's/\r$//' > %s"%output))
+            logger.debug(self.adbShell("/system/bin/screencap -p | sed 's/\\r$//' > %s"%output))
          elif os.name == "nt":
             logger.debug(self.adbShell("/system/bin/screencap -p /sdcard/screenshot.png", stdout='devnull', stderr='devnull', log=False))
             logger.debug(self.adb("pull /sdcard/screenshot.png %s" %output, stdout='devnull', stderr='devnull', log=False))
          else:
             logger.error("Unsupported OS")
             exit(1)
+            
+      if self.screen_height > self.screen_width or self.orientation == "portrait":
+         process = QtCore.QProcess()
+         process.start("mogrify -rotate 270 %s"%output)
+         process.waitForFinished()
+         process.terminate()
+         process.waitForFinished()
                
       self.screenshot_ready.emit(output)
          
@@ -450,6 +576,456 @@ class Device(QtCore.QObject):
    
       self.adbShell('echo "echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness" \| su' %percent)
       
+      
+   def adb_input(self, text):
+      macro_output = self.adbShell('input text %s' %(text))
+
+   def adb_event_batch(self, events):
+      
+      sendevent_string = ''
+      for i, event in enumerate(events):
+         if i != 0:
+            sendevent_string += '; '
+            
+         sendevent_string += "sendevent /dev/input/event%d %d %d %d" % event
+           
+      self.adbShell('"%s"' % (sendevent_string))
+         
+   #   print( "adb adbShell %s"%sendevent_string )
+         
+   
+   def adb_event(self, event_no=2, a=None, b=None , c=None):
+      """Event number: 1 - hardware key (home?)
+                       2 - touch
+                           0003 2f - ABS_MT_SLOT           : value 0, min 0, max 9, fuzz 0, flat 0, resolution 0
+                           0003 30 - ABS_MT_TOUCH_MAJOR    : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0
+                           0003 35 - ABS_MT_POSITION_X     : value 0, min 0, max 479, fuzz 0, flat 0, resolution 0
+                           0003 36 - ABS_MT_POSITION_Y     : value 0, min 0, max 799, fuzz 0, flat 0, resolution 0
+                           0003 39 - ABS_MT_TRACKING_ID    : value 0, min 0, max 65535, fuzz 0, flat 0, resolution 0
+                           0003 3a - ABS_MT_PRESSURE       : value 0, min 0, max 30, fuzz 0, flat 0, resolution 0
+      """
+      
+      macro_output = self.adbShell('sendevent /dev/input/event%d %d %d %d' % (event_no, a, b, c))
+   #   time.sleep(0.5)  
+      #adbSend("/dev/input/event2",3,48,10);
+      
+   def homeKey(self):
+   
+      if self.isYouwave():
+         self.adb_event(1, 0x0001, 0x0066, 0x00000001)
+         self.adb_event(1, 0x0000, 0x0000, 0x00000000)
+         self.adb_event(1, 0x0001, 0x0066, 0x00000000)
+         self.adb_event(1, 0x0000, 0x0000, 0x00000000)
+      else:
+         self.adbShell('input keyevent 4')
+   
+   def powerKey(self):
+      
+      if re.search("Xperia Z2", self.device_model):
+         self.adb_event(1, 0x0001, 0x0074, 0x00000001)
+         self.adb_event(1, 0x0000, 0x0000, 0x00000000)
+         self.adb_event(1, 0x0001, 0x0074, 0x00000000)
+         self.adb_event(1, 0x0000, 0x0000, 0x00000000)
+         
+# /dev/input/event1: 0001 0074 00000001
+# /dev/input/event1: 0000 0000 00000000
+# /dev/input/event1: 0001 0074 00000000
+# /dev/input/event1: 0000 0000 00000000
+
+         
+      else:
+         self.adb_event(1, 0x0001, 0x0074, 0x00000001)
+         self.adb_event(1, 0x0000, 0x0000, 0x00000000)
+         self.adb_event(1, 0x0001, 0x0074, 0x00000000)
+         self.adb_event(1, 0x0000, 0x0000, 0x00000000)
+         
+      time.sleep(2)
+      
+      
+   def backKey(self):
+      
+      device.adbShell('input keyevent 4')
+      
+   def back(self):
+      event_no = 5
+      
+      self.adb_event_batch([
+      (event_no, 0x0001, 0x009e, 0x00000001),
+      (event_no, 0x0000, 0x0000, 0x00000000),
+      (event_no, 0x0001, 0x009e, 0x00000000),
+      (event_no, 0x0000, 0x0000, 0x00000000)
+      ])
+   #       time.sleep(0.2)
+   
+   def press(self, coords, time):
+      self.swipe(coords, coords, time)
+      
+   def leftClick(self, loc):
+       
+#       global isYouwave()
+   #   adb_event( 2, 0x0003, 0x0039, 0x00000d45 )
+   #   adb_event( 2, 0x0003, 0x0035, loc[0] )
+   #   adb_event( 2, 0x0003, 0x0036, loc[1] )
+   #   adb_event( 2, 0x0003, 0x0030, 0x00000032 )
+   #   adb_event( 2, 0x0003, 0x003a, 0x00000002 )
+   #   adb_event( 2, 0x0000, 0x0000, 0x00000000 )
+   #   adb_event( 2, 0x0003, 0x0039, 0xffffffff )
+   #   adb_event( 2, 0x0000, 0x0000, 0x00000000 )
+   
+      # TODO: use input tap x y
+      
+      
+      if not self.isYouwave():
+         
+         self.adbShell('input tap %d %d'%(loc[0],loc[1]))
+         
+   #      adb_event_batch([
+   #         (2, 0x0003, 0x0039, 0x00000d45),
+   #         (2, 0x0003, 0x0035, loc[0]),
+   #         (2, 0x0003, 0x0036, loc[1]),
+   #         (2, 0x0003, 0x0030, 0x00000032),
+   #         (2, 0x0003, 0x003a, 0x00000002),
+   #         (2, 0x0000, 0x0000, 0x00000000),
+   #         (2, 0x0003, 0x0039, 0xffffffff),
+   #         (2, 0x0000, 0x0000, 0x00000000)
+   #         ])
+      
+      else:
+         
+         if self.eventTablet:
+            event_no = self.eventTablet
+         else:
+            event_no = 3
+                    
+     
+         self.adb_event_batch([
+            (event_no, 0x0004, 0x0004, 0x00090001),
+            (event_no, 0x0001, 0x0110, 0x00000001),
+            (event_no, 0x0003, 0x0000, int(loc[0] * 2 ** 15 / 480.0)),
+            (event_no, 0x0003, 0x0001, int(loc[1] * 2 ** 15 / 640.0)),
+            (event_no, 0x0000, 0x0000, 0x00000000),
+            (event_no, 0x0004, 0x0004, 0x00090001),
+            (event_no, 0x0001, 0x0110, 0x00000000),
+            (event_no, 0x0000, 0x0000, 0x00000000)
+            ])
+   #       time.sleep(0.2)
+   
+   def backspace(self):
+      
+   
+      if self.isYouwave() or self.isAndroidVM():
+         event_no = self.event_keyboard
+         if not event_no:
+            event_no = 2
+         
+         self. adb_event_batch([
+            (event_no, 0x0004, 0x0004, 0x0000000e),
+            (event_no, 0x0001, 0x000e, 0x00000001),
+            (event_no, 0x0000, 0x0000, 0x00000000),
+            (event_no, 0x0004, 0x0004, 0x0000000e),
+            (event_no, 0x0001, 0x000e, 0x00000000),
+            (event_no, 0x0000, 0x0000, 0x00000000)
+            ])     
+   
+      else:
+         myPrint("ERROR: backspace() is not implemented for regular phones")     
+        
+   def right_arrow(self):
+   
+      if self.isYouwave() or self.isAndroidVM():
+         event_no = self.event_keyboard
+         if not event_no:
+            event_no = 2
+         
+         self.adb_event_batch([
+            (event_no, 0x0004, 0x0004, 0x000000cd),
+            (event_no, 0x0001, 0x006a, 0x00000001),
+            (event_no, 0x0000, 0x0000, 0x00000000),
+            (event_no, 0x0004, 0x0004, 0x000000cd),
+            (event_no, 0x0001, 0x006a, 0x00000000),
+            (event_no, 0x0000, 0x0000, 0x00000000)
+            ])     
+   
+      else:
+         myPrint("ERROR: right_arrow() is not implemented for regular phones")   
+          
+      
+   def enterText(self, text):
+      self.adb_input(text)
+      
+   def swipe(self, start, stop, time=None):
+
+      if not self.isYouwave():
+         if time:
+            self.adbShell('input swipe %d %d %d %d %d' % (start[0], start[1], stop[0], stop[1], time))
+         else:
+            self.adbShell('input swipe %d %d %d %d' % (start[0], start[1], stop[0], stop[1]))
+      else:
+         self.linear_swipe(start, stop, steps=5)
+         
+   def linear_swipe(self, start, stop, steps=1):
+   
+      if not self.isYouwave():
+         xloc = np.linspace(start[0], stop[0], steps + 1)
+         yloc = np.linspace(start[1], stop[1], steps + 1)
+      
+         
+         self.adb_event(2, 0x0003, 0x0039, 0x00000eb0)
+         self.adb_event(2, 0x0003, 0x0035, xloc[0])
+         self.adb_event(2, 0x0003, 0x0036, yloc[0])
+         self.adb_event(2, 0x0003, 0x0030, 0x00000053)
+         self.adb_event(2, 0x0003, 0x003a, 0x00000005)
+         self.adb_event(2, 0x0000, 0x0000, 0x00000000)
+         
+         for i in range(steps):
+            self.adb_event(2, 0x0003, 0x0035, xloc[i + 1])
+            self.adb_event(2, 0x0003, 0x0036, yloc[i + 1])
+            self.adb_event(2, 0x0003, 0x0030, 0x00000042)
+            self.adb_event(2, 0x0003, 0x003a, 0x00000005)
+            self.adb_event(2, 0x0000, 0x0000, 0x00000000)
+            
+         self.adb_event(2, 0x0003, 0x0039, 0xffffffff)
+         self.adb_event(2, 0x0000, 0x0000, 0x00000000)
+      
+      else:
+         xloc = np.linspace(int(start[0] * 2 ** 15 / 480.0), int(stop[0] * 2 ** 15 / 480.0), steps + 1)
+         yloc = np.linspace(int(start[1] * 2 ** 15 / 640.0), int(stop[1] * 2 ** 15 / 640.0), steps + 1)
+   
+         self.adb_event_batch([
+            (3, 0x0004, 0x0004, 0x00090001),
+            (3, 0x0001, 0x0110, 0x00000001),
+            (3, 0x0000, 0x0000, 0x00000000),
+            (3, 0x0003, 0x0000, xloc[0]),
+            (3, 0x0003, 0x0001, yloc[0]),
+            (3, 0x0000, 0x0000, 0x00000000)
+            ])
+         
+         for i in range(steps):
+            self.adb_event_batch([
+               (3, 0x0003, 0x0000, xloc[i + 1]),
+               (3, 0x0003, 0x0001, yloc[i + 1]),
+               (3, 0x0000, 0x0000, 0x00000000)
+               ])
+   #         time.sleep(1.0/steps)
+            
+         self.adb_event_batch([         
+            (3, 0x0004, 0x0004, 0x00090001),
+            (3, 0x0001, 0x0110, 0x00000000),
+            (3, 0x0000, 0x0000, 0x00000000)
+            ])
+   
+   
+   def scroll(self, dx, dy):
+      
+      if not self.isYouwave():
+         self.adbShell('input trackball roll %d %d' % (dx, dy))
+      else:
+   #      xint = 200.0
+         yint = 200.0
+               
+         numy = dy / yint
+         for i in range(int(numy) + 1):
+            if dy > 0:
+               self.linear_swipe((5, 400), (5, 400 - yint), steps=5)
+            else:
+               self.linear_swipe((5, 200), (5, 200 + yint), steps=5)
+               
+   def unlock_phone(self):
+      
+      anything = self.locateTemplate("button_once.png",  offset='center', print_coeff=True, threshold=0.02)
+      if not anything: 
+         self.powerKey()
+         time.sleep(1)
+         self.homeKey()
+         time.sleep(.5)
+   #       self.linear_swipe((187, 616), (340, 616))
+   
+   
+   def lock_phone(self):
+      
+      self.powerKey()
+
+         
+   def readImage(self, image_file, xbounds=None, ybounds=None):
+      try:
+         image = myRun(cv2.imread, image_file)
+      except Exception, e:
+         myPrint(e)
+         myPrint("Unable to read image %"%image_file, msg_type='error')
+         
+      if not xbounds:
+         if not ybounds:
+            return image
+         else:
+            return image[ybounds[0]:ybounds[1], :]
+      else:
+         if not ybounds:
+            return image[:, xbounds[0]:xbounds[1]].copy()
+         else:
+            return image[ybounds[0]:ybounds[1], xbounds[0]:xbounds[1]].copy()
+         
+         
+   def swipeReference(self, template, destination=(0, 0), threshold=0.96, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False):
+      
+      ref = self.locateTemplate(template, threshold=threshold, retries=2, print_coeff=print_coeff, xbounds=xbounds, ybounds=ybounds, reuse_last_screenshot=reuse_last_screenshot)
+      
+      if not ref:
+         printAction("Unable to navigate to swipe reference...", newline=True)
+         return None
+      
+      if not xbounds:
+         xbounds = (0, 480)
+      if not ybounds:
+         ybounds = (0, 800)
+         
+      diff = np.array(destination) - (ref + np.array([xbounds[0], ybounds[0]]))
+      
+      self.swipe(ref, map(int, ref + 0.613 * diff))
+      time.sleep(.3)
+      self.swipe(ref, map(int, ref + 0.613 * diff))
+      time.sleep(.5)
+      return ref
+      
+   def locateTemplateErrorHandler(self, retries=1):
+      # See if the cause can be an Android error:
+
+      image_error = self.locateTemplate("android_error.png", recursing=True, threshold=0.9, offset=(65,31), reuse_last_screenshot=True)
+      
+      if image_error:
+         myPrint(' ')
+         printAction("Android error detected and will (hopefully) be dealt with.", newline=True)
+         self.leftClick(image_error)
+         time.sleep(10) # In case we hit a "wait" button
+         retries = retries + 1
+      
+      
+   def locateTemplate(self, template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False,
+                   recursing=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
+
+      DEBUG=False
+      
+      
+      for i in range(retries):
+         if not reuse_last_screenshot:
+            self.takeScreenshot()
+         
+         time.sleep(.1)
+         try:
+            if self.screen_density == 480:
+               img_path = self.settings.SCREEN_PATH
+            else:
+               myPrint("ERROR: Screen density not supported. Aborting" % self.active_device)
+               return False
+               
+            image_screen = self.readImage(self.settings.TEMP_PATH+"/screenshot_%s.png" %self.active_device, xbounds, ybounds)
+            
+            # This means the VM probably crashed
+            if image_screen == None:
+               raise Exception("ERROR: Unable to load image from disk. This shouldn't happen!")
+               
+   #         image_screen   = readImage("test.png", xbounds, ybounds)
+         except:
+            raise Exception("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!" % self.active_device)
+         
+         result = np.array(0)
+         match_found = False
+         template = re.sub(r'-[0-9]*\.', '.', template)
+         for j in range(5):
+                     
+            name, ext = os.path.splitext(template)
+            if ext == '':
+               ext = '.png'
+            
+            if self.isYouwave():
+               template_youwave = name + "_youwave" + ext
+               if os.path.exists(img_path+'/'+template_youwave):
+                  template = template_youwave
+         
+            if os.path.exists(img_path+'/'+name+ext):
+               image_template = myRun(cv2.imread, img_path+'/'+name+ext)
+   
+               if DEBUG:
+                  pl.imshow(image_template)
+                  pl.show()
+                  
+               if offset == 'center':
+                  image_size = np.array([image_template.shape[1],image_template.shape[0]])
+                  offset = tuple((image_size/2.0).astype('int'))
+                  
+               try:
+                  result = myRun(cv2.matchTemplate, image_screen, image_template, cv2.TM_CCOEFF_NORMED)
+               except Exception, e:
+                  print(e)
+                  myPrint("Unable to match screenshot with template %s"%template)
+                  raise Exception()
+                  
+               if result.max() > threshold:
+                  match_found = True
+                  break
+            
+            if j==0:
+               template = re.sub(r'\.', '-%d.'%j, template)
+            else:
+               template = re.sub(r'-[0-9]*\.', '-%d.'%j, template)
+            
+   #       try:
+   #          result = cv2.matchTemplate(image_screen, image_template, cv2.TM_CCOEFF_NORMED)
+   #       except:
+   #          myPrint("ERROR: Unable to match template \"%s\" with screenshot!!!" % template)
+   #          return False
+         
+         if print_coeff:
+            sys.stdout.write("%.2f " % result.max())
+            sys.stdout.flush()
+         else:
+            sys.stdout.write('.')
+            sys.stdout.flush()
+         printQueue("%.2f " % result.max())
+   #         print( " %.2f"%result.max(), end='' )
+            
+         if match_found:
+            template_coords = np.unravel_index(result.argmax(), result.shape)
+            template_coords = np.array([template_coords[1], template_coords[0]])
+            object_coords = tuple(template_coords + np.array(offset))
+            if click:
+               self.leftClick(object_coords)
+               time.sleep(3)
+            if print_coeff:
+               sys.stdout.write("(%d,%d) " % (object_coords[0], object_coords[1]))
+               sys.stdout.flush()
+            else:
+               sys.stdout.write(' ')
+               sys.stdout.flush()
+            printQueue("(%d,%d) " % (object_coords[0], object_coords[1]))
+   #         myPrint(" (%d,%d)"%(object_coords[0],object_coords[1]),end=' ')
+            return object_coords
+         
+         else:
+            # See if the cause can be an Android error:
+            if recursing:
+               return
+            
+            self.locateTemplateErrorHandler(self, retries=1)
+            
+   
+         if retries > 1:
+            if swipe_ref[0] != '':
+               self.swipeReference(swipe_ref[0], destination=swipe_ref[1], reuse_last_screenshot=False)
+            if swipe_size:
+               self.swipe(swipe_size[0], swipe_size[1])
+               if interval < 1:
+                  time.sleep(1)
+               else:
+                  time.sleep(interval)
+            if scroll_size:
+               self.scroll(scroll_size[0], scroll_size[1])
+               if interval < 1:
+                  time.sleep(3)
+            
+            time.sleep(interval)
+         
+      return None
+
 
 if __name__ == "__main__":
    
@@ -458,7 +1034,7 @@ if __name__ == "__main__":
    
    device = Device(settings)
    
-   device.setActive('192.168.100.10:5555')
+   device.setActive('192.168.56.101:5555')
 
    device.takeScreenshot('screen.png')
    

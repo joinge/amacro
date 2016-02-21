@@ -53,6 +53,8 @@ class Device(QtCore.QObject):
       if settings.ANDROID_UTILS_PATH:
          self.adb_cmd = settings.ANDROID_UTILS_PATH + "/adb"
          
+      self.image_screen = None
+         
       self.android_vm = None
       self.is_phone = None
       self.youwave = None
@@ -64,6 +66,7 @@ class Device(QtCore.QObject):
       self.adb_port = 5037
       
       self.processes = []
+      self.post_processes = []
       
       class DoubleThread():
          def __int__(self):
@@ -389,14 +392,16 @@ class Device(QtCore.QObject):
    #   Popen("adb %s adbShell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, adbShell=True).stdout.read()
 
    @QtCore.Slot(str, dict)
-   def adb(self, command, stdout=False, process=None):
+   def adb(self, command, stdout=False, process=None, binary_output=False):
       
-      # Make sure only one adb command is executed at a time
-      self.device_mutex.lock()
+      has_parent = False
+      if process:
+         has_parent = True
+      else:
+         process = QtCore.QProcess(self)
+         self.processes.append(process)
       
 #       if not process:
-      process = QtCore.QProcess(self)      
-      self.processes.append(process)
       
       cmd = ''
       if re.search("devices", command):
@@ -413,9 +418,15 @@ class Device(QtCore.QObject):
          else:
             cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
 
-#       
-      logger.debug(process.start(cmd))
-      process.waitForFinished()
+#
+      # Make sure only one adb command is executed at a time
+      self.device_mutex.lock()
+      
+      p1 = process.start(cmd)
+      if not binary_output:
+         logger.debug(p1)
+      if not has_parent:
+         process.waitForFinished()
 
 #       if not stdout:
 #          logger.debug(cmd)
@@ -430,57 +441,99 @@ class Device(QtCore.QObject):
 #          else:
 #             break
          
-      output = str(process.readAll())
-      logger.debug(output)
-
-      
-      if output and re.search('device not found', output):
-         logger.info("Adb lost connection to target.")
-         exit()
+         if binary_output:
+            output = process.readAllStandardOutput()
+         else:
+            output = str(process.readAllStandardOutput())
+            logger.info(output)
          
-      process.terminate()
-      process.waitForFinished()
+            if output and re.search('device not found', output):
+               logger.info("Adb lost connection to target.")
+               exit()
+            
+         errors = process.readAllStandardError()
+         logger.debug(errors)
+
+         process.terminate()
+         process.waitForFinished()
+
+         self.device_mutex.unlock()
+         return output
 
       self.device_mutex.unlock()
-         
-      return output
+      
    
    @QtCore.Slot(str, dict)
-   def adbPipe(self, cmd1, cmd2, **kwargs):
-            
+   def adbPipe(self, cmd1, cmd2, binary_output):
+      process = QtCore.QProcess(self)
       post_process = QtCore.QProcess(self)
+      self.processes.append(process)
+      self.post_processes.append(post_process)
+      
+      process.setStandardOutputProcess(post_process)
+      self.adb(cmd1, binary_output=binary_output, process=process)
+      post_process.start(cmd2)
+            
       post_process.setProcessChannelMode(QtCore.QProcess.ForwardedChannels)
       
-      process = QtCore.QProcess(self)
-      process.setStandardOutputProcess(post_process)
-      
-      self.adb(cmd1, process=process)
-      post_process.start(cmd2)
+      if not process.waitForStarted():
+         logger.error("ADB timeout/crash. Command: %s"%cmd1) 
+         post_process.kill()
+         process.kill()
+         return False
 
       if not self.adb_active_device:
          logger.error("You must set active device before using adb.")
          exit(1)
-      
-      if os.name == "posix":
-         cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, cmd1)
-         process.start(cmd)
-      else:
-         cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, cmd1)
-         process.start(cmd)
          
+      ret1 = post_process.waitForFinished(2000)
+      if not ret1:
+         logger.warning("ADB timeout/crash. Command: %s"%cmd1) 
+         post_process.kill()
+         process.kill()
+         return False
 
-      logger.debug(cmd)
 #       self.process.waitForReadyRead()
-      if not process.waitForFinished():
-         logger.warning("ADB timeout/crash. Command: %s"%cmd) 
+#       output = QtCore.QByteArray()
+#       retries = 0
+#       while retries < 5:
+#          retries = retries + 1
+#          output = output + post_process.readAllStandardOutput()
+#          
+#          if post_process.waitForFinished(1):
+#             break
+#          
+#       if retries == 4:
+#          logger.warning("ADB timeout/crash. Command: %s"%cmd1) 
+#          process.kill()
+#          post_process.kill
+#          return False
+         
+      if binary_output:
+         output = post_process.readAllStandardOutput()
+      else:
+         output = str(post_process.readAllStandardOutput())
+         logger.info(output)
+      
+         if output and re.search('device not found', output):
+            logger.info("Adb lost connection to target.")
+            exit()
+            
+#       ret1 = post_process.waitForFinished(5000)
+      ret2 = process.waitForFinished(2000)
+      if ret2:
+         process.terminate()
+      else:
+         logger.error("ERROR: Timeout/crash. Command: %s"%cmd1) 
          process.kill()
          
-      output = str(process.readAll())
+      if ret1:
+         post_process.terminate()
+      else:
+         logger.error("ERROR: Timeout/crash. Command: %s"%cmd2) 
+         post_process.kill()
       
-      if output and re.search('device not found', output):
-         logger.info("Adb lost connection to target.")
-         exit()
-         
+                 
       return output
    
 
@@ -490,7 +543,7 @@ class Device(QtCore.QObject):
       return self.adb("shell %s"%command, **kwargs)
               
    @QtCore.Slot(str)
-   def takeScreenshot(self, filename=None):
+   def takeScreenshot(self, filename=None, ybounds=None):
    
       logger.debug("Pulling a fresh screenshot from the device...")
    #   Popen("adb adbShell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
@@ -502,6 +555,8 @@ class Device(QtCore.QObject):
    #          dd bs=800 count=1920 if=img.raw of=img.tmp >/dev/null 2>&1;\
    #          ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img.tmp screenshot.png >/dev/null 2>&1",
    #          stdout=PIPE, adbShell=True).stdout.read()
+      if not ybounds:
+         ybounds = [0, self.screen_width]
        
       if filename:
          output = filename
@@ -511,9 +566,42 @@ class Device(QtCore.QObject):
       ################
       # CURRENT BEST #
       ################
+      
+      method = 'partial_screen_stream'
+      
+      if method == 'partial_screen_stream':
+   #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, adbShell=True).stdout.read()
+#          if os.name == "posix":
+         retries = 5
+         for i in range(retries):
+            try:
+               process = self.adbPipe("shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_height, ybounds[0], ybounds[1]),
+                                      "gunzip -c", binary_output=True)
+               data = np.fromstring(process, dtype=np.uint8)
+               im = data.reshape((ybounds[1]-ybounds[0], self.screen_height, 4))
+               
+               if self.screen_height > self.screen_width or self.orientation == "portrait":
+#                if self.screen_width < self.screen_height: # Landscape
+                  im = im.transpose((1,0,2))
+                  im = im[::-1,:,:]
+               image = cv2.cvtColor(im, cv2.COLOR_BGRA2RGB)
+#                cv2.imshow('', image)
+#                cv2.waitKey()
+#                cv2.destroyAllWindows()
+               
+               return image
+            except Exception as e:
+               print("ERROR: Screenshot failed. Tring to continue (attempt %d)..."%i)
+#                print data.shape
+               print (ybounds[1]-ybounds[0], self.screen_height, 4)
+               time.sleep(1)
+
+   #             raise e
+   #             print("ERROR: Unable to lock device.")
+
           
    #   Popen("adb %s adbShell screencap | sed 's/\r$//' > img.raw"%ADB_ACTIVE_DEVICE, stdout=PIPE, adbShell=True).stdout.read()
-      if not self.isYouwave() and not self.isAndroidVM() and not self.isPhone():
+      elif not self.isYouwave() and not self.isAndroidVM() and not self.isPhone():
          self.adb('"shell/system/bin/screencap /sdcard/img.raw;\
                     pull /sdcard/img.raw %s/img_%s.raw"'% (self.settings.TEMP_PATH, self.active_device))
              
@@ -525,6 +613,14 @@ class Device(QtCore.QObject):
                
          myPopen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i %s/img_%s1.raw %s"
                %(self.settings.TEMP_PATH,self.active_device,output))
+         
+         if self.screen_height > self.screen_width or self.orientation == "portrait":
+            process = QtCore.QProcess()
+            process.start("mogrify -rotate 270 %s"%output)
+            process.waitForFinished()
+            process.terminate()
+            process.waitForFinished()
+         
       else:
    #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, adbShell=True).stdout.read()
          if os.name == "posix":
@@ -536,14 +632,26 @@ class Device(QtCore.QObject):
             logger.error("Unsupported OS")
             exit(1)
             
-      if self.screen_height > self.screen_width or self.orientation == "portrait":
-         process = QtCore.QProcess()
-         process.start("mogrify -rotate 270 %s"%output)
-         process.waitForFinished()
-         process.terminate()
-         process.waitForFinished()
+         if self.screen_height > self.screen_width or self.orientation == "portrait":
+            process = QtCore.QProcess()
+            process.start("mogrify -rotate 270 %s"%output)
+            process.waitForFinished()
+            process.terminate()
+            process.waitForFinished()
+            
+
                
-      self.screenshot_ready.emit(output)
+#       self.screenshot_ready.emit(output)
+         
+         
+      # New ways:
+      # adb shell "screencap 2>/dev/null | (dd of=/dev/null bs=12 count=1 2>/dev/null; dd bs=$((4*1080)) count=1000 skip=200 2>/dev/null of=/sdcard/img.raw)"; adb pull /sdcard/img.raw
+      # adb shell "screencap 2>/dev/null | (dd of=/dev/null bs=12 count=1 2>/dev/null; dd bs=$((4*1080)) count=1000 skip=200 2>/dev/null)" | perl -pe 's/\x0D\x0A/\x0A/g' > img.raw
+      # adb shell "screencap 2>/dev/null | (dd of=/dev/null bs=12 count=1 2>/dev/null; dd bs=$((4*1080)) count=1000 skip=200 2>/dev/null)" | sed $'s/\\r$//' > img.raw
+      # adb shell "busybox stty raw; screencap 2>/dev/null | (dd of=/dev/null bs=12 count=1920 2>/dev/null; dd bs=$((4*1080)) count=1000 skip=200 2>/dev/null)" > ing.raw
+      
+      # Best
+      # adb shell "busybox stty raw; screencap 2>/dev/null | (dd of=/dev/null bs=12 count=1920 2>/dev/null; dd bs=$((4*1080)) count=1000 skip=200 2>/dev/null) | gzip -c" | gunzip -c > img.raw
          
       
       # adb pull /dev/graphics/fb0 img.raw
@@ -903,29 +1011,35 @@ class Device(QtCore.QObject):
                    recursing=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
 
       DEBUG=False
-      
+      if not ybounds:
+         ybounds = [0,self.screen_width]
       
       for i in range(retries):
          if not reuse_last_screenshot:
-            self.takeScreenshot()
+            self.image_screen = self.takeScreenshot(ybounds=ybounds)
+            
+#             cv2.imshow('', self.image_screen)
+#             cv2.waitKey()
+#             cv2.destroyAllWindows()
          
          time.sleep(.1)
-         try:
-            if self.screen_density == 480:
-               img_path = self.settings.SCREEN_PATH
-            else:
-               myPrint("ERROR: Screen density not supported. Aborting" % self.active_device)
-               return False
+#          try:
+         if not self.screen_density == 480:
+#                img_path = self.settings.SCREEN_PATH
+#             else:
+            myPrint("ERROR: Screen density not supported. Aborting" % self.active_device)
+            return False
                
-            image_screen = self.readImage(self.settings.TEMP_PATH+"/screenshot_%s.png" %self.active_device, xbounds, ybounds)
+      
+#             image_screen = self.readImage(self.settings.TEMP_PATH+"/screenshot_%s.png" %self.active_device, xbounds, ybounds)
             
-            # This means the VM probably crashed
-            if image_screen == None:
-               raise Exception("ERROR: Unable to load image from disk. This shouldn't happen!")
+#             # This means the VM probably crashed
+#             if image_screen == None:
+#                raise Exception("ERROR: Unable to load image from disk. This shouldn't happen!")
                
    #         image_screen   = readImage("test.png", xbounds, ybounds)
-         except:
-            raise Exception("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!" % self.active_device)
+#          except:
+#             raise Exception("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!" % self.active_device)
          
          result = np.array(0)
          match_found = False
@@ -938,11 +1052,11 @@ class Device(QtCore.QObject):
             
             if self.isYouwave():
                template_youwave = name + "_youwave" + ext
-               if os.path.exists(img_path+'/'+template_youwave):
+               if os.path.exists(self.settings.SCREEN_PATH+'/'+template_youwave):
                   template = template_youwave
          
-            if os.path.exists(img_path+'/'+name+ext):
-               image_template = myRun(cv2.imread, img_path+'/'+name+ext)
+            if os.path.exists(self.settings.SCREEN_PATH+'/'+name+ext):
+               image_template = myRun(cv2.imread, self.settings.SCREEN_PATH+'/'+name+ext)
    
                if DEBUG:
                   pl.imshow(image_template)
@@ -953,7 +1067,7 @@ class Device(QtCore.QObject):
                   offset = tuple((image_size/2.0).astype('int'))
                   
                try:
-                  result = myRun(cv2.matchTemplate, image_screen, image_template, cv2.TM_CCOEFF_NORMED)
+                  result = myRun(cv2.matchTemplate, self.image_screen, image_template, cv2.TM_CCOEFF_NORMED)
                except Exception, e:
                   print(e)
                   myPrint("Unable to match screenshot with template %s"%template)
@@ -986,7 +1100,7 @@ class Device(QtCore.QObject):
          if match_found:
             template_coords = np.unravel_index(result.argmax(), result.shape)
             template_coords = np.array([template_coords[1], template_coords[0]])
-            object_coords = tuple(template_coords + np.array(offset))
+            object_coords = tuple(template_coords + np.array(offset) + np.array([ybounds[0], 0]))
             if click:
                self.leftClick(object_coords)
                time.sleep(3)

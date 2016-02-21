@@ -11,7 +11,8 @@ class Settings:
       self.ANDROID_UTILS_PATH   = self.EMULATOR_PATH + "/tools"
       
       self.MACRO_ROOT           = "/home/me/Work/Code/tools/python/amacro"
-      self.TEMP_PATH            = self.MACRO_ROOT + "/tmp"
+      
+      self.TEMP_PATH            = self.PROJECT_PATH + "/tmp"
       
 
       

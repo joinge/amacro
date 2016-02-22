@@ -65,8 +65,8 @@ class Device(QtCore.QObject):
       self.device_mutex = QtCore.QMutex()
       self.adb_port = 5037
       
-      self.processes = []
-      self.post_processes = []
+      #self.processes = []
+      #self.post_processes = []
       
       class DoubleThread():
          def __int__(self):
@@ -80,11 +80,11 @@ class Device(QtCore.QObject):
       self.player_process.finished.connect(self.checkIfValidExit)
 
       
-   def __del__(self):
-      self.process.terminate()
-      self.process.waitForFinished()
-      self.thread.terminate()
-      self.thread.wait()
+   #def __del__(self):
+      #self.process.terminate()
+      #self.process.waitForFinished()
+      #self.thread.terminate()
+      #self.thread.wait()
       
    def start(self):
       printAction("Starting VirtualBox...", newline=True)
@@ -390,6 +390,17 @@ class Device(QtCore.QObject):
       self.active_device_is_set.emit()
      
    #   Popen("adb %s adbShell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, adbShell=True).stdout.read()
+   
+   def killProcess(self, process, desc=''):
+      if process.state() == QtCore.QProcess.NotRunning:
+         if process.exitStatus() != QtCore.QProcess.NormalExit:
+            logger.error("ERROR: %s process died with error code %d"%(desc, process.exitStatus()))
+      else:
+         print("-----Killing %s process-----"%desc)
+         process.kill()
+         if not process.waitForFinished(-1):
+            print ret1
+            logger.error("ERROR: Unable to kill %s process!"%desc)
 
    @QtCore.Slot(str, dict)
    def adb(self, command, stdout=False, process=None, binary_output=False):
@@ -398,8 +409,8 @@ class Device(QtCore.QObject):
       if process:
          has_parent = True
       else:
-         process = QtCore.QProcess(self)
-         self.processes.append(process)
+         process = QtCore.QProcess()
+         #self.processes.append(process)
       
 #       if not process:
       
@@ -423,6 +434,7 @@ class Device(QtCore.QObject):
       self.device_mutex.lock()
       
       p1 = process.start(cmd)
+      process.waitForStarted()
       if not binary_output:
          logger.debug(p1)
       if not has_parent:
@@ -445,53 +457,60 @@ class Device(QtCore.QObject):
             output = process.readAllStandardOutput()
          else:
             output = str(process.readAllStandardOutput())
-            logger.info(output)
-         
-            if output and re.search('device not found', output):
-               logger.info("Adb lost connection to target.")
-               exit()
+            if output:
+               if re.search('device not found', output):
+                  logger.info("Adb lost connection to target.")
+                  exit()
+               if output != "":
+                  output = str(output)
+                  logger.info(output)
             
          errors = process.readAllStandardError()
          logger.debug(errors)
-
-         process.terminate()
-         process.waitForFinished()
+         
+         self.killProcess(process, 'adb(): %s'%cmd)
 
          self.device_mutex.unlock()
          return output
 
       self.device_mutex.unlock()
       
+      
    
    @QtCore.Slot(str, dict)
    def adbPipe(self, cmd1, cmd2, binary_output):
-      process = QtCore.QProcess(self)
-      post_process = QtCore.QProcess(self)
-      self.processes.append(process)
-      self.post_processes.append(post_process)
       
+      # Creat processes owned by this class (to reduce zombie-process risk)
+      process = QtCore.QProcess()
+      post_process = QtCore.QProcess()
+      #self.processes.append(process)
+      #self.post_processes.append(post_process)
+            
       process.setStandardOutputProcess(post_process)
       self.adb(cmd1, binary_output=binary_output, process=process)
       post_process.start(cmd2)
-            
+      
       post_process.setProcessChannelMode(QtCore.QProcess.ForwardedChannels)
       
       if not process.waitForStarted():
-         logger.error("ADB timeout/crash. Command: %s"%cmd1) 
-         post_process.kill()
-         process.kill()
+         logger.error("ERROR: Command: %s failed to start."%cmd1) 
+         self.killProcess(process, 'adbPipe()')
+         self.killProcess(post_process, 'adbPipe() post')
          return False
-
-      if not self.adb_active_device:
-         logger.error("You must set active device before using adb.")
-         exit(1)
-         
-      ret1 = post_process.waitForFinished(2000)
+   
+      ret1 = post_process.waitForFinished()
+      ret2 = process.waitForFinished()
       if not ret1:
-         logger.warning("ADB timeout/crash. Command: %s"%cmd1) 
-         post_process.kill()
-         process.kill()
-         return False
+         logger.error("ERROR: Command: %s timed out."%cmd1)
+         self.killProcess(process, 'adbPipe()')
+         self.killProcess(post_process, 'adbPipe() post')
+         #process.kill()
+         #if not process.waitForFinished(-1):
+            #logger.error("ERROR: Unable to kill adbPipe() process!") 
+         #post_process.kill()
+         #if not post_process.waitForFinished(-1):
+            #logger.error("ERROR: Unable to kill adbPipe() process!") 
+         #return False
 
 #       self.process.waitForReadyRead()
 #       output = QtCore.QByteArray()
@@ -513,27 +532,23 @@ class Device(QtCore.QObject):
          output = post_process.readAllStandardOutput()
       else:
          output = str(post_process.readAllStandardOutput())
-         logger.info(output)
+         if output:
+            if re.search('device not found', output):
+               logger.info("Adb lost connection to target.")
+               exit()
+            if output != "":
+               output = str(output)
+               logger.info(output)
+##       ret1 = post_process.waitForFinished(5000)
+      #ret2 = process.waitForFinished(-1)
+      #if ret2:
       
-         if output and re.search('device not found', output):
-            logger.info("Adb lost connection to target.")
-            exit()
+      # Make sure the processes die, and block until they do.QProcess.NormalExit 	
+      # Stray ADB processes are sure to eventually crash the program
+      self.killProcess(post_process, 'adbPipe() post')
+      self.killProcess(process, 'adbPipe()')
             
-#       ret1 = post_process.waitForFinished(5000)
-      ret2 = process.waitForFinished(2000)
-      if ret2:
-         process.terminate()
-      else:
-         logger.error("ERROR: Timeout/crash. Command: %s"%cmd1) 
-         process.kill()
-         
-      if ret1:
-         post_process.terminate()
-      else:
-         logger.error("ERROR: Timeout/crash. Command: %s"%cmd2) 
-         post_process.kill()
-      
-                 
+        
       return output
    
 

@@ -48,10 +48,12 @@ class Device(QtCore.QObject):
       
       self.settings = settings
       
-      self.adb_cmd = 'adb'
-      
-      if settings.ANDROID_UTILS_PATH:
+      if settings.USE_PYTHON_ADB:
+         self.adb_cmd = "python adb.zip"
+         
+      else:
          self.adb_cmd = settings.ANDROID_UTILS_PATH + "/adb"
+         
          
       self.image_screen = None
          
@@ -191,6 +193,60 @@ class Device(QtCore.QObject):
    @QtCore.Slot()
    def isPhone(self):
       return self.is_phone
+   
+   def updateScreenOrientation(self):
+      
+      try:
+         dumpsys_inputs = self.adbShell("dumpsys input")
+         surface_orientation = re.search('SurfaceOrientation:\s*([0-9])', dumpsys_inputs)
+         if surface_orientation:
+            if surface_orientation.group(0) == "1":
+               self.orientation = "landscape"
+            else:
+               self.orientation = "portrait"
+      except:
+         logger.error("ERROR: Unable to parse screen orientation")
+         
+   def updateScreenDensity(self):
+      
+      try:
+#          try:
+         self.screen_density = int(self.adbShell('getprop ro.sf.lcd_density'))
+#          except:
+#             dumpsys_display = self.adbShell("dumpsys display")
+#             devno = re.search('Built-in\sScreen', dumpsys_display)
+         
+         # OLD METHOD:
+#          build_prop = self.adb('adbShell echo "cat /system/build.prop" %s| su'%ESC)
+#          try:
+#             self.screen_density = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
+#          except:
+#             try:
+#                if re.search('vbox86p',build_prop):
+#                   self.screen_density = 160 # Not defined in Android VM
+#             except:
+#                self.screen_density = 160
+#          
+#          if self.screen_density != 160 and self.screen_density != 240:
+#             
+#             myPrint("")
+#             myPrint("<<<WARNING>>> ")
+#             myPrint("A screen density of %d detected. This is NOT SUPPORTED!!!"%self.screen_density)
+#             myPrint("")
+                        
+      except:
+         self.screen_density = 0
+         logger.error("ERROR: Unable to parse screen density")
+         
+         
+   def updateScreenResolution(self):
+      
+      dumpsys_log = self.adbShell("dumpsys window policy")
+      screen_size = re.search('mUnrestrictedScreen=.+ ([0-9]+)x([0-9]+)', dumpsys_log)
+      if screen_size:
+         self.screen_width  = int(screen_size.group(1))
+         self.screen_height = int(screen_size.group(2))
+      
 
    @QtCore.Slot()
    def updateInfo(self):
@@ -203,7 +259,7 @@ class Device(QtCore.QObject):
       
       # Copy some scripts to the device we will use later on
       self.adbShell('mkdir /sdcard/macro')
-      self.adb('push %s/device /sdcard/macro'%self.settings.MACRO_SCRIPTS, stdout='devnull')
+      self.adbPush('%s/device /sdcard/macro'%self.settings.MACRO_SCRIPTS, stdout='devnull')
       
       # Query on arch. But really, Android version would be better.
       self.youwave = False
@@ -261,51 +317,12 @@ class Device(QtCore.QObject):
       except:
          printAction("ERROR: Unable to find device ID string")
          
-      try:
-         dumpsys_inputs = self.adbShell("dumpsys input")
-         surface_orientation = re.search('SurfaceOrientation:\s*([0-9])', dumpsys_inputs)
-         if surface_orientation:
-            if surface_orientation.group(0) == "1":
-               self.orientation = "landscape"
-            else:
-               self.orientation = "portrait"
-      except:
-         logger.error("ERROR: Unable to parse screen orientation")
          
-      try:
-#          try:
-         self.screen_density = int(self.adbShell('getprop ro.sf.lcd_density'))
-#          except:
-#             dumpsys_display = self.adbShell("dumpsys display")
-#             devno = re.search('Built-in\sScreen', dumpsys_display)
+      self.updateScreenOrientation()
          
-         # OLD METHOD:
-#          build_prop = self.adb('adbShell echo "cat /system/build.prop" %s| su'%ESC)
-#          try:
-#             self.screen_density = int(re.search('[^#]ro\.sf\.lcd_density=([0-9]+)',build_prop).group(1))
-#          except:
-#             try:
-#                if re.search('vbox86p',build_prop):
-#                   self.screen_density = 160 # Not defined in Android VM
-#             except:
-#                self.screen_density = 160
-#          
-#          if self.screen_density != 160 and self.screen_density != 240:
-#             
-#             myPrint("")
-#             myPrint("<<<WARNING>>> ")
-#             myPrint("A screen density of %d detected. This is NOT SUPPORTED!!!"%self.screen_density)
-#             myPrint("")
-                        
-      except:
-         self.screen_density = 0
-         logger.error("ERROR: Unable to parse screen density")
+      self.updateScreenDensity()
          
-      dumpsys_log = self.adbShell("dumpsys window policy")
-      screen_size = re.search('mUnrestrictedScreen=.+ ([0-9]+)x([0-9]+)', dumpsys_log)
-      if screen_size:
-         self.screen_width  = int(screen_size.group(1))
-         self.screen_height = int(screen_size.group(2))
+      self.updateScreenResolution()
       
          
       devno = re.search('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]([0-9]{1,2})\.[0-9]{1,3}.[0-9]{1,5}', self.active_device)
@@ -391,54 +408,77 @@ class Device(QtCore.QObject):
      
    #   Popen("adb %s adbShell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, adbShell=True).stdout.read()
    
-   def killProcess(self, process, desc=''):
+   def killProcess(self, process, desc='', timeout=5):
       if process.state() == QtCore.QProcess.NotRunning:
          if process.exitStatus() != QtCore.QProcess.NormalExit:
             logger.error("ERROR: %s process died with error code %d"%(desc, process.exitStatus()))
       else:
          print("-----Killing %s process-----"%desc)
          process.kill()
-         if not process.waitForFinished(-1):
+         if not process.waitForFinished(timeout*1000):
             print ret1
             logger.error("ERROR: Unable to kill %s process!"%desc)
 
    @QtCore.Slot(str, dict)
-   def adb(self, command, stdout=False, process=None, binary_output=False):
+   def adb(self, command, stdout=False, process=None, binary_output=False, timeout=5):
       
       has_parent = False
       if process:
          has_parent = True
       else:
-         process = QtCore.QProcess()
+         process = QtCore.QProcess(self)
          #self.processes.append(process)
       
 #       if not process:
-      
-      cmd = ''
-      if re.search("devices", command):
-         cmd= "%s -P %d %s" %(self.adb_cmd, self.adb_port, command)
-         
-      else:
-         if not self.adb_active_device:
-            logger.error("You must set active device before using adb.")
-            exit(1)
-         
-         # May seem odd but it allows piping in the shell
-         if os.name == "posix":
-            cmd = "sh -c \"%s -P %d %s %s\"" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
-         else:
-            cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
 
+      if self.settings.USE_PYTHON_ADB:
+
+         if re.search("devices", command):
+            cmd = "%s %s" %(self.adb_cmd, command)
+         
+         else:
+            
+            # May seem odd but it allows piping in the shell
+            cmd = ""
+#             if os.name == "posix":
+#                cmd = "\"sh -c "
+               
+
+            cmd = cmd + "%s %s" %(self.adb_cmd, command)
+
+   
+#             if os.name == "posix":
+#                cmd = cmd + "\""
+   #       print cmd
+
+
+      else:
+         cmd = ''
+         if re.search("devices", command):
+            cmd= "%s -P %d %s" %(self.adb_cmd, self.adb_port, command)
+            
+         else:
+            if not self.adb_active_device:
+               logger.error("You must set active device before using adb.")
+               exit(1)
+            
+            # May seem odd but it allows piping in the shell
+            if os.name == "posix":
+               cmd = "sh -c \"%s -P %d %s %s\"" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
+            else:
+               cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
+
+#       print cmd
 #
       # Make sure only one adb command is executed at a time
       self.device_mutex.lock()
       
       p1 = process.start(cmd)
-      process.waitForStarted()
+      process.waitForStarted(timeout*1000)
       if not binary_output:
          logger.debug(p1)
       if not has_parent:
-         process.waitForFinished()
+         process.waitForFinished(timeout*1000)
 
 #       if not stdout:
 #          logger.debug(cmd)
@@ -461,14 +501,15 @@ class Device(QtCore.QObject):
                if re.search('device not found', output):
                   logger.info("Adb lost connection to target.")
                   exit()
-               if output != "":
+               if output != "" and stdout:
                   output = str(output)
                   logger.info(output)
             
          errors = process.readAllStandardError()
-         logger.debug(errors)
+         if errors != "":
+            logger.error(errors)
          
-         self.killProcess(process, 'adb(): %s'%cmd)
+         self.killProcess(process, 'adb(): %s'%cmd, timeout=timeout)
 
          self.device_mutex.unlock()
          return output
@@ -478,11 +519,11 @@ class Device(QtCore.QObject):
       
    
    @QtCore.Slot(str, dict)
-   def adbPipe(self, cmd1, cmd2, binary_output):
+   def adbPipe(self, cmd1, cmd2, binary_output, timeout=5):
       
       # Creat processes owned by this class (to reduce zombie-process risk)
-      process = QtCore.QProcess()
-      post_process = QtCore.QProcess()
+      process = QtCore.QProcess(self)
+      post_process = QtCore.QProcess(self)
       #self.processes.append(process)
       #self.post_processes.append(post_process)
             
@@ -492,16 +533,19 @@ class Device(QtCore.QObject):
       
       post_process.setProcessChannelMode(QtCore.QProcess.ForwardedChannels)
       
-      if not process.waitForStarted():
+      if not process.waitForStarted(timeout*1000):
          logger.error("ERROR: Command: %s failed to start."%cmd1) 
          self.killProcess(process, 'adbPipe()')
          self.killProcess(post_process, 'adbPipe() post')
          return False
    
-      ret1 = post_process.waitForFinished()
-      ret2 = process.waitForFinished()
+      ret1 = post_process.waitForFinished(timeout*1000)
+      ret2 = process.waitForFinished(timeout*1000)
       if not ret1:
          logger.error("ERROR: Command: %s timed out."%cmd1)
+      if not ret2:
+         logger.error("ERROR: Command: %s timed out."%cmd2)
+      if not ret1 or not ret2:
          self.killProcess(process, 'adbPipe()')
          self.killProcess(post_process, 'adbPipe() post')
          #process.kill()
@@ -555,10 +599,22 @@ class Device(QtCore.QObject):
    @QtCore.Slot(str, dict)
    def adbShell(self, command, **kwargs):
       
-      return self.adb("shell %s"%command, **kwargs)
+      return self.adb("shell %s %s"%(self.adb_active_device, command), **kwargs)
               
+              
+   @QtCore.Slot(str, dict)
+   def adbPush(self, command, **kwargs):
+      
+      return self.adb("push %s %s"%(self.adb_active_device, command), **kwargs)
+   
+   @QtCore.Slot(str, dict)
+   def adbPull(self, command, **kwargs):
+      
+      return self.adb("pull %s %s"%(self.adb_active_device, command), **kwargs)
+   
+   
    @QtCore.Slot(str)
-   def takeScreenshot(self, filename=None, ybounds=None):
+   def takeScreenshot(self, filename=None, ybounds=None, timeout=5):
    
       logger.debug("Pulling a fresh screenshot from the device...")
    #   Popen("adb adbShell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
@@ -571,7 +627,14 @@ class Device(QtCore.QObject):
    #          ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img.tmp screenshot.png >/dev/null 2>&1",
    #          stdout=PIPE, adbShell=True).stdout.read()
       if not ybounds:
-         ybounds = [0, self.screen_width]
+         ybounds = [0, 1]
+      #else:
+         #print("   DEBUG: Height: %d   Width: %d   Orientation: %s"%(self.screen_height, self.screen_width, self.orientation))
+         #if self.screen_height < self.screen_width:
+            #print "   DEBUG: shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width)
+         #else:
+            #print "   DEBUG: shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height)
+#       print ybounds
        
       if filename:
          output = filename
@@ -590,28 +653,51 @@ class Device(QtCore.QObject):
          retries = 5
          for i in range(retries):
             try:
-               process = self.adbPipe("shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_height, ybounds[0], ybounds[1]),
-                                      "gunzip -c", binary_output=True)
-               data = np.fromstring(process, dtype=np.uint8)
-               im = data.reshape((ybounds[1]-ybounds[0], self.screen_height, 4))
+#                print("   Height: %d   Width: %d   Orientation: %s"%(self.screen_height, self.screen_width, self.orientation))
+   
+               if self.screen_height < self.screen_width:
+                  process = self.adbPipe("shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width), "gunzip -c", binary_output=True, timeout=timeout)
+                  data = np.fromstring(process, dtype=np.uint8)
                
-               if self.screen_height > self.screen_width or self.orientation == "portrait":
-#                if self.screen_width < self.screen_height: # Landscape
+#                   print("   Reshaping data")
+#                   print data.shape
+#                   print (ybounds[1]*self.screen_width - ybounds[0]*self.screen_width, self.screen_height, 4)
+                  im = data.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_width)), self.screen_height, 4))
+#                   print("   Transposing data")
                   im = im.transpose((1,0,2))
                   im = im[::-1,:,:]
+                  
+               else:
+                  
+                  process = self.adbPipe("shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
+                  data = np.fromstring(process, dtype=np.uint8)
+#                   print("   Reshaping data")
+#                   print data.shape
+#                   print (ybounds[1]*self.screen_height - ybounds[0]*self.screen_height, self.screen_width, 4)
+                  im = data.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_height)), self.screen_width, 4))
+            
+               
+#                print("   Converting color")
                image = cv2.cvtColor(im, cv2.COLOR_BGRA2RGB)
-#                cv2.imshow('', image)
-#                cv2.waitKey()
-#                cv2.destroyAllWindows()
+               
+               cv2.imwrite("screenshot.png", image)
+               
+   #                cv2.imshow('', image)
+   #                cv2.waitKey()
+   #                cv2.destroyAllWindows()
+   #                cv2.imshow('', cv2.cvtColor(data.reshape((self.screen_height, ybounds[1]-ybounds[0], 4)), cv2.COLOR_BGRA2RGB)); cv2.waitKey()
                
                return image
+            
             except Exception as e:
                print("ERROR: Screenshot failed. Tring to continue (attempt %d)..."%i)
+               self.updateScreenOrientation()
+               self.updateScreenResolution()
 #                print data.shape
                print (ybounds[1]-ybounds[0], self.screen_height, 4)
                time.sleep(1)
-
-   #             raise e
+ 
+               print e
    #             print("ERROR: Unable to lock device.")
 
           
@@ -632,9 +718,9 @@ class Device(QtCore.QObject):
          if self.screen_height > self.screen_width or self.orientation == "portrait":
             process = QtCore.QProcess()
             process.start("mogrify -rotate 270 %s"%output)
-            process.waitForFinished()
+            process.waitForFinished(timeout*1000)
             process.terminate()
-            process.waitForFinished()
+            process.waitForFinished(timeout*1000)
          
       else:
    #      Popen("ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x640 -i img_%s1.raw screenshot_%s.png >/dev/null 2>&1"%(ACTIVE_DEVICE,ACTIVE_DEVICE), stdout=PIPE, adbShell=True).stdout.read()
@@ -650,9 +736,9 @@ class Device(QtCore.QObject):
          if self.screen_height > self.screen_width or self.orientation == "portrait":
             process = QtCore.QProcess()
             process.start("mogrify -rotate 270 %s"%output)
-            process.waitForFinished()
+            process.waitForFinished(timeout*1000)
             process.terminate()
-            process.waitForFinished()
+            process.waitForFinished(timeout*1000)
             
 
                
@@ -780,8 +866,8 @@ class Device(QtCore.QObject):
       ])
    #       time.sleep(0.2)
    
-   def press(self, coords, time):
-      self.swipe(coords, coords, time)
+   def press(self, coords, seconds):
+      self.swipe(coords, coords, seconds)
       
    def leftClick(self, loc):
        
@@ -876,15 +962,27 @@ class Device(QtCore.QObject):
    def enterText(self, text):
       self.adb_input(text)
       
-   def swipe(self, start, stop, time=None):
+   def swipe(self, start, stop, seconds=None, repeats=1):
 
+      if seconds:
+         cmd = 'sh /sdcard/macro/swipe %d %d %d %d %d %d' % (repeats, start[0], start[1], stop[0], stop[1], seconds*1000)
+      else:
+         cmd = 'sh /sdcard/macro/swipe %d %d %d %d %d' % (repeats, start[0], start[1], stop[0], stop[1])
+#       for i in range(repeats):
+#          if seconds:
+#             cmd = cmd + 'input swipe %d %d %d %d %d; ' % (start[0], start[1], stop[0], stop[1], seconds*1000)
+#          else:
+#             cmd = cmd + 'input swipe %d %d %d %d; ' % (start[0], start[1], stop[0], stop[1])
+         
       if not self.isYouwave():
-         if time:
-            self.adbShell('input swipe %d %d %d %d %d' % (start[0], start[1], stop[0], stop[1], time))
+         if seconds:
+            self.adbShell("%s" %cmd, timeout=repeats*seconds+5)
          else:
-            self.adbShell('input swipe %d %d %d %d' % (start[0], start[1], stop[0], stop[1]))
+            self.adbShell("%s" %cmd, timeout=repeats*2)
+#          print "%s" % cmd
       else:
          self.linear_swipe(start, stop, steps=5)
+         
          
    def linear_swipe(self, start, stop, steps=1):
    
@@ -1022,16 +1120,18 @@ class Device(QtCore.QObject):
          retries = retries + 1
       
       
-   def locateTemplate(self, template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False,
+   def locateTemplate(self, template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False, timeout=15,
                    recursing=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
 
       DEBUG=False
       if not ybounds:
-         ybounds = [0,self.screen_width]
+         ybounds = [0,1]
       
       for i in range(retries):
          if not reuse_last_screenshot:
-            self.image_screen = self.takeScreenshot(ybounds=ybounds)
+            self.image_screen = self.takeScreenshot(ybounds=ybounds, timeout=timeout)
+            
+            cv2.imwrite( "../../../rk/screenshot.png", self.image_screen );
             
 #             cv2.imshow('', self.image_screen)
 #             cv2.waitKey()
@@ -1115,7 +1215,12 @@ class Device(QtCore.QObject):
          if match_found:
             template_coords = np.unravel_index(result.argmax(), result.shape)
             template_coords = np.array([template_coords[1], template_coords[0]])
-            object_coords = tuple(template_coords + np.array(offset) + np.array([ybounds[0], 0]))
+            
+            if self.screen_height < self.screen_width:
+               object_coords = tuple(template_coords + np.array(offset) + np.array([ybounds[0]*self.screen_width, 0]).astype('int'))
+            else:
+               object_coords = tuple(template_coords + np.array(offset) + np.array([ybounds[0]*self.screen_height, 0]).astype('int'))
+            
             if click:
                self.leftClick(object_coords)
                time.sleep(3)

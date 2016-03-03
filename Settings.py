@@ -24,3 +24,5 @@ class Settings:
       self.LOG_FILE             = self.MACRO_ROOT + "/macro.log"
       
       self.DEVICE_NAME          = "S6-Android6"
+      
+      self.USE_PYTHON_ADB       = True

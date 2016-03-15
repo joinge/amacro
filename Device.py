@@ -38,6 +38,7 @@ class Device(QtCore.QObject):
       super(Device, self).__init__(parent)
       
 #       self.active_device_is_set.connect(self.takeScreenshot)
+      self.app = QtGui.QApplication(sys.argv)
       
       self.process_gimp = QtCore.QProcess(self)
 #       self.process.waitForStarted()
@@ -97,6 +98,19 @@ class Device(QtCore.QObject):
       printAction("Starting Player...", newline=True)
       self.player_process.startDetached("%s/player --vm-name %s --no-popup"%(self.settings.EMULATOR_PATH, self.settings.DEVICE_NAME))
       time.sleep(60)
+      
+      if self.settings.USE_PYTHON_ADB:
+         cmds = ["sh -c \"killall adb\""]*5
+         for i in range(1):
+            for cmd in cmds:
+               killproc = QtCore.QProcess()
+               try:
+                  killproc.startDetached(cmd)
+                  killproc.waitForFinished(5)
+               except Exception as e:
+                  print("Failed to run command: %s"%cmd)
+               killproc.terminate()
+               killproc.waitForFinished()
       
    def stop(self):
       printAction("Stopping processes...", newline=True)

@@ -26,4 +26,4 @@ class Settings:
       
       self.DEVICE_NAME          = "S6-Android6"
       
-      self.USE_PYTHON_ADB       = True
+      self.USE_PYTHON_ADB       = False

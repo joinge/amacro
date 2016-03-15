@@ -65,8 +65,10 @@ def printResult(res, msg_type='debug'):
       else:
          break
       
-#   logging.debug('Happy Hoppy')
-   if res:
+   if isinstance(res, basestring):
+      getattr(logging, msg_type)(msg.ljust(PAD, ' ')+res)
+      sys.stdout.write(res)
+   elif res:
       getattr(logging, msg_type)(msg.ljust(PAD, ' ')+':)')
       sys.stdout.write(":)")
    else:

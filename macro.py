@@ -1719,7 +1719,7 @@ def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=0
             img_path = SCREEN_PATH + '/dpi160'
             
          image_screen = readImage(TEMP_PATH+"/screenshot_%s.png" %device.active_device, xbounds, ybounds)
-#         image_screen   = readImage("test.png", xbounds, ybounds)
+#         image_screen   = readImage("test_img_raw.png", xbounds, ybounds)
       except:
          myPrint("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!" % device.active_device)
          return False
@@ -3689,7 +3689,7 @@ def fuseAndBoost(card_type, cards_list, fuse_alignment='all', boost_alignment='a
          return
    
    
-#def test():
+#def test_img_raw():
 #   info = getMyPageStatus()
 #   roster_count, roster_capacity = info['roster']
 #   

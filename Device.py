@@ -13,7 +13,7 @@ from nothreads import myRun
 import cv2
 import re
 import sys
-from PySide import QtCore
+from PySide import QtCore, QtGui
 # from PySide import QProcess
 
 import logging
@@ -246,7 +246,18 @@ class Device(QtCore.QObject):
       if screen_size:
          self.screen_width  = int(screen_size.group(1))
          self.screen_height = int(screen_size.group(2))
+         
+   def updateScreenInfo(self):
+      self.updateScreenOrientation()
+         
+      self.updateScreenDensity()
+         
+      self.updateScreenResolution()
       
+   def updateScreenshotMethod(self):
+      pixmap = QtGui.QPixmap.grabWindow(QtGui.QApplication.desktop().winId(), 1920,0,1920,1080)
+      
+      print "hello"
 
    @QtCore.Slot()
    def updateInfo(self):
@@ -257,22 +268,28 @@ class Device(QtCore.QObject):
       uname_machine = self.adbShell('uname -m')
       uname_all = self.adbShell('uname -a')
       
-      # Copy some scripts to the device we will use later on
-      self.adbShell('mkdir /sdcard/macro')
-      self.adbPush('%s/device /sdcard/macro'%self.settings.MACRO_SCRIPTS, stdout='devnull')
+      self.arch = None
       
       # Query on arch. But really, Android version would be better.
       self.youwave = False
       self.android_vm = False
       if re.search('arm',uname_machine):
          self.is_phone = True
+         self.arch = "arm"
       
       if re.search('i686',uname_machine):
+         self.arch = "i686"
          if re.search('qemu',uname_all) or re.search('genymotion',uname_all):
             self.android_vm = True
          else:
             self.youwave = True
             
+      # Copy some scripts to the device we will use later on      
+      self.adbShell('mkdir %s'%self.settings.MACRO_ROOT_DEVICE)
+      self.adbPush('%s/device %s'%(self.settings.MACRO_SCRIPTS, self.settings.MACRO_ROOT_DEVICE), stdout='devnull')
+      self.adbPush('%s/ndk/libs/armeabi/decimate %s/decimate_arm'%(self.settings.MACRO_ROOT, self.settings.MACRO_ROOT_DEVICE), stdout='devnull')
+      self.adbPush('%s/ndk/libs/x86/decimate %s/decimate_i686'%(self.settings.MACRO_ROOT, self.settings.MACRO_ROOT_DEVICE), stdout='devnull')
+      
       event_devices = self.adbShell('sh /sdcard/macro/getevent')  
       
       if self.youwave:
@@ -323,6 +340,8 @@ class Device(QtCore.QObject):
       self.updateScreenDensity()
          
       self.updateScreenResolution()
+      
+      self.updateScreenshotMethod()
       
          
       devno = re.search('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]([0-9]{1,2})\.[0-9]{1,3}.[0-9]{1,5}', self.active_device)
@@ -516,10 +535,12 @@ class Device(QtCore.QObject):
 
       self.device_mutex.unlock()
       
-      
+   @QtCore.Slot(str, dict)
+   def adbShellPipe(self, cmd1, cmd2, **kwargs):
+      return self.adbPipe("shell %s %s"%(self.adb_active_device, cmd1), cmd2, **kwargs)
    
    @QtCore.Slot(str, dict)
-   def adbPipe(self, cmd1, cmd2, binary_output, timeout=5):
+   def adbPipe(self, cmd1, cmd2, binary_output=False, timeout=5):
       
       # Creat processes owned by this class (to reduce zombie-process risk)
       process = QtCore.QProcess(self)
@@ -614,7 +635,7 @@ class Device(QtCore.QObject):
    
    
    @QtCore.Slot(str)
-   def takeScreenshot(self, filename=None, ybounds=None, timeout=5):
+   def takeScreenshot(self, filename=None, ybounds=None, decimation=1, timeout=5):
    
       logger.debug("Pulling a fresh screenshot from the device...")
    #   Popen("adb adbShell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
@@ -645,6 +666,8 @@ class Device(QtCore.QObject):
       # CURRENT BEST #
       ################
       
+      self.Ndec = 1920*1080 / (self.screen_width*self.screen_height)
+      
       method = 'partial_screen_stream'
       
       if method == 'partial_screen_stream':
@@ -656,7 +679,8 @@ class Device(QtCore.QObject):
 #                print("   Height: %d   Width: %d   Orientation: %s"%(self.screen_height, self.screen_width, self.orientation))
    
                if self.screen_height < self.screen_width:
-                  process = self.adbPipe("shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width), "gunzip -c", binary_output=True, timeout=timeout)
+#                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width, decimation), "gunzip -c", binary_output=True, timeout=timeout)
+                  process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width), "gunzip -c", binary_output=True, timeout=timeout)
                   data = np.fromstring(process, dtype=np.uint8)
                
 #                   print("   Reshaping data")
@@ -669,7 +693,8 @@ class Device(QtCore.QObject):
                   
                else:
                   
-                  process = self.adbPipe("shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
+                  process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
+#                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
                   data = np.fromstring(process, dtype=np.uint8)
 #                   print("   Reshaping data")
 #                   print data.shape
@@ -1120,7 +1145,8 @@ class Device(QtCore.QObject):
          retries = retries + 1
       
       
-   def locateTemplate(self, template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False, timeout=15,
+   def locateTemplate(self, template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None,
+                   reuse_last_screenshot=False, timeout=15, decimation=1,
                    recursing=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
 
       DEBUG=False
@@ -1129,9 +1155,9 @@ class Device(QtCore.QObject):
       
       for i in range(retries):
          if not reuse_last_screenshot:
-            self.image_screen = self.takeScreenshot(ybounds=ybounds, timeout=timeout)
+            self.image_screen = self.takeScreenshot(ybounds=ybounds, timeout=timeout, decimation=decimation)
             
-            cv2.imwrite( "../../../rk/screenshot.png", self.image_screen );
+            cv2.imwrite( "tmp/screenshot.png", self.image_screen );
             
 #             cv2.imshow('', self.image_screen)
 #             cv2.waitKey()
@@ -1139,11 +1165,11 @@ class Device(QtCore.QObject):
          
          time.sleep(.1)
 #          try:
-         if not self.screen_density == 480:
-#                img_path = self.settings.SCREEN_PATH
-#             else:
-            myPrint("ERROR: Screen density not supported. Aborting" % self.active_device)
-            return False
+#          if not self.screen_density == 480:
+# #                img_path = self.settings.SCREEN_PATH
+# #             else:
+#             myPrint("ERROR: Screen density not supported. Aborting" % self.active_device)
+#             return False
                
       
 #             image_screen = self.readImage(self.settings.TEMP_PATH+"/screenshot_%s.png" %self.active_device, xbounds, ybounds)
@@ -1152,7 +1178,7 @@ class Device(QtCore.QObject):
 #             if image_screen == None:
 #                raise Exception("ERROR: Unable to load image from disk. This shouldn't happen!")
                
-   #         image_screen   = readImage("test.png", xbounds, ybounds)
+   #         image_screen   = readImage("test_img_raw.png", xbounds, ybounds)
 #          except:
 #             raise Exception("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!" % self.active_device)
          
@@ -1182,7 +1208,8 @@ class Device(QtCore.QObject):
                   offset = tuple((image_size/2.0).astype('int'))
                   
                try:
-                  result = myRun(cv2.matchTemplate, self.image_screen, image_template, cv2.TM_CCOEFF_NORMED)
+                  cv2.imwrite("tmp/template.png", image_template[::decimation,::decimation,:])
+                  result = myRun(cv2.matchTemplate, self.image_screen, image_template[::decimation,::decimation,:], cv2.TM_CCOEFF_NORMED)
                except Exception, e:
                   print(e)
                   myPrint("Unable to match screenshot with template %s"%template)
@@ -1268,7 +1295,7 @@ if __name__ == "__main__":
    
    device = Device(settings)
    
-   device.setActive('192.168.56.101:5555')
+   device.setActive('192.168.56.102:5555')
 
    device.takeScreenshot('screen.png')
    

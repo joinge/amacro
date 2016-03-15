@@ -159,7 +159,7 @@ class RainbowLoggingHandler(ColorizingStreamHandler):
       return message
 
 if __name__ == "__main__":
-   # Run test output on stdout
+   # Run test_img_raw output on stdout
    import sys
 
    root_logger = logging.getLogger()
@@ -169,7 +169,7 @@ if __name__ == "__main__":
    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
    handler.setFormatter(formatter)
    root_logger.addHandler(handler)
-   logger = logging.getLogger("test")
+   logger = logging.getLogger("test_img_raw")
 
    def test_func():
       logger.debug("debug msg")

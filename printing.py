@@ -1,6 +1,6 @@
 from __future__ import print_function
-import multiprocessing
-import select
+# import multiprocessing
+# import select
 import sys
 
 PAD = 60
@@ -32,7 +32,7 @@ def setupLogging(
    
 
 
-msg_queue = multiprocessing.Queue()
+# msg_queue = multiprocessing.Queue()
 def myPrint(arg, **kwargs):
 
    msg = ''

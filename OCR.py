@@ -20,7 +20,7 @@ QT_BOX_EDITOR="/home/me/Apps/QtBoxEditor/zdenop-qt-box-editor-86691a2/qt-box-edi
 TESSBOXES = "/home/me/Apps/tessboxes-0.8/src/tessboxes"
 
 # The user object deals with user info 
-class OCR():
+class ImageAnalysis():
    
    def __init__(self, settings):
       self.settings = settings
@@ -32,6 +32,9 @@ class OCR():
       os.chdir(new_path)
       
       return old_path
+   
+
+
    
    def generateTrainingSetWthLatex(self, fontfile):
       old_path = self.changePath(LATEX_PATH)
@@ -315,7 +318,7 @@ if __name__ == "__main__":
    
    settings = Settings()
    
-   ocr = OCR(settings)
+   ocr = ImageAnalysis(settings)
 
    ocr.train(fontfile="eng.Supercell-Magic.exp0.ttf", method="tesseract", training_text="/home/me/clash/coc_training_text.txt")
    

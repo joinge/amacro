@@ -15,8 +15,10 @@ import re
 import sys
 from PySide import QtCore, QtGui
 # from PySide import QProcess
+# from multiprocessing import Queue
 
 import logging
+from antlr import Queue
 logger = logging.getLogger(__name__)
 
 import os
@@ -28,6 +30,115 @@ else:
    myPrint("WARNING: Unsupported OS")
    ESC = "\\"
    
+# Don't like these global signals but they get the job done
+
+class StartThread(QtCore.QThread):
+   success = QtCore.Signal(str)
+   def __init__(self, wait_condition, mutex, queue, name,  settings, vm_process, player_process):
+      QtCore.QThread.__init__(self)
+      self.exiting = False
+      
+      self.waitCondition = wait_condition
+      self.mutex = mutex
+      self.queue = queue
+      
+      self.vm_process = vm_process
+      self.player_process = player_process
+      
+      self.settings = settings
+      
+      self.name = name
+      
+   def run(self):
+      
+      print "StartThread::run() - Waiting for mutex to unlock..."
+      self.mutex.lock()
+#       self.timer.start(timeout)
+      print "StartThread::run() - Performing work..."
+
+      time.sleep(6)
+
+#       time.sleep(5)
+#       self.startDevice()
+#       self.timer.stop()
+#       self.success.emit()
+      print "StartThread::run() - Telling Caller that we're done..."
+      self.waitCondition.wakeAll()
+      
+      print "StartThread::run() - Releasing mutex..."      
+      self.mutex.unlock()
+      
+   def startDevice(self):
+      time.sleep(15)
+      printAction("Starting VirtualBox...", newline=True)
+      
+      self.ip = None
+      
+      self.vm_process.startDetached("VBoxManage startvm %s --type headless"%self.name)
+      time.sleep(15)
+      
+      printAction("Starting Player...", newline=True)
+      self.player_process.startDetached("%s/player --vm-name %s --no-popup"%(self.settings.EMULATOR_PATH, self.name))
+      time.sleep(5)
+           
+      if self.settings.USE_PYTHON_ADB:
+         cmds = ["sh -c \"killall adb\""]*5
+         for i in range(1):
+            for cmd in cmds:
+               killproc = QtCore.QProcess()
+               try:
+                  killproc.startDetached(cmd)
+                  killproc.waitForFinished(5)
+               except Exception as e:
+                  print("Failed to run command: %s"%cmd)
+               killproc.terminate()
+               killproc.waitForFinished()
+      
+      if self.settings.USE_PYTHON_ADB:
+         self.stopAdb()
+      
+      TIMEOUT=5
+      for i in range(TIMEOUT):
+         has_slept=False
+         printAction("Checking if system is online (%d/%d)..."%(i+1,TIMEOUT))
+         try:
+            ip = self.getIP(self.name)
+            if not ip:
+               raise Exception()
+            time.sleep(5)
+            has_slept=True
+            self.setActive(str(ip)+":5555")
+            if self.locateTemplate("android_messaging_icon.png", threshold=0.9, print_coeff=True):
+               printResult(True)
+               break
+         except: 
+            printResult(False)
+            if not has_slept:
+               time.sleep(5)
+         
+      if i<TIMEOUT-1:
+         self.ip = str(ip)
+         self.queue.put(self.ip)
+         return
+            
+               
+   def getIP(self, name):
+      proc = QtCore.QProcess()
+      
+      try:
+         proc.start("VBoxManage guestproperty enumerate %s"%name)
+         proc.waitForStarted(1e4)
+         proc.waitForFinished(5e4)
+         dev_prop = proc.readAllStandardOutput()
+      except Exception as e:
+         print("Failed to run command: VBoxManage guestproperty enumerate %s"%name)
+         
+      ip_reg = re.search("androvm_ip_management, value: ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})", dev_prop)
+      
+      if ip_reg:
+         return ip_reg.group(1)
+   
+   
 
 class Device(QtCore.QObject):
    device_list = QtCore.Signal(list)
@@ -38,7 +149,7 @@ class Device(QtCore.QObject):
       super(Device, self).__init__(parent)
       
 #       self.active_device_is_set.connect(self.takeScreenshot)
-      self.app = QtGui.QApplication(sys.argv)
+#       self.app = QtGui.QApplication(sys.argv)
       
       self.process_gimp = QtCore.QProcess(self)
 #       self.process.waitForStarted()
@@ -67,6 +178,13 @@ class Device(QtCore.QObject):
          
       self.device_mutex = QtCore.QMutex()
       self.adb_port = 5037
+      self.ip = None
+
+      self.device_starter = None
+      self.wait_condition = QtCore.QWaitCondition()
+      self.mutex = QtCore.QMutex()
+      self.queue = Queue()
+      
       
       #self.processes = []
       #self.post_processes = []
@@ -74,6 +192,8 @@ class Device(QtCore.QObject):
       class DoubleThread():
          def __int__(self):
             pass
+      
+      self.vm_name = ''
       
       self.vm_process = QtCore.QProcess(self)
       self.vm_process.error.connect(self.checkIfValidExit)
@@ -89,28 +209,33 @@ class Device(QtCore.QObject):
       #self.thread.terminate()
       #self.thread.wait()
       
-   def start(self):
-      printAction("Starting VirtualBox...", newline=True)
-      self.running = True
-      self.vm_process.startDetached("VBoxManage startvm %s --type headless"%self.settings.DEVICE_NAME)
-      time.sleep(10)
+   def start(self, name):
       
-      printAction("Starting Player...", newline=True)
-      self.player_process.startDetached("%s/player --vm-name %s --no-popup"%(self.settings.EMULATOR_PATH, self.settings.DEVICE_NAME))
-      time.sleep(60)
+      self.device_starter = StartThread(self.wait_condition, self.mutex, self.queue, name, self.settings, self.vm_process, self.player_process)
       
-      if self.settings.USE_PYTHON_ADB:
-         cmds = ["sh -c \"killall adb\""]*5
-         for i in range(1):
-            for cmd in cmds:
-               killproc = QtCore.QProcess()
-               try:
-                  killproc.startDetached(cmd)
-                  killproc.waitForFinished(5)
-               except Exception as e:
-                  print("Failed to run command: %s"%cmd)
-               killproc.terminate()
-               killproc.waitForFinished()
+      TIMEOUT=5
+      for i in range(TIMEOUT):
+         print "Caller::start() - Locking mutex..."
+         self.mutex.lock()
+         
+         self.queue.reset()
+         print "Caller::start() - Starting StartThread..."
+         self.device_starter.start()
+   
+         print "Caller::start() - Waiting for StartThread to complete (or time out)..."
+         if self.wait_condition.wait(self.mutex, 4000):
+            print "Caller::start() - Good news! StartThread signaled completion!"
+            
+            self.ip = self.queue.get()
+   
+            self.mutex.unlock()
+            return True
+         else:
+            print "Caller::start() - Bad news! StartThread timed out!"
+            self.stop()
+         
+      return False
+      
       
    def stop(self):
       printAction("Stopping processes...", newline=True)
@@ -119,6 +244,7 @@ class Device(QtCore.QObject):
       self.vm_process.terminate()
       self.player_process.waitForFinished()
       self.vm_process.waitForFinished()
+      
 #       timer = QtCore.QTimer()
 #       timer.timeout.connect(self.player_process.kill)
 #       timer.timeout.connect(self.vm_process.kill)
@@ -140,10 +266,36 @@ class Device(QtCore.QObject):
             killproc.waitForFinished()
 #          time.sleep(5)
 
+
+               
+   def stopAdb(self):
+      printAction("Stopping ADB...", newline=True)
       
-   def restart(self):
+      cmds = ["sh -c \"killall adb\""]*3
+      for i in range(1):
+         for cmd in cmds:
+            killproc = QtCore.QProcess()
+            try:
+               killproc.startDetached(cmd)
+               killproc.waitForFinished(5)
+            except Exception as e:
+               print("Failed to run command: %s"%cmd)
+            killproc.terminate()
+            killproc.waitForFinished()
+#          time.sleep(5)
+
+      
+   def restart(self, vm_name=''):
+      if self.vm_name == '' and vm_name=='':
+         print "ERROR: Device.restart(): VM has never been started before and no name given."
+         exit(1) 
       self.stop()
-      self.start()
+      if vm_name=='':
+         self.start(self.vm_name)
+      else:
+         self.start(vm_name)
+         self.vm_name = vm_name
+      
       
    def checkIfValidExit(self):
       printAction("Process quitting. Checking if OK...")
@@ -271,7 +423,7 @@ class Device(QtCore.QObject):
    def updateScreenshotMethod(self):
       pixmap = QtGui.QPixmap.grabWindow(QtGui.QApplication.desktop().winId(), 1920,0,1920,1080)
       
-      print "hello"
+      print "WARNING: Device.updateScreenshotMethod() isn't implemented yet"
 
    @QtCore.Slot()
    def updateInfo(self):
@@ -304,7 +456,12 @@ class Device(QtCore.QObject):
       self.adbPush('%s/ndk/libs/armeabi/decimate %s/decimate_arm'%(self.settings.MACRO_ROOT, self.settings.MACRO_ROOT_DEVICE), stdout='devnull')
       self.adbPush('%s/ndk/libs/x86/decimate %s/decimate_i686'%(self.settings.MACRO_ROOT, self.settings.MACRO_ROOT_DEVICE), stdout='devnull')
       
-      event_devices = self.adbShell('sh /sdcard/macro/getevent')  
+      event_devices = self.adbShell('%s/getevent'%self.settings.MACRO_ROOT_DEVICE)  
+      
+      try:
+         self.genymotion_virtual_input = int(re.search('/dev/input/event([0-9]).*\n.*Genymotion Virtual Input',event_devices).group(1))
+      except:
+         pass
       
       if self.youwave:
          
@@ -367,18 +524,21 @@ class Device(QtCore.QObject):
    @QtCore.Slot() 
    def printInfo(self):
       
-      logger.info("")
-      logger.info("Device info updated. New parameters:")
-      if self.isYouwave():
-         logger.info("   Device type:           YouWave emulator")
-         logger.info("   Device - touchscreen: /dev/input/event%d"%self.eventTablet)
-         logger.info("   Device - keyboard:    /dev/input/event%d"%self.event_keyboard)
-         logger.info("   Device - mouse:       /dev/input/event%d"%self.eventMouse)
-         
-      if self.isAndroidVM():
-         logger.info("   Device type:          AndroVM/Genymotion emulator")
-         logger.info("   Device - keyboard:    /dev/input/event%d"%self.event_keyboard)
-         logger.info("   Screen:               %dx%d  (%d DPI)"%(self.screen_width, self.screen_height, self.screen_density))
+      try:
+         logger.info("")
+         logger.info("Device info updated. New parameters:")
+         if self.isYouwave():
+            logger.info("   Device type:           YouWave emulator")
+            logger.info("   Device - touchscreen: /dev/input/event%d"%self.eventTablet)
+            logger.info("   Device - keyboard:    /dev/input/event%d"%self.event_keyboard)
+            logger.info("   Device - mouse:       /dev/input/event%d"%self.eventMouse)
+            
+         if self.isAndroidVM():
+            logger.info("   Device type:          AndroVM/Genymotion emulator")
+            logger.info("   Device - keyboard:    /dev/input/event%d"%self.event_keyboard)
+            logger.info("   Screen:               %dx%d  (%d DPI)"%(self.screen_width, self.screen_height, self.screen_density))
+      except Exception as e:
+         print e
       
       logger.info("")
          
@@ -426,18 +586,19 @@ class Device(QtCore.QObject):
    
    @QtCore.Slot(str)
    def setActive(self, device_id):
+      
+      if not self.ip:
+         logger.info("Setting active device "+device_id)
+         if device_id != None:
+            windows_friendly_device = re.sub(r':','.',device_id)
+            self.active_device = windows_friendly_device
+            self.adb_active_device = "-s " + device_id
             
-      logger.info("Setting active device "+device_id)
-      if device_id != None:
-         windows_friendly_device = re.sub(r':','.',device_id)
-         self.active_device = windows_friendly_device
-         self.adb_active_device = "-s " + device_id
+         self.updateInfo()
          
-      self.updateInfo()
-      
-      self.takeScreenshot()
-      
-      self.active_device_is_set.emit()
+         self.takeScreenshot()
+         
+         self.active_device_is_set.emit()
      
    #   Popen("adb %s adbShell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, adbShell=True).stdout.read()
    
@@ -449,7 +610,6 @@ class Device(QtCore.QObject):
          print("-----Killing %s process-----"%desc)
          process.kill()
          if not process.waitForFinished(timeout*1000):
-            print ret1
             logger.error("ERROR: Unable to kill %s process!"%desc)
 
    @QtCore.Slot(str, dict)
@@ -497,9 +657,9 @@ class Device(QtCore.QObject):
             
             # May seem odd but it allows piping in the shell
             if os.name == "posix":
-               cmd = "sh -c \"%s -P %d %s %s\"" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
+               cmd = "sh -c \"%s %s %s\"" %(self.adb_cmd, self.adb_active_device, command)
             else:
-               cmd = "%s -P %d %s %s" %(self.adb_cmd, self.adb_port, self.adb_active_device, command)
+               cmd = "%s %s %s" %(self.adb_cmd, self.adb_active_device, command)
 
 #       print cmd
 #
@@ -551,7 +711,10 @@ class Device(QtCore.QObject):
       
    @QtCore.Slot(str, dict)
    def adbShellPipe(self, cmd1, cmd2, **kwargs):
-      return self.adbPipe("shell %s %s"%(self.adb_active_device, cmd1), cmd2, **kwargs)
+      if self.settings.USE_PYTHON_ADB:
+         return self.adbPipe("shell %s %s"%(self.adb_active_device, cmd1), cmd2, **kwargs)
+      else:
+         return self.adbPipe("shell %s"%(cmd1), cmd2, **kwargs)
    
    @QtCore.Slot(str, dict)
    def adbPipe(self, cmd1, cmd2, binary_output=False, timeout=5):
@@ -634,23 +797,37 @@ class Device(QtCore.QObject):
    @QtCore.Slot(str, dict)
    def adbShell(self, command, **kwargs):
       
-      return self.adb("shell %s %s"%(self.adb_active_device, command), **kwargs)
+      if self.settings.USE_PYTHON_ADB:
+         return self.adb("shell %s %s"%(self.adb_active_device, command), **kwargs)
+      else:
+         return self.adb("shell %s"%(command), **kwargs)
               
               
    @QtCore.Slot(str, dict)
    def adbPush(self, command, **kwargs):
       
-      return self.adb("push %s %s"%(self.adb_active_device, command), **kwargs)
+      if self.settings.USE_PYTHON_ADB:
+         return self.adb("push %s %s"%(self.adb_active_device, command), **kwargs)
+      else:
+         return self.adb("push %s"%(command), **kwargs)
+      
    
    @QtCore.Slot(str, dict)
    def adbPull(self, command, **kwargs):
       
-      return self.adb("pull %s %s"%(self.adb_active_device, command), **kwargs)
+      if self.settings.USE_PYTHON_ADB:
+         return self.adb("pull %s %s"%(self.adb_active_device, command), **kwargs)
+      else:
+         return self.adb("pull %s"%(command), **kwargs)
    
    
    @QtCore.Slot(str)
-   def takeScreenshot(self, filename=None, ybounds=None, decimation=1, timeout=5):
+   def takeScreenshot(self, filename=None, ybounds=None, decimation=1, timeout=5, load_from_file=None):
    
+      if load_from_file:
+         self.image_screen = cv2.imread( load_from_file );
+         return self.image_screen     
+         
       logger.debug("Pulling a fresh screenshot from the device...")
    #   Popen("adb adbShell /system/bin/screencap -p /sdcard/screenshot.png > error.log 2>&1;\
    #          adb pull  /sdcard/screenshot.png screenshot.png >error.log 2>&1", stdout=PIPE, adbShell=True).stdout.read()
@@ -690,18 +867,17 @@ class Device(QtCore.QObject):
          retries = 5
          for i in range(retries):
             try:
-#                print("   Height: %d   Width: %d   Orientation: %s"%(self.screen_height, self.screen_width, self.orientation))
    
                if self.screen_height < self.screen_width:
 #                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width, decimation), "gunzip -c", binary_output=True, timeout=timeout)
                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width), "gunzip -c", binary_output=True, timeout=timeout)
-                  data = np.fromstring(process, dtype=np.uint8)
+                  data_sample = np.fromstring(process, dtype=np.uint8)
                
-#                   print("   Reshaping data")
-#                   print data.shape
+#                   print("   Reshaping data_sample")
+#                   print data_sample.shape
 #                   print (ybounds[1]*self.screen_width - ybounds[0]*self.screen_width, self.screen_height, 4)
-                  im = data.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_width)), self.screen_height, 4))
-#                   print("   Transposing data")
+                  im = data_sample.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_width)), self.screen_height, 4))
+#                   print("   Transposing data_sample")
                   im = im.transpose((1,0,2))
                   im = im[::-1,:,:]
                   
@@ -709,11 +885,11 @@ class Device(QtCore.QObject):
                   
                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
 #                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
-                  data = np.fromstring(process, dtype=np.uint8)
-#                   print("   Reshaping data")
-#                   print data.shape
+                  data_sample = np.fromstring(process, dtype=np.uint8)
+#                   print("   Reshaping data_sample")
+#                   print data_sample.shape
 #                   print (ybounds[1]*self.screen_height - ybounds[0]*self.screen_height, self.screen_width, 4)
-                  im = data.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_height)), self.screen_width, 4))
+                  im = data_sample.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_height)), self.screen_width, 4))
             
                
 #                print("   Converting color")
@@ -724,17 +900,21 @@ class Device(QtCore.QObject):
    #                cv2.imshow('', image)
    #                cv2.waitKey()
    #                cv2.destroyAllWindows()
-   #                cv2.imshow('', cv2.cvtColor(data.reshape((self.screen_height, ybounds[1]-ybounds[0], 4)), cv2.COLOR_BGRA2RGB)); cv2.waitKey()
+   #                cv2.imshow('', cv2.cvtColor(data_sample.reshape((self.screen_height, ybounds[1]-ybounds[0], 4)), cv2.COLOR_BGRA2RGB)); cv2.waitKey()
                
                return image
             
             except Exception as e:
                print("ERROR: Screenshot failed. Tring to continue (attempt %d)..."%i)
-               self.updateScreenOrientation()
-               self.updateScreenResolution()
-#                print data.shape
+               if i>1:
+                  print("   Before - Height: %d   Width: %d   Orientation: %s"%(self.screen_height, self.screen_width, self.orientation))
+                  self.updateScreenOrientation()
+                  self.updateScreenResolution()
+                  print("   After  - Height: %d   Width: %d   Orientation: %s"%(self.screen_height, self.screen_width, self.orientation))
+
+#                print data_sample.shape
                print (ybounds[1]-ybounds[0], self.screen_height, 4)
-               time.sleep(1)
+#                time.sleep(1)
  
                print e
    #             print("ERROR: Unable to lock device.")
@@ -857,6 +1037,71 @@ class Device(QtCore.QObject):
    #   time.sleep(0.5)  
       #adbSend("/dev/input/event2",3,48,10);
       
+   def zoom(self, direction='out', amount=0.5):
+      
+      # Right click and hold
+#       self.adb_event(5, 0x0001, 0x014a, 0x00000001)
+#       self.adb_event(5, 0x0003, 0x003a, 0x00000001)
+#       self.adb_event(5, 0x0003, 0x0035, 0x0000010e) # Y coordinate
+#       self.adb_event(5, 0x0003, 0x0036, 0x0000015f) # X coordinate
+#       self.adb_event(5, 0x0000, 0x0002, 0x00000000)
+#       self.adb_event(5, 0x0003, 0x0035, 0x0000010e)
+#       self.adb_event(5, 0x0003, 0x0036, 0x0000026d)
+#       self.adb_event(5, 0x0000, 0x0002, 0x00000000)
+#       self.adb_event(5, 0x0000, 0x0000, 0x00000000)
+
+#       if self.screen_height > self.screen_width:
+      vpos = int(self.screen_height/2)
+      if direction=='out':
+         hpos = (np.array([0.45-0.15*amount, 0.55+0.15*amount, 0.45, 0.55])*self.screen_width).astype('int') # [(start),(end)]
+      else:
+         hpos = (np.array([0.45, 0.55, 0.45-0.15*amount, 0.55+0.15*amount])*self.screen_width).astype('int') # [(start),(end)]
+
+#       else:
+#          vpos = self.screen_width/2
+#          if direction=='in':
+#             hpos = (np.array([0.1, 0.9, 0.45, 0.55])*self.screen_height*amount).astype('int') # [(start),(end)]
+#          else:
+#             hpos = (np.array([0.45, 0.55, 0.1, 0.9])*self.screen_height*amount).astype('int') # [(start),(end)]
+      print hpos
+      print self.genymotion_virtual_input
+      
+      ms = self.genymotion_virtual_input
+      self.adb_event(ms, 0x0001, 0x014a, 0x00000001)
+      self.adb_event(ms, 0x0003, 0x003a, 0x00000001)
+      
+      self.adb_event(ms, 0x0003, 0x0035, vpos)
+      self.adb_event(ms, 0x0003, 0x0036, hpos[0])
+      self.adb_event(ms, 0x0000, 0x0002, 0x00000000)
+      
+      self.adb_event(ms, 0x0003, 0x0035, vpos)
+      self.adb_event(ms, 0x0003, 0x0036, hpos[1])
+      self.adb_event(ms, 0x0000, 0x0002, 0x00000000)
+      self.adb_event(ms, 0x0000, 0x0000, 0x00000000)
+      
+
+      self.adb_event(ms, 0x0003, 0x0035, vpos)
+      self.adb_event(ms, 0x0003, 0x0036, hpos[2])
+      self.adb_event(ms, 0x0000, 0x0002, 0x00000000)
+      self.adb_event(ms, 0x0003, 0x0035, vpos)
+      self.adb_event(ms, 0x0003, 0x0036, hpos[3])
+      self.adb_event(ms, 0x0000, 0x0002, 0x00000000)
+      self.adb_event(ms, 0x0000, 0x0000, 0x00000000)
+      
+      self.adb_event(ms, 0x0001, 0x014a, 0x00000000)
+      self.adb_event(ms, 0x0003, 0x003a, 0x00000000)
+      self.adb_event(ms, 0x0000, 0x0002, 0x00000000)
+      self.adb_event(ms, 0x0000, 0x0000, 0x00000000)
+      
+      
+      
+      
+      
+#       if re.search("Xperia Z2", self.device_model):
+#          self.adb_event(1, 0x0001, 0x0074, 0x00000001)
+         
+      time.sleep(2)
+      
    def homeKey(self):
    
       if self.isYouwave():
@@ -906,7 +1151,53 @@ class Device(QtCore.QObject):
    #       time.sleep(0.2)
    
    def press(self, coords, seconds):
-      self.swipe(coords, coords, seconds)
+      
+      # This only works on new Android builds
+#       self.swipe(coords, coords, seconds)
+
+#       if self.screen_height > self.screen_width:
+#       vpos = int(self.screen_height*coords[0])
+#       hpos = int(self.screen_width*coords[1])
+      hpos = int(coords[0])
+      if self.screen_height > self.screen_width:
+         vpos = int(self.screen_width-coords[1])
+      else:
+         vpos = int(self.screen_height-coords[1])
+
+      ms = self.genymotion_virtual_input
+      self.adb_event(ms, 0x0001, 0x014a, 0x00000001)
+      self.adb_event(ms, 0x0003, 0x003a, 0x00000001)
+      
+      self.adb_event(ms, 0x0003, 0x0035, vpos)
+      self.adb_event(ms, 0x0003, 0x0036, hpos)
+      self.adb_event(ms, 0x0000, 0x0002, 0x00000000)
+      self.adb_event(ms, 0x0000, 0x0000, 0x00000000)
+
+      time.sleep(seconds)
+
+      self.adb_event(ms, 0x0001, 0x014a, 0x00000000)
+      self.adb_event(ms, 0x0003, 0x003a, 0x00000000)
+
+      self.adb_event(ms, 0x0003, 0x0035, vpos)
+      self.adb_event(ms, 0x0003, 0x0036, hpos)
+      self.adb_event(ms, 0x0000, 0x0002, 0x00000000)
+      self.adb_event(ms, 0x0000, 0x0000, 0x00000000)
+      
+      
+      
+# /dev/input/event5: 0001 014a 00000001
+# /dev/input/event5: 0003 003a 00000001
+# /dev/input/event5: 0003 0035 0000002b
+# /dev/input/event5: 0003 0036 00000087
+# /dev/input/event5: 0000 0002 00000000
+# /dev/input/event5: 0000 0000 00000000
+# /dev/input/event5: 0001 014a 00000000
+# /dev/input/event5: 0003 003a 00000000
+# /dev/input/event5: 0003 0035 0000002b
+# /dev/input/event5: 0003 0036 00000087
+# /dev/input/event5: 0000 0002 00000000
+# /dev/input/event5: 0000 0000 00000000
+
       
    def leftClick(self, loc):
        
@@ -1001,12 +1292,45 @@ class Device(QtCore.QObject):
    def enterText(self, text):
       self.adb_input(text)
       
+   def rel2abs(self, rel_coord):
+      if self.screen_height > self.screen_width:
+         try:
+            coord = rel_coord
+            coord[:,0] = coord[:,0]*self.screen_height
+            coord[:,1] = coord[:,1]*self.screen_width
+            return coord.astype('int')
+         except:
+            return (int(self.screen_height*rel_coord[0]), int(self.screen_width*rel_coord[1]))
+      else:
+         try:
+            coord = rel_coord
+            coord[:,0] = coord[:,0]*self.screen_width
+            coord[:,1] = coord[:,1]*self.screen_height
+            return coord.astype('int')
+         except:
+            return (int(self.screen_width*rel_coord[0]), int(self.screen_height*rel_coord[1]))
+      
+   def swipeRelative(self, start, stop, seconds=None, repeats=1):
+      
+      start_abs = self.rel2abs(start)
+      stop_abs  = self.rel2abs(stop)
+      
+      print "swipe((%d,%d), (%d,%d))"%(start_abs[0], start_abs[1], stop_abs[0], stop_abs[1])
+      self.swipe(start_abs, stop_abs, seconds=seconds, repeats=repeats)
+      
    def swipe(self, start, stop, seconds=None, repeats=1):
 
       if seconds:
-         cmd = 'sh /sdcard/macro/swipe %d %d %d %d %d %d' % (repeats, start[0], start[1], stop[0], stop[1], seconds*1000)
+         cmd = '%s/swipe %d %d %d %d %d %d' % (self.settings.MACRO_ROOT_DEVICE, repeats, start[0], start[1], stop[0], stop[1], seconds*1000)
       else:
-         cmd = 'sh /sdcard/macro/swipe %d %d %d %d %d' % (repeats, start[0], start[1], stop[0], stop[1])
+         cmd = '%s/swipe %d %d %d %d %d' % (self.settings.MACRO_ROOT_DEVICE, repeats, start[0], start[1], stop[0], stop[1])
+         
+#       if seconds:
+#          cmd = 'sh /sdcard/macro/swipe %d %d %d %d %d' % (repeats, start[0], start[1], stop[0], stop[1])
+#       else:
+#          cmd = 'sh /sdcard/macro/swipe %d %d %d %d %d' % (repeats, start[0], start[1], stop[0], stop[1])
+         
+         
 #       for i in range(repeats):
 #          if seconds:
 #             cmd = cmd + 'input swipe %d %d %d %d %d; ' % (start[0], start[1], stop[0], stop[1], seconds*1000)
@@ -1160,7 +1484,7 @@ class Device(QtCore.QObject):
       
       
    def locateTemplate(self, template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None,
-                   reuse_last_screenshot=False, timeout=15, decimation=1,
+                   reuse_last_screenshot=False, timeout=15, decimation=1, return_all_matches=False,
                    recursing=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
 
       DEBUG=False
@@ -1256,6 +1580,9 @@ class Device(QtCore.QObject):
          if match_found:
             template_coords = np.unravel_index(result.argmax(), result.shape)
             template_coords = np.array([template_coords[1], template_coords[0]])
+            
+            if return_all_matches:
+               pass
             
             if self.screen_height < self.screen_width:
                object_coords = tuple(template_coords + np.array(offset) + np.array([ybounds[0]*self.screen_width, 0]).astype('int'))

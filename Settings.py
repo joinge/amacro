@@ -1,16 +1,18 @@
+import os
 
 class Settings:
    def __init__(self):
-      self.PROJECT_PATH         = "/home/me/Work/Code/rk"
+      home = os.environ['HOME']
+      self.PROJECT_PATH         = home + "/Work/Code/rk"
       self.SCREEN_PATH          = self.PROJECT_PATH + "/screens"
       
-      self.ANDROID_SDK_PATH     = "/home/me/Apps/android-sdk-linux"
+      self.ANDROID_SDK_PATH     = home + "/Apps/android-sdk-linux"
       
-      self.EMULATOR_PATH        = "/home/me/Apps/Genymotion/genymotion"
+      self.EMULATOR_PATH        = home + "/Apps/genymotion"
       
       self.ANDROID_UTILS_PATH   = self.EMULATOR_PATH + "/tools"
       
-      self.MACRO_ROOT           = "/home/me/Work/Code/tools/python/amacro"
+      self.MACRO_ROOT           = home + "/Work/Code/tools/python/amacro"
       self.MACRO_ROOT_DEVICE    = "/data/local/macro"
       
       self.TEMP_PATH            = self.PROJECT_PATH + "/tmp"

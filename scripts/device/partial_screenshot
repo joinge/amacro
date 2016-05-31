@@ -1,0 +1,8 @@
+
+# $1 = Screen width
+# $2 = Screen height
+
+screencap img.raw
+#dd bs=$((12+1080*4*1920)) count=1 skip=0 if=/dev/graphics/fb0 of=/sdcard/img.raw
+
+screencap | dd bs=$((4*$1)) count=200 skip=501 | gzip -c > 2.gzip

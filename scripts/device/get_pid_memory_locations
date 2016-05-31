@@ -1,0 +1,4 @@
+# 1: Type of memory (stack, ...)
+# 2: Process name
+
+echo $(grep $1 /proc/$(pgrep $2)/maps | sed -n 's/^\([0-9a-f]*\)-\([0-9a-f]*\) .*$/\1 \2/p')

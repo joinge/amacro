@@ -1,0 +1,28 @@
+if [ "${1}" == "" ]; then
+   XRES=1080
+else
+   XRES=$1
+fi
+
+if [ "${2}" == "" ]; then
+   YSTART=0
+else
+   YSTART=$2
+fi
+
+if [ "${3}" == "" ]; then
+   YSTOP=1920
+else
+   YSTOP=$3
+fi
+  
+#screencap img.raw
+#dd bs=$((12+1080*4*1920)) count=1 skip=0 if=/dev/graphics/fb0 of=/sdcard/img.raw
+ 
+#screencap | dd bs=$((4*$1)) count=200 skip=501 | gzip -c > 2.gzip
+
+busybox stty raw;                                                # Use a tty that doesn't do EOL conversion
+screencap 2>/dev/null |                                          # Grab screen buffer
+(dd of=/dev/null bs=12 count=1 2>/dev/null;                      # Remove first 12 junk bytes
+ dd bs=$((4*$XRES)) count=$(($YSTOP-$YSTART)) skip=$YSTART 2>/dev/null) |     # Grab the rest
+gzip -c                                                          # Compress

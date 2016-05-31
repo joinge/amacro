@@ -8,7 +8,7 @@ import numpy as np
 import pylab as pl
 import time
 from nothreads import myPopen
-from printing import myPrint, printAction, printResult, printQueue
+from printing import myPrint, printAction, printResult
 from nothreads import myRun
 import cv2
 import re
@@ -16,9 +16,10 @@ import sys
 from PySide import QtCore, QtGui
 # from PySide import QProcess
 # from multiprocessing import Queue
+from Queue import Queue
 
 import logging
-from antlr import Queue
+# from antlr import Queue
 logger = logging.getLogger(__name__)
 
 import os
@@ -33,14 +34,16 @@ else:
 # Don't like these global signals but they get the job done
 
 class StartThread(QtCore.QThread):
-   success = QtCore.Signal(str)
-   def __init__(self, wait_condition, mutex, queue, name,  settings, vm_process, player_process):
-      QtCore.QThread.__init__(self)
+   set_active = QtCore.Signal(str)
+   def __init__(self, wait_condition, mutex_shared, queue, name,  settings, vm_process, player_process):
+      super(StartThread, self).__init__(None)
       self.exiting = False
       
       self.waitCondition = wait_condition
-      self.mutex = mutex
+      self.mutex_shared = mutex_shared
       self.queue = queue
+      
+      self.mutex_local = QtCore.QMutex()
       
       self.vm_process = vm_process
       self.player_process = player_process
@@ -51,34 +54,40 @@ class StartThread(QtCore.QThread):
       
    def run(self):
       
-      print "StartThread::run() - Waiting for mutex to unlock..."
-      self.mutex.lock()
+      self.mutex_local.lock()
+      self.should_continue = True
+      self.running = True
+      self.mutex_local.unlock()
+#       print "StartThread::run() - Waiting for mutex_shared to unlock..."
+#       self.mutex_shared.lock()
 #       self.timer.start(timeout)
       print "StartThread::run() - Performing work..."
 
-      time.sleep(6)
+#       time.sleep(6)
 
 #       time.sleep(5)
-#       self.startDevice()
+      self.startDevice()
 #       self.timer.stop()
 #       self.success.emit()
-      print "StartThread::run() - Telling Caller that we're done..."
+      print "StartThread::run() - Telling Device that we're done..."
       self.waitCondition.wakeAll()
       
-      print "StartThread::run() - Releasing mutex..."      
-      self.mutex.unlock()
+#       print "StartThread::run() - Releasing mutex_shared..."      
+#       self.mutex_shared.unlock()
       
    def startDevice(self):
-      time.sleep(15)
+
       printAction("Starting VirtualBox...", newline=True)
       
       self.ip = None
       
       self.vm_process.startDetached("VBoxManage startvm %s --type headless"%self.name)
+      self.vm_process.waitForStarted()
       time.sleep(15)
       
       printAction("Starting Player...", newline=True)
       self.player_process.startDetached("%s/player --vm-name %s --no-popup"%(self.settings.EMULATOR_PATH, self.name))
+      self.player_process.waitForStarted()
       time.sleep(5)
            
       if self.settings.USE_PYTHON_ADB:
@@ -98,20 +107,21 @@ class StartThread(QtCore.QThread):
          self.stopAdb()
       
       TIMEOUT=5
-      for i in range(TIMEOUT):
+      i=0
+      while i<TIMEOUT and self.should_continue:
+         i=i+1
          has_slept=False
-         printAction("Checking if system is online (%d/%d)..."%(i+1,TIMEOUT))
+         printAction("Checking if system is online (%d/%d)..."%(i,TIMEOUT))
          try:
             ip = self.getIP(self.name)
             if not ip:
                raise Exception()
             time.sleep(5)
             has_slept=True
-            self.setActive(str(ip)+":5555")
-            if self.locateTemplate("android_messaging_icon.png", threshold=0.9, print_coeff=True):
-               printResult(True)
-               break
-         except: 
+            break
+
+         except Exception as e:
+            print e 
             printResult(False)
             if not has_slept:
                time.sleep(5)
@@ -119,6 +129,10 @@ class StartThread(QtCore.QThread):
       if i<TIMEOUT-1:
          self.ip = str(ip)
          self.queue.put(self.ip)
+         self.mutex_local.lock()
+         self.running = False
+         self.mutex_local.unlock()
+      
          return
             
                
@@ -137,8 +151,28 @@ class StartThread(QtCore.QThread):
       
       if ip_reg:
          return ip_reg.group(1)
-   
-   
+      
+   def stop(self):
+      sys.stdout.write("StartThread::run() - Waiting for thread to stop... ")
+      self.mutex_local.lock()
+      if not self.running:
+         self.mutex_local.unlock()
+         return
+      
+      self.should_continue = False
+      self.mutex_local.unlock()
+      
+      for i in range(15):
+         self.mutex_local.lock()
+         if self.running:
+            time.sleep(1)
+         else:
+            print("")
+            return
+         self.mutex_local.unlock()
+         sys.stdout.write("%d "%(i+1))
+      print("")
+         
 
 class Device(QtCore.QObject):
    device_list = QtCore.Signal(list)
@@ -149,7 +183,7 @@ class Device(QtCore.QObject):
       super(Device, self).__init__(parent)
       
 #       self.active_device_is_set.connect(self.takeScreenshot)
-#       self.app = QtGui.QApplication(sys.argv)
+      self.app = QtGui.QApplication(sys.argv)
       
       self.process_gimp = QtCore.QProcess(self)
 #       self.process.waitForStarted()
@@ -182,7 +216,7 @@ class Device(QtCore.QObject):
 
       self.device_starter = None
       self.wait_condition = QtCore.QWaitCondition()
-      self.mutex = QtCore.QMutex()
+      self.mutex_shared = QtCore.QMutex()
       self.queue = Queue()
       
       
@@ -211,35 +245,48 @@ class Device(QtCore.QObject):
       
    def start(self, name):
       
-      self.device_starter = StartThread(self.wait_condition, self.mutex, self.queue, name, self.settings, self.vm_process, self.player_process)
       
       TIMEOUT=5
       for i in range(TIMEOUT):
-         print "Caller::start() - Locking mutex..."
-         self.mutex.lock()
+         print "Device::start() - Starting a new thread..."         
+         self.device_starter = StartThread(self.wait_condition, self.mutex_shared, self.queue, name, self.settings, self.vm_process, self.player_process)
+         self.device_starter.set_active.connect(self.setActive)
          
-         self.queue.reset()
-         print "Caller::start() - Starting StartThread..."
+         print "Device::start() - Locking mutex_shared..."
+         self.mutex_shared.lock()
+         
+         try:
+            for i in range(2):
+               self.queue.get(block=False)
+         except: pass
+            
+         print "Device::start() - Starting StartThread..."
          self.device_starter.start()
    
-         print "Caller::start() - Waiting for StartThread to complete (or time out)..."
-         if self.wait_condition.wait(self.mutex, 4000):
-            print "Caller::start() - Good news! StartThread signaled completion!"
+         print "Device::start() - Waiting for StartThread to complete (or time out)..."
+         if self.wait_condition.wait(self.mutex_shared, 60*1000):
+            print "Device::start() - Good news! StartThread signaled completion!"
+            self.mutex_shared.unlock()
             
             self.ip = self.queue.get()
-   
-            self.mutex.unlock()
-            return True
+            
+            self.setActive(self.ip+":5555")
+            if self.locateTemplate("android_messaging_icon.png", threshold=0.9, print_coeff=True, timeout=5):
+               printResult(True)
+               return True
          else:
-            print "Caller::start() - Bad news! StartThread timed out!"
+            print "Device::start() - Bad news! StartThread timed out!"
+            self.mutex_shared.unlock()
             self.stop()
+            print ""
          
       return False
       
       
    def stop(self):
       printAction("Stopping processes...", newline=True)
-      self.running = False
+      if self.device_starter:
+         self.device_starter.stop()
       self.player_process.terminate()
       self.vm_process.terminate()
       self.player_process.waitForFinished()
@@ -586,19 +633,18 @@ class Device(QtCore.QObject):
    
    @QtCore.Slot(str)
    def setActive(self, device_id):
+   
+      logger.info("Setting active device "+device_id)
+      if device_id != None:
+         windows_friendly_device = re.sub(r':','.',device_id)
+         self.active_device = windows_friendly_device
+         self.adb_active_device = "-s " + device_id
+         
+      self.updateInfo()
       
-      if not self.ip:
-         logger.info("Setting active device "+device_id)
-         if device_id != None:
-            windows_friendly_device = re.sub(r':','.',device_id)
-            self.active_device = windows_friendly_device
-            self.adb_active_device = "-s " + device_id
-            
-         self.updateInfo()
-         
-         self.takeScreenshot()
-         
-         self.active_device_is_set.emit()
+      self.takeScreenshot()
+      
+      self.active_device_is_set.emit()
      
    #   Popen("adb %s adbShell echo 'echo %d > /sys/devices/platform/samsung-pd.2/s3cfb.0/spi_gpio.3/spi_master/spi3/spi3.0/backlight/panel/brightness' \| su" % (ADB_ACTIVE_DEVICE, percent), stdout=PIPE, adbShell=True).stdout.read()
    
@@ -895,7 +941,7 @@ class Device(QtCore.QObject):
 #                print("   Converting color")
                image = cv2.cvtColor(im, cv2.COLOR_BGRA2RGB)
                
-               cv2.imwrite("screenshot.png", image)
+               cv2.imwrite(self.settings.TEMP_PATH+"/screenshot.png", image)
                
    #                cv2.imshow('', image)
    #                cv2.waitKey()
@@ -1495,7 +1541,7 @@ class Device(QtCore.QObject):
          if not reuse_last_screenshot:
             self.image_screen = self.takeScreenshot(ybounds=ybounds, timeout=timeout, decimation=decimation)
             
-            cv2.imwrite( "tmp/screenshot.png", self.image_screen );
+            cv2.imwrite( self.settings.TEMP_PATH+"/screenshot.png", self.image_screen );
             
 #             cv2.imshow('', self.image_screen)
 #             cv2.waitKey()
@@ -1574,7 +1620,7 @@ class Device(QtCore.QObject):
          else:
             sys.stdout.write('.')
             sys.stdout.flush()
-         printQueue("%.2f " % result.max())
+#          printQueue("%.2f " % result.max())
    #         print( " %.2f"%result.max(), end='' )
             
          if match_found:
@@ -1598,7 +1644,7 @@ class Device(QtCore.QObject):
             else:
                sys.stdout.write(' ')
                sys.stdout.flush()
-            printQueue("(%d,%d) " % (object_coords[0], object_coords[1]))
+#             printQueue("(%d,%d) " % (object_coords[0], object_coords[1]))
    #         myPrint(" (%d,%d)"%(object_coords[0],object_coords[1]),end=' ')
             return object_coords
          

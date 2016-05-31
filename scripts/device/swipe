@@ -1,0 +1,4 @@
+
+for i in `seq ${1}`; do
+   input swipe ${2} ${3} ${4} ${5} ${6}
+done

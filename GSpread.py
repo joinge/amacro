@@ -25,21 +25,29 @@ class GSpread:
       self.sheet_name = sheet_name
       self.tab_name = tab_name
       
-      self.setupConnection()
-      
-      self.updateAll()
+      try:
+         self.setupConnection()
+         
+         self.updateAll()
+      except Exception as e:
+         print traceback.format_exc()
+         print e
+         
       
       print "hello"
       
    def setupConnection(self):
-      self.credentials = ServiceAccountCredentials.from_json_keyfile_name(self.credentials_json_file, self.scope)
+      try:
+         self.credentials = ServiceAccountCredentials.from_json_keyfile_name(self.credentials_json_file, self.scope)
       
-      self.gspread = gspread.authorize(self.credentials)
+         self.gspread = gspread.authorize(self.credentials)
 
-      self.sheet = self.gspread.open(self.sheet_name)
+         self.sheet = self.gspread.open(self.sheet_name)
       
-      self.tab = self.sheet.worksheet(self.tab_name)
-      
+         self.tab = self.sheet.worksheet(self.tab_name)
+      except Exception as e:
+         print e
+
    def updateAll(self):
       
       self.user_info = {}
@@ -67,7 +75,7 @@ class GSpread:
          print("ERROR: Unable to pull data from spreadsheet.")
          self.user_info["1.Joey"] = {"enabled":True, "login_side":"left", "attack_type":"multiplayer", "ancient":'Malice'}
          self.user_info["2.Cherie"] = {"enabled":True, "login_side":"left", "attack_type":"multiplayer", "ancient":'Malice'}
-         self.user_info["3.Rupert"] = {"enabled":False, "login_side":"left", "attack_type":"multiplayer", "ancient":'Malice'}
+#          self.user_info["3.Rupert"] = {"enabled":False, "login_side":"left", "attack_type":"multiplayer", "ancient":'Malice'}
       
 
    def getUserInfo(self):

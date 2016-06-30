@@ -213,12 +213,13 @@ class Device(QtCore.QObject):
       self.device_mutex = QtCore.QMutex()
       self.adb_port = 5037
       self.ip = None
+      self.current_player = None
 
       self.device_starter = None
       self.wait_condition = QtCore.QWaitCondition()
       self.mutex_shared = QtCore.QMutex()
       self.queue = Queue()
-      
+      self.screen_host_coords = None      
       
       #self.processes = []
       #self.post_processes = []
@@ -227,11 +228,15 @@ class Device(QtCore.QObject):
          def __int__(self):
             pass
       
+      self.device_orientation = 'portrait' # fits most phones
+      
       self.vm_name = ''
       
       self.vm_process = QtCore.QProcess(self)
       self.vm_process.error.connect(self.checkIfValidExit)
       self.vm_process.finished.connect(self.checkIfValidExit)
+      self.recorder_process = QtCore.QProcess(self)
+      self.avconv_process = QtCore.QProcess(self)
       self.player_process = QtCore.QProcess(self)
       self.player_process.error.connect(self.checkIfValidExit)
       self.player_process.finished.connect(self.checkIfValidExit)
@@ -244,7 +249,7 @@ class Device(QtCore.QObject):
       #self.thread.wait()
       
    def start(self, name):
-      
+      self.current_player = name
       
       TIMEOUT=5
       for i in range(TIMEOUT):
@@ -273,6 +278,7 @@ class Device(QtCore.QObject):
             self.setActive(self.ip+":5555")
             if self.locateTemplate("android_messaging_icon.png", threshold=0.9, print_coeff=True, timeout=5):
                printResult(True)
+               time.sleep(3)
                return True
          else:
             print "Device::start() - Bad news! StartThread timed out!"
@@ -297,10 +303,15 @@ class Device(QtCore.QObject):
 #       timer.timeout.connect(self.vm_process.kill)
 #       timer.start(5000)
 #       time.sleep(6)
-      
-      cmds = ["sh -c \"killall %s/player\""%self.settings.EMULATOR_PATH,
-              "sh -c \"killall %s/tools/adb\""%self.settings.EMULATOR_PATH,
-              "sh -c \"ps -ef | grep VBox | awk '{print $2}' | xargs kill\""]
+      cmds = []
+      if self.current_player:
+         cmds.append("sh -c \"ps -ef | grep player | grep %s | awk '{print $2}' | xargs kill\""%self.current_player)
+         cmds.append("sh -c \"ps -ef | grep VBox   | grep %s | awk '{print $2}' | xargs kill\""%self.current_player)
+         
+      if self.ip:
+         cmds.append("sh -c \"ps -ef | grep adb    | grep %s | awk '{print $2}' | xargs kill\""%self.ip)
+         cmds.append("sh -c \"ps -ef | grep VBox   | grep %s | awk '{print $2}' | xargs kill\""%self.ip)
+
       for i in range(1):
          for cmd in cmds:
             killproc = QtCore.QProcess()
@@ -468,7 +479,7 @@ class Device(QtCore.QObject):
       self.updateScreenResolution()
       
    def updateScreenshotMethod(self):
-      pixmap = QtGui.QPixmap.grabWindow(QtGui.QApplication.desktop().winId(), 1920,0,1920,1080)
+      pixmap = QtGui.QPixmap.grabWindow(self.app.desktop().winId(), 1920,0,1920,1080)
       
       print "WARNING: Device.updateScreenshotMethod() isn't implemented yet"
 
@@ -630,7 +641,7 @@ class Device(QtCore.QObject):
             
       self.device_list.emit(device_list)
       return device_list
-   
+
    @QtCore.Slot(str)
    def setActive(self, device_id):
    
@@ -642,7 +653,21 @@ class Device(QtCore.QObject):
          
       self.updateInfo()
       
-      self.takeScreenshot()
+      image_device = self.takeScreenshot()
+      
+      QtGui.QPixmap.grabWindow(self.app.desktop().winId()).save(self.settings.TEMP_PATH+'/screenshot_desktop.png', 'png')
+      image_desktop = cv2.imread(self.settings.TEMP_PATH+'/screenshot_desktop.png')
+      
+      result = cv2.matchTemplate(image_desktop, image_device, cv2.TM_CCOEFF_NORMED)
+
+      if result.max() > 0.8:
+         coords = np.unravel_index(result.argmax(), result.shape)
+         coords = np.array([coords[1], coords[0]])
+         
+         self.screen_host_coords = coords
+         
+      else:
+         print("WARNING: Unable to match desktop image with device image.")
       
       self.active_device_is_set.emit()
      
@@ -868,7 +893,7 @@ class Device(QtCore.QObject):
    
    
    @QtCore.Slot(str)
-   def takeScreenshot(self, filename=None, ybounds=None, decimation=1, timeout=5, load_from_file=None):
+   def takeScreenshot(self, filename=None, xbounds=None, ybounds=None, decimation=1, timeout=5, load_from_file=None):
    
       if load_from_file:
          self.image_screen = cv2.imread( load_from_file );
@@ -884,15 +909,18 @@ class Device(QtCore.QObject):
    #          dd bs=800 count=1920 if=img.raw of=img.tmp >/dev/null 2>&1;\
    #          ffmpeg -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt bgr32 -s 480x800 -i img.tmp screenshot.png >/dev/null 2>&1",
    #          stdout=PIPE, adbShell=True).stdout.read()
+      if not xbounds:
+         xbounds = [0, 1]
+         
       if not ybounds:
          ybounds = [0, 1]
       #else:
          #print("   DEBUG: Height: %d   Width: %d   Orientation: %s"%(self.screen_height, self.screen_width, self.orientation))
          #if self.screen_height < self.screen_width:
-            #print "   DEBUG: shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width)
+            #print "   DEBUG: shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_height, xbounds[0]*self.screen_width, xbounds[1]*self.screen_width)
          #else:
-            #print "   DEBUG: shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height)
-#       print ybounds
+            #print "   DEBUG: shell sh /sdcard/macro/screenshot %d %d %d"%(self.screen_width, xbounds[0]*self.screen_height, xbounds[1]*self.screen_height)
+#       print xbounds
        
       if filename:
          output = filename
@@ -915,27 +943,36 @@ class Device(QtCore.QObject):
             try:
    
                if self.screen_height < self.screen_width:
-#                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width, decimation), "gunzip -c", binary_output=True, timeout=timeout)
-                  process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_height, ybounds[0]*self.screen_width, ybounds[1]*self.screen_width), "gunzip -c", binary_output=True, timeout=timeout)
+                  
+                  if self.device_orientation == 'portrait':
+#                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_height, xbounds[0]*self.screen_width, xbounds[1]*self.screen_width, decimation), "gunzip -c", binary_output=True, timeout=timeout)
+                     process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_height, xbounds[0]*self.screen_width, xbounds[1]*self.screen_width), "gunzip -c", binary_output=True, timeout=timeout)
+                  else:
+                     process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
+                  
                   data_sample = np.fromstring(process, dtype=np.uint8)
                
 #                   print("   Reshaping data_sample")
 #                   print data_sample.shape
-#                   print (ybounds[1]*self.screen_width - ybounds[0]*self.screen_width, self.screen_height, 4)
-                  im = data_sample.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_width)), self.screen_height, 4))
+#                   print (xbounds[1]*self.screen_width - xbounds[0]*self.screen_width, self.screen_height, 4)
+                  if self.device_orientation == 'portrait':
+                     im = data_sample.reshape((int(round((xbounds[1]-xbounds[0])*self.screen_width)), self.screen_height, 4))
+                     im = im.transpose((1,0,2))
+                     im = im[::-1,:,:]
+                  else:
+                     im = data_sample.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_height)), self.screen_width, 4))
 #                   print("   Transposing data_sample")
-                  im = im.transpose((1,0,2))
-                  im = im[::-1,:,:]
+
                   
                else:
-                  
-                  process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
-#                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_width, ybounds[0]*self.screen_height, ybounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
+
+                  process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_width, xbounds[0]*self.screen_height, xbounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
+#                   process = self.adbShellPipe("sh %s/screenshot_ref %d %d %d"%(self.settings.MACRO_ROOT_DEVICE, self.screen_width, xbounds[0]*self.screen_height, xbounds[1]*self.screen_height), "gunzip -c", binary_output=True, timeout=timeout)
                   data_sample = np.fromstring(process, dtype=np.uint8)
 #                   print("   Reshaping data_sample")
 #                   print data_sample.shape
-#                   print (ybounds[1]*self.screen_height - ybounds[0]*self.screen_height, self.screen_width, 4)
-                  im = data_sample.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_height)), self.screen_width, 4))
+#                   print (xbounds[1]*self.screen_height - xbounds[0]*self.screen_height, self.screen_width, 4)
+                  im = data_sample.reshape((int(round((xbounds[1]-xbounds[0])*self.screen_height)), self.screen_width, 4))
             
                
 #                print("   Converting color")
@@ -943,10 +980,13 @@ class Device(QtCore.QObject):
                
                cv2.imwrite(self.settings.TEMP_PATH+"/screenshot.png", image)
                
+#                cv2.imwrite(self.settings.TEMP_PATH+"/screenshot.png", cv2.cvtColor(data_sample.reshape((int(round((ybounds[1]-ybounds[0])*self.screen_width)), self.screen_height, 4)), cv2.COLOR_BGRA2RGB))
+#                cv2.imwrite(self.settings.TEMP_PATH+"/screenshot.png", cv2.cvtColor(data_sample.reshape((self.screen_height, int(round((ybounds[1]-ybounds[0])*self.screen_width)), 4)), cv2.COLOR_BGRA2RGB))
+               
    #                cv2.imshow('', image)
    #                cv2.waitKey()
    #                cv2.destroyAllWindows()
-   #                cv2.imshow('', cv2.cvtColor(data_sample.reshape((self.screen_height, ybounds[1]-ybounds[0], 4)), cv2.COLOR_BGRA2RGB)); cv2.waitKey()
+   #                cv2.imshow('', cv2.cvtColor(data_sample.reshape((self.screen_height, xbounds[1]-xbounds[0], 4)), cv2.COLOR_BGRA2RGB)); cv2.waitKey()
                
                return image
             
@@ -959,7 +999,7 @@ class Device(QtCore.QObject):
                   print("   After  - Height: %d   Width: %d   Orientation: %s"%(self.screen_height, self.screen_width, self.orientation))
 
 #                print data_sample.shape
-               print (ybounds[1]-ybounds[0], self.screen_height, 4)
+               print (xbounds[1]-xbounds[0], self.screen_height, 4)
 #                time.sleep(1)
  
                print e
@@ -1339,22 +1379,32 @@ class Device(QtCore.QObject):
       self.adb_input(text)
       
    def rel2abs(self, rel_coord):
-      if self.screen_height > self.screen_width:
-         try:
-            coord = rel_coord
-            coord[:,0] = coord[:,0]*self.screen_height
-            coord[:,1] = coord[:,1]*self.screen_width
-            return coord.astype('int')
-         except:
-            return (int(self.screen_height*rel_coord[0]), int(self.screen_width*rel_coord[1]))
-      else:
-         try:
-            coord = rel_coord
-            coord[:,0] = coord[:,0]*self.screen_width
-            coord[:,1] = coord[:,1]*self.screen_height
-            return coord.astype('int')
-         except:
-            return (int(self.screen_width*rel_coord[0]), int(self.screen_height*rel_coord[1]))
+      """Transforms from relative coordinates to image coordinates:
+         
+           (0,0) _________x_______  (1,0)
+                 |                |
+                 |                |
+               y |                |
+                 |                |
+           (0,1) |________________| (1,1)
+      """
+      
+#       if self.screen_height > self.screen_width:
+#          try:
+#             coord = rel_coord
+#             coord[:,0] = coord[:,0]*self.screen_height
+#             coord[:,1] = coord[:,1]*self.screen_width
+#             return coord.astype('int')
+#          except:
+#             return (int(self.screen_height*rel_coord[0]), int(self.screen_width*rel_coord[1]))
+#       else:
+      try:
+         coord = rel_coord
+         coord[:,0] = coord[:,0]*self.screen_width
+         coord[:,1] = coord[:,1]*self.screen_height
+         return coord.astype('int')
+      except:
+         return (int(self.screen_width*rel_coord[0]), int(self.screen_height*rel_coord[1]))
       
    def swipeRelative(self, start, stop, seconds=None, repeats=1):
       
@@ -1476,7 +1526,7 @@ class Device(QtCore.QObject):
       self.powerKey()
 
          
-   def readImage(self, image_file, xbounds=None, ybounds=None):
+   def readImage(self, image_file, xbounds=None, ybounds_old=None):
       try:
          image = myRun(cv2.imread, image_file)
       except Exception, e:
@@ -1484,20 +1534,20 @@ class Device(QtCore.QObject):
          myPrint("Unable to read image %"%image_file, msg_type='error')
          
       if not xbounds:
-         if not ybounds:
+         if not ybounds_old:
             return image
          else:
-            return image[ybounds[0]:ybounds[1], :]
+            return image[ybounds_old[0]:ybounds_old[1], :]
       else:
-         if not ybounds:
+         if not ybounds_old:
             return image[:, xbounds[0]:xbounds[1]].copy()
          else:
-            return image[ybounds[0]:ybounds[1], xbounds[0]:xbounds[1]].copy()
+            return image[ybounds_old[0]:ybounds_old[1], xbounds[0]:xbounds[1]].copy()
          
          
-   def swipeReference(self, template, destination=(0, 0), threshold=0.96, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False):
+   def swipeReference(self, template, destination=(0, 0), threshold=0.96, print_coeff=False, xbounds=None, ybounds_old=None, reuse_last_screenshot=False):
       
-      ref = self.locateTemplate(template, threshold=threshold, retries=2, print_coeff=print_coeff, xbounds=xbounds, ybounds=ybounds, reuse_last_screenshot=reuse_last_screenshot)
+      ref = self.locateTemplate(template, threshold=threshold, retries=2, print_coeff=print_coeff, ybounds=xbounds, xbounds=ybounds_old, reuse_last_screenshot=reuse_last_screenshot)
       
       if not ref:
          printAction("Unable to navigate to swipe reference...", newline=True)
@@ -1505,10 +1555,10 @@ class Device(QtCore.QObject):
       
       if not xbounds:
          xbounds = (0, 480)
-      if not ybounds:
-         ybounds = (0, 800)
+      if not ybounds_old:
+         ybounds_old = (0, 800)
          
-      diff = np.array(destination) - (ref + np.array([xbounds[0], ybounds[0]]))
+      diff = np.array(destination) - (ref + np.array([xbounds[0], ybounds_old[0]]))
       
       self.swipe(ref, map(int, ref + 0.613 * diff))
       time.sleep(.3)
@@ -1536,12 +1586,24 @@ class Device(QtCore.QObject):
       DEBUG=False
       if not ybounds:
          ybounds = [0,1]
-      
+         
+      if not xbounds:
+         xbounds = [0,1]
+      xbounds_abs = self.rel2abs((xbounds[0],0))[0], self.rel2abs((xbounds[1],0))[0]
+      ybounds_abs = self.rel2abs((0,ybounds[0]))[1], self.rel2abs((0,ybounds[1]))[1]
+              
       for i in range(retries):
          if not reuse_last_screenshot:
-            self.image_screen = self.takeScreenshot(ybounds=ybounds, timeout=timeout, decimation=decimation)
             
-            cv2.imwrite( self.settings.TEMP_PATH+"/screenshot.png", self.image_screen );
+            if self.device_orientation == 'portrait':
+               self.image_screen = self.takeScreenshot(xbounds=xbounds, timeout=timeout, decimation=decimation)
+               self.image_screen = self.image_screen[int(ybounds_abs[0]):int(ybounds_abs[1])]
+            else:
+               self.image_screen = self.takeScreenshot(ybounds=ybounds, timeout=timeout, decimation=decimation)
+               self.image_screen = self.image_screen[:,int(xbounds_abs[0]):int(xbounds_abs[1])]
+            
+            
+            cv2.imwrite( self.settings.TEMP_PATH+"/screenshot.png", self.image_screen )
             
 #             cv2.imshow('', self.image_screen)
 #             cv2.waitKey()
@@ -1592,7 +1654,7 @@ class Device(QtCore.QObject):
                   offset = tuple((image_size/2.0).astype('int'))
                   
                try:
-                  cv2.imwrite("tmp/template.png", image_template[::decimation,::decimation,:])
+                  cv2.imwrite("%s/template.png"%self.settings.TEMP_PATH, image_template[::decimation,::decimation,:])
                   result = myRun(cv2.matchTemplate, self.image_screen, image_template[::decimation,::decimation,:], cv2.TM_CCOEFF_NORMED)
                except Exception, e:
                   print(e)
@@ -1631,9 +1693,9 @@ class Device(QtCore.QObject):
                pass
             
             if self.screen_height < self.screen_width:
-               object_coords = tuple(template_coords + np.array(offset) + np.array([ybounds[0]*self.screen_width, 0]).astype('int'))
+               object_coords = tuple(template_coords + np.array(offset) + np.array([xbounds[0]*self.screen_width, ybounds[0]*self.screen_height]).astype('int'))
             else:
-               object_coords = tuple(template_coords + np.array(offset) + np.array([ybounds[0]*self.screen_height, 0]).astype('int'))
+               object_coords = tuple(template_coords + np.array(offset) + np.array([xbounds[0]*self.screen_height, ybounds[0]*self.screen_width]).astype('int'))
             
             if click:
                self.leftClick(object_coords)
@@ -1673,6 +1735,87 @@ class Device(QtCore.QObject):
             time.sleep(interval)
          
       return None
+   
+   
+   def record(self, end_template, timeout=180):
+      
+      cmds = ["sh -c \"killall avconv\"", "sh -c \"killall avconv\""]
+      for i in range(1):
+         for cmd in cmds:
+            killproc = QtCore.QProcess()
+            try:
+               killproc.startDetached(cmd)
+               killproc.waitForFinished(5)
+            except Exception as e:
+               print("Failed to run command: %s"%cmd)
+            killproc.terminate()
+            killproc.waitForFinished()
+      
+      try:
+         os.remove("%s/screen_record.mkv"%self.settings.TEMP_PATH)
+      except: pass
+      
+      self.recorder_process.start("python %s/recordscreen.py -n -p %dx%d -s %dx%d %s/screen_record.mkv"%(self.settings.MACRO_ROOT, self.screen_host_coords[0], self.screen_host_coords[1],
+                                                                                                self.screen_width, self.screen_height, self.settings.TEMP_PATH))
+      self.recorder_process.waitForStarted()
+      end_command = QtCore.QByteArray("q\n")
+      for i in range(120):
+         sys.stdout.write("%s "%i)
+         replay_end = self.locateTemplate(end_template, offset='center', threshold=0.8, print_coeff=True)
+         if replay_end:
+            self.recorder_process.write(end_command)
+            time.sleep(2)
+            self.recorder_process.terminate()
+            self.recorder_process.waitForFinished(2000)
+            self.killProcess(self.recorder_process, "recordscreen.py", 5)
+            break
+         else:
+            time.sleep(2)
+            
+      cmds = ["sh -c \"killall avconv\"", "sh -c \"killall avconv\""]
+      for i in range(1):
+         for cmd in cmds:
+            killproc = QtCore.QProcess()
+            try:
+               killproc.startDetached(cmd)
+               killproc.waitForFinished(5)
+            except Exception as e:
+               print("Failed to run command: %s"%cmd)
+            killproc.terminate()
+            killproc.waitForFinished()
+            
+      try:
+         os.remove("%s/screen_record_compressed.mp4"%self.settings.TEMP_PATH)
+      except: pass
+      
+#       self.avconv_process.start("avconv -i %s/screen_record.mkv -vcodec libx264 -r 30 -pre libx264-slower -an -threads 0 %s/screen_record_compressed.mkv"%\
+#                  (self.settings.TEMP_PATH, self.settings.TEMP_PATH))
+      self.avconv_process.start("ffmpeg -i %s/screen_record.mkv -codec:v libx264 -crf 21 -bf 2 -flags +cgop -pix_fmt yuv420p -codec:a aac -strict -2 -b:a 384k -r:a 48000 -movflags faststart %s/screen_record_compressed.mp4"%\
+                 (self.settings.TEMP_PATH, self.settings.TEMP_PATH))
+            
+      
+      self.avconv_process.waitForStarted()
+      self.avconv_process.waitForFinished(180*1000)
+      self.avconv_process.terminate()
+      self.avconv_process.waitForFinished(5000)
+      self.killProcess(self.avconv_process, "avconv", 5)
+      
+      cmds = ["sh -c \"killall avconv\"", "sh -c \"killall avconv\""]
+      for i in range(1):
+         for cmd in cmds:
+            killproc = QtCore.QProcess()
+            try:
+               killproc.startDetached(cmd)
+               killproc.waitForFinished(5)
+            except Exception as e:
+               print("Failed to run command: %s"%cmd)
+            killproc.terminate()
+            killproc.waitForFinished()
+      
+   #    proc.kill()
+   #    proc2.kill()
+      
+      return "%s/screen_record_compressed.mp4"%self.settings.TEMP_PATH
 
 
 if __name__ == "__main__":

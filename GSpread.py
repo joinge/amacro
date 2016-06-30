@@ -25,16 +25,19 @@ class GSpread:
       self.sheet_name = sheet_name
       self.tab_name = tab_name
       
+      self.initialized = False      
+      
+      print "hello"
+      
+   def intialize(self):
       try:
          self.setupConnection()
+         self.initialized = True
          
          self.updateAll()
       except Exception as e:
          print traceback.format_exc()
          print e
-         
-      
-      print "hello"
       
    def setupConnection(self):
       try:
@@ -49,6 +52,9 @@ class GSpread:
          print e
 
    def updateAll(self):
+      
+      if not self.initialized:
+         self.intialize()
       
       self.user_info = {}
       for i in range(2):
@@ -79,10 +85,14 @@ class GSpread:
       
 
    def getUserInfo(self):
+      if not self.initialized:
+         self.intialize()
       
       return self.user_info
    
    def setStatus(self, user, status):
+      if not self.initialized:
+         self.intialize()
       
       try:
          for i in range(len(self.data)-4):

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [ "${1}" == "" ]; then
    XRES=1080
 else

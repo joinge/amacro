@@ -193,7 +193,7 @@ class ImageAnalysis():
       self.changePath(old_path)
       
       
-   def readImage(self, image_file, xbounds=None, ybounds=None):
+   def readImage(self, image_file, xbounds=None, ybounds_old=None):
       try:
          image = myRun(cv2.imread, image_file)
       except Exception, e:
@@ -201,25 +201,25 @@ class ImageAnalysis():
          myPrint("Unable to read image %"%image_file, msg_type='error')
          
       if not xbounds:
-         if not ybounds:
+         if not ybounds_old:
             return image
          else:
-            return image[ybounds[0]:ybounds[1], :]
+            return image[ybounds_old[0]:ybounds_old[1], :]
       else:
-         if not ybounds:
+         if not ybounds_old:
             return image[:, xbounds[0]:xbounds[1]].copy()
          else:
-            return image[ybounds[0]:ybounds[1], xbounds[0]:xbounds[1]].copy()
+            return image[ybounds_old[0]:ybounds_old[1], xbounds[0]:xbounds[1]].copy()
       
       
-   def preOCR(self, image_name, color_mask=(1, 1, 1), threshold=180, invert=True, xbounds=None, ybounds=None):
+   def preOCR(self, image_name, color_mask=(1, 1, 1), threshold=180, invert=True, xbounds=None, ybounds_old=None):
       
       import scipy.interpolate as interpolate
       import pylab as pl
       
       DEBUG = False
    
-      image = self.readImage(image_name, xbounds, ybounds)
+      image = self.readImage(image_name, xbounds, ybounds_old)
    #   image = self.readImage(image_name)
       
       # Adjust color information

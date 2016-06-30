@@ -839,7 +839,7 @@ def createNewFakeAccount(referral="", draw_ucp=False):
          myPrint("ERROR: Unable to find \"Card Pack\" button!")
          return 4
 
-      basic_tab = locateTemplate('card_pack_basic_tab.png', offset=(45,12), click=True, retries=5, interval=1, swipe_size=[(240, 500), (240, 295)], ybounds=(0,400))
+      basic_tab = locateTemplate('card_pack_basic_tab.png', offset=(45,12), click=True, retries=5, interval=1, swipe_size=[(240, 500), (240, 295)], xbounds=(0,400))
       printResult(basic_tab)
       
       if not basic_tab:
@@ -1701,7 +1701,7 @@ def scroll(dx, dy):
 
    
 
-def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, xbounds=None, ybounds=None, reuse_last_screenshot=False,
+def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=0, print_coeff=False, ybounds=None, xbounds=None, reuse_last_screenshot=False,
                    recurse=None, click=False, scroll_size=[], swipe_size=[], swipe_ref=['', (0, 0)]):
 
    DEBUG=False
@@ -1718,8 +1718,8 @@ def locateTemplate(template, threshold=0.96, offset=(0,0), retries=1, interval=0
          else:
             img_path = SCREEN_PATH + '/dpi160'
             
-         image_screen = readImage(TEMP_PATH+"/screenshot_%s.png" %device.active_device, xbounds, ybounds)
-#         image_screen   = readImage("test_img_raw.png", xbounds, ybounds)
+         image_screen = readImage(TEMP_PATH+"/screenshot_%s.png" %device.active_device, ybounds, xbounds)
+#         image_screen   = readImage("test_img_raw.png", ybounds, xbounds)
       except:
          myPrint("ERROR: Unable to load screenshot_%s.png. This is bad, and weird!!!" % device.active_device)
          return False
@@ -1855,14 +1855,14 @@ def abort_if_vnc_died():
 #      raise Exception("VNC appears to have died. Aborting.")
    pass
 
-def preOCR(image_name, color_mask=(1, 1, 1), threshold=180, invert=True, xbounds=None, ybounds=None):
+def preOCR(image_name, color_mask=(1, 1, 1), threshold=180, invert=True, xbounds=None, ybounds_old=None):
    
    import scipy.interpolate as interpolate
    import pylab as pl
    
    DEBUG = False
 
-   image = readImage(image_name, xbounds, ybounds)
+   image = readImage(image_name, xbounds, ybounds_old)
 #   image = readImage(image_name)
    
    # Adjust color information
@@ -2004,7 +2004,7 @@ def getMyPageStatus():
 
    printAction("Running OCR to figure out cards in roster...")
    device.takeScreenshot()
-   cards_in_roster_image = preOCR("screenshot_%s.png" % device.active_device, color_mask=(0, 1, 0), xbounds=(92, 185), ybounds=(195, 241))
+   cards_in_roster_image = preOCR("screenshot_%s.png" % device.active_device, color_mask=(0, 1, 0), xbounds=(92, 185), ybounds_old=(195, 241))
    cards_in_roster_string = runOCR(cards_in_roster_image, mode='line')
 
    cards_in_roster_numbers = re.findall(r'\d+', cards_in_roster_string)
@@ -2022,7 +2022,7 @@ def getMyPageStatus():
       myRun(cv2.imwrite, 'tmp_last_error.png', cards_in_roster_image)
       
    printAction("Running OCR to figure out amount of silver...")
-   silver_image = preOCR("screenshot_%s.png" % device.active_device, color_mask=(1, 1, 0), xbounds=(332, 446), ybounds=(272, 312))
+   silver_image = preOCR("screenshot_%s.png" % device.active_device, color_mask=(1, 1, 0), xbounds=(332, 446), ybounds_old=(272, 312))
    silver_string = runOCR(silver_image, mode='line', lang='event_enemy')
 #   silver_numbers = re.search(r'[0-9,]+', silver_string).group(0)
 #   silver_numbers = re.sub(r',', '', silver_numbers)
@@ -2103,7 +2103,7 @@ def eventPlayMission(repeat=1):
             printAction("Raid boss detected. Playing the boss...", newline=True)
             
 #            face_the_enemy = locateTemplate("face_the_enemy_button.png",
-#                                             offset=(130,16), retries=8, click=True, ybounds=(0,600), swipe_size=[(20,600),(20,295)])
+#                                             offset=(130,16), retries=8, click=True, ybounds_old=(0,600), swipe_size=[(20,600),(20,295)])
 #            if not face_the_enemy:
 #               printAction("Unable to find \"face the enemy\" button...", newline=True)
 #               return False
@@ -2190,11 +2190,11 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
       keep_assessing = False
       is_enraged = False
       for j in range(10):
-         ref = swipeReference("event_enemy_info_frame.png", threshold=0.85, destination=(0, 80), ybounds=(150, 500), reuse_last_screenshot=True)
+         ref = swipeReference("event_enemy_info_frame.png", threshold=0.85, destination=(0, 80), ybounds_old=(150, 500), reuse_last_screenshot=True)
          if not ref:
             return info
          time.sleep(1)
-         event_enemy_corner = locateTemplate("event_enemy_info.png", threshold=.80, ybounds=(0, 400), reuse_last_screenshot=False)
+         event_enemy_corner = locateTemplate("event_enemy_info.png", threshold=.80, xbounds=(0, 400), reuse_last_screenshot=False)
          if event_enemy_corner:
             break
          else:
@@ -2208,7 +2208,7 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
       
       if find_enraged:
          printAction("Checking if enemy is enraged...")
-         increased_raid_rating = locateTemplate("event_3_times_raid_rating.png", threshold=.85, retries=3, ybounds=(0, 450))
+         increased_raid_rating = locateTemplate("event_3_times_raid_rating.png", threshold=.85, retries=3, xbounds=(0, 450))
          printResult(increased_raid_rating)
          if increased_raid_rating:
             is_enraged = True
@@ -2220,7 +2220,7 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
       printAction("Running OCR to figure out badass name and level...")
    #   printAction("Preprocessing image")
 
-      badguy_image = preOCR("screenshot_%s.png" % device.active_device, xbounds=(110, 370), ybounds=(84, 114)) #(99,126)
+      badguy_image = preOCR("screenshot_%s.png" % device.active_device, xbounds=(110, 370), ybounds_old=(84, 114)) #(99,126)
       badguy_string = runOCR(badguy_image, mode='line')
    
       badguy_name = re.sub(r' Lv.+', '', badguy_string)
@@ -2231,7 +2231,7 @@ def eventFindEnemy(find_enraged=False, watchdog=10):
             
       printAction("Running OCR to figure out enemy info...")
       e = event_enemy_corner
-      enemy_image = preOCR("screenshot_%s.png" % device.active_device, color_mask=(0, 1, 0), xbounds=(e[0], 470), ybounds=(e[1], e[1] + 144)) #old x: e[0]+250
+      enemy_image = preOCR("screenshot_%s.png" % device.active_device, color_mask=(0, 1, 0), xbounds=(e[0], 470), ybounds_old=(e[1], e[1] + 144)) #old x: e[0]+250
       enemy_info = runOCR(enemy_image, mode='', lang='event_enemy')
    
       enemy_health = re.findall(r'\d+', enemy_info)
@@ -2293,7 +2293,7 @@ def eventKillEnemies(find_enraged=False):
   
          gotoEventHome()
          event_enemies_in_area = locateTemplate("event_enemies_in_area.png",
-            offset=(154, 89), retries=5, ybounds=(0, 400), swipe_size=[(240, 600), (240, 295)])
+            offset=(154, 89), retries=5, xbounds=(0, 400), swipe_size=[(240, 600), (240, 295)])
          if not event_enemies_in_area:
             return False
 #         event_face_enemy = locateTemplate("event_mission_button.png",
@@ -2321,7 +2321,7 @@ def eventKillEnemies(find_enraged=False):
 #      printAction("Searching for deck select button...")
 #      for j in range(5):
 #         swipe((10,400),(10,200))
-#         select_deck = locateTemplate("select_deck_button.png", threshold=.96, offset=(-144,17), ybounds=(0,600), click=True)
+#         select_deck = locateTemplate("select_deck_button.png", threshold=.96, offset=(-144,17), ybounds_old=(0,600), click=True)
 #         if select_deck:
 #            break
 #      printResult(select_deck)
@@ -2537,7 +2537,7 @@ def eventPlay(find_enraged=False):
   
       printAction("Checking if enemies are present in the area...")
       event_enemies_in_area = locateTemplate("event_enemies_in_area.png",
-         offset=(154, 89), retries=5, ybounds=(0, 400), swipe_size=[(240, 600), (240, 295)])
+         offset=(154, 89), retries=5, xbounds=(0, 400), swipe_size=[(240, 600), (240, 295)])
       printResult(event_enemies_in_area)
       
       success = True
@@ -2602,7 +2602,7 @@ def selectCard(card_name, alignment='all'):
    number_of_cards_selected = 0
    
 #   card_coords = locateTemplate("card_%s.png"%card_name, correlation_threshold=0.95, offset=(214,86),
-#                                ybounds=(0,600), swipe_ref=['list_select_button_area',()])
+#                                ybounds_old=(0,600), swipe_ref=['list_select_button_area',()])
 
    # Cards with stapled lines are skipped (base card)
    top = locateTemplate("list_top_separator.png")
@@ -2614,8 +2614,8 @@ def selectCard(card_name, alignment='all'):
    swipeReference("list_top_separator.png", destination=(20, 90), print_coeff=True, reuse_last_screenshot=True)
    
    for i in range(15):
-      card_coords = locateTemplate("card_%s.png" % card_name, threshold=0.95, offset=(214, 86), ybounds=(0, 550))
-      select_bar = locateTemplate("list_select_button_area.png", offset=(18, 26), ybounds=(150, 550), reuse_last_screenshot=True)
+      card_coords = locateTemplate("card_%s.png" % card_name, threshold=0.95, offset=(214, 86), xbounds=(0, 550))
+      select_bar = locateTemplate("list_select_button_area.png", offset=(18, 26), xbounds=(150, 550), reuse_last_screenshot=True)
       if card_coords and select_bar:
          leftClick([select_bar[0], select_bar[1] + 150])
          number_of_cards_selected += 1
@@ -2624,7 +2624,7 @@ def selectCard(card_name, alignment='all'):
       
 #      swipe((1,600),(479,500))
 #      time.sleep(1)
-      line_separator = swipeReference("list_line_separator.png", destination=(20, 90), ybounds=(150, 600), threshold=0.85, print_coeff=True, reuse_last_screenshot=True)
+      line_separator = swipeReference("list_line_separator.png", destination=(20, 90), ybounds_old=(150, 600), threshold=0.85, print_coeff=True, reuse_last_screenshot=True)
       if not line_separator:
          printResult(False)
          printAction("Assuming no more cards can be found...", newline=True)
@@ -2662,7 +2662,7 @@ def markCards(cards_list, alignment='all'):
    for i in range(15):
       device.takeScreenshot()
       for card in cards_list:
-         card_coords = locateTemplate("card_%s.png" % card, threshold=0.95, offset=(214, 86), ybounds=(300, 800), reuse_last_screenshot=True)
+         card_coords = locateTemplate("card_%s.png" % card, threshold=0.95, offset=(214, 86), xbounds=(300, 800), reuse_last_screenshot=True)
          
          if card_coords:
             leftClick([card_coords[0], card_coords[1] + 300])
@@ -2818,7 +2818,7 @@ def boostCard(card_name, cards_list, alignment='all'):
    for i in range(11):
       device.takeScreenshot()
       for card in cards_list:
-         card_coords = locateTemplate("card_%s.png" % card, threshold=0.95, offset=(214, 86), ybounds=(300, 800), reuse_last_screenshot=True)
+         card_coords = locateTemplate("card_%s.png" % card, threshold=0.95, offset=(214, 86), xbounds=(300, 800), reuse_last_screenshot=True)
          
          if card_coords:
             leftClick([card_coords[0], card_coords[1] + 300])
@@ -3052,7 +3052,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
    one_or_more_card_found = False
    for card in cards_list:
       printAction("Adding another card for trade...")
-      trade_card = locateTemplate("trade_card_button.png", offset=(59, 17), retries=3, ybounds=((450, 800)))
+      trade_card = locateTemplate("trade_card_button.png", offset=(59, 17), retries=3, xbounds=((450, 800)))
       trade_card = tuple(np.array(trade_card) + (0, 450))
          
       if not trade_card:
@@ -3082,7 +3082,7 @@ def tradeCards(receiver='joinge', cards_list=['rare_ironman'], alignment='all'):
       return False
    
    printAction("Trading for 1 silver...")
-   trade_silver = locateTemplate("trade_silver_button.png", offset=(59, 17), retries=2, ybounds=((0, 550)))
+   trade_silver = locateTemplate("trade_silver_button.png", offset=(59, 17), retries=2, xbounds=((0, 550)))
       
    if not trade_silver:
       printAction("Unable to find card trade button!.", newline=True)
@@ -4049,7 +4049,7 @@ def checkRaid(health_limit):
       gotoEventHome()
 #      time.sleep(2)
       ref = locateTemplate('event_asked_for_raid_support.png', threshold=0.95,
-                           offset=(130, 16), retries=2, click=True, ybounds=(0, 600), swipe_size=[(20, 600), (20, 100)])
+                           offset=(130, 16), retries=2, click=True, xbounds=(0, 600), swipe_size=[(20, 600), (20, 100)])
       
       printResult(ref)
       
@@ -4105,7 +4105,7 @@ def eventStarkPresident():
          printAction("Landed on search spot...", newline=True)
          printAction("Hitting radar watch...")
          radar_watch = locateTemplate("stark_president/radar_watch.png",
-                                      offset=(78, 27), threshold=0.92, retries=5, ybounds=(0, 600), swipe_size=[(20, 600), (20, 100)], click=True)
+                                      offset=(78, 27), threshold=0.92, retries=5, xbounds=(0, 600), swipe_size=[(20, 600), (20, 100)], click=True)
          printResult(radar_watch)
          
          if radar_watch:
